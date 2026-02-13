@@ -1,10 +1,15 @@
 /**
  * IP allowlist/denylist filtering policy.
  *
+ * Supports both HTTP (`handler`) and protocol-agnostic (`evaluate`) entry
+ * points. The evaluate path uses {@link PolicyInput.clientIp} when available
+ * (set by the runtime), falling back to header extraction.
+ *
  * @module ip-filter
  */
 
 import { GatewayError } from "../../core/errors";
+import type { PolicyInput, PolicyResult } from "../../core/protocol";
 import { isInRange, type ParsedCIDR, parseCIDR } from "../../utils/cidr";
 import { extractClientIp } from "../../utils/ip";
 import { Priority, withSkip } from "../sdk";
@@ -50,21 +55,27 @@ export function ipFilter(config: IpFilterConfig): Policy {
     .map(parseCIDR)
     .filter((r): r is ParsedCIDR => r !== null);
 
-  const handler: import("hono").MiddlewareHandler = async (c, next) => {
-    const ip = extractClientIp(c.req.raw.headers, ipHeaders);
-
+  // ── Shared logic — used by both handler and evaluate ────────────
+  function checkIp(ip: string): PolicyResult {
     if (mode === "allow") {
-      // Allowlist mode: deny unless IP matches
       if (!isInRange(ip, allowRanges)) {
-        throw new GatewayError(403, "ip_denied", "Access denied");
+        return { action: "reject", status: 403, code: "ip_denied", message: "Access denied" };
       }
     } else {
-      // Denylist mode: allow unless IP matches
       if (isInRange(ip, denyRanges)) {
-        throw new GatewayError(403, "ip_denied", "Access denied");
+        return { action: "reject", status: 403, code: "ip_denied", message: "Access denied" };
       }
     }
+    return { action: "continue" };
+  }
 
+  // ── HTTP handler (Hono middleware) ──────────────────────────────
+  const handler: import("hono").MiddlewareHandler = async (c, next) => {
+    const ip = extractClientIp(c.req.raw.headers, ipHeaders);
+    const result = checkIp(ip);
+    if (result.action === "reject") {
+      throw new GatewayError(result.status, result.code, result.message);
+    }
     await next();
   };
 
@@ -72,5 +83,13 @@ export function ipFilter(config: IpFilterConfig): Policy {
     name: "ip-filter",
     priority: Priority.IP_FILTER,
     handler: withSkip(config.skip, handler),
+    phases: ["request-headers"],
+    // ── Protocol-agnostic evaluator ────────────────────────────────
+    evaluate: {
+      onRequest: async (input: PolicyInput) => {
+        const ip = input.clientIp ?? extractClientIp(input.headers, ipHeaders);
+        return checkIp(ip);
+      },
+    },
   };
 }
