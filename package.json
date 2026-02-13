@@ -7,7 +7,6 @@
     "type": "git",
     "url": "git+https://github.com/HomeGrower-club/stoma.git"
   },
-  "provenance": true,
   "homepage": "https://stoma.opensource.homegrower.club",
   "license": "MIT",
   "author": {
@@ -30,7 +29,8 @@
     "declarative"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
