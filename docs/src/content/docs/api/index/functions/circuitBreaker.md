@@ -7,7 +7,7 @@ title: "circuitBreaker"
 
 > **circuitBreaker**(`config?`): [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: src/policies/resilience/circuit-breaker.ts:205
+Defined in: [src/policies/resilience/circuit-breaker.ts:205](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/resilience/circuit-breaker.ts#L205)
 
 Protect upstream services by breaking the circuit on repeated failures.
 

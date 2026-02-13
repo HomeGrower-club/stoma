@@ -5,7 +5,7 @@ prev: false
 title: "VerifyHttpSignatureConfig"
 ---
 
-Defined in: src/policies/auth/verify-http-signature.ts:29
+Defined in: [src/policies/auth/verify-http-signature.ts:29](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/verify-http-signature.ts#L29)
 
 Configuration for the verifyHttpSignature policy.
 
@@ -19,7 +19,7 @@ Configuration for the verifyHttpSignature policy.
 
 > **keys**: `Record`\<`string`, [`HttpSignatureKey`](/api/policies/interfaces/httpsignaturekey/)\>
 
-Defined in: src/policies/auth/verify-http-signature.ts:31
+Defined in: [src/policies/auth/verify-http-signature.ts:31](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/verify-http-signature.ts#L31)
 
 Map of keyId to key material.
 
@@ -29,7 +29,7 @@ Map of keyId to key material.
 
 > `optional` **label**: `string`
 
-Defined in: src/policies/auth/verify-http-signature.ts:41
+Defined in: [src/policies/auth/verify-http-signature.ts:41](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/verify-http-signature.ts#L41)
 
 Expected signature label. Default: "sig1".
 
@@ -39,7 +39,7 @@ Expected signature label. Default: "sig1".
 
 > `optional` **maxAge**: `number`
 
-Defined in: src/policies/auth/verify-http-signature.ts:35
+Defined in: [src/policies/auth/verify-http-signature.ts:35](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/verify-http-signature.ts#L35)
 
 Max signature age in seconds. Default: 300 (5 min).
 
@@ -49,7 +49,7 @@ Max signature age in seconds. Default: 300 (5 min).
 
 > `optional` **requiredComponents**: `string`[]
 
-Defined in: src/policies/auth/verify-http-signature.ts:33
+Defined in: [src/policies/auth/verify-http-signature.ts:33](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/verify-http-signature.ts#L33)
 
 Components that MUST be in the signature. Default: ["@method"].
 
@@ -59,7 +59,7 @@ Components that MUST be in the signature. Default: ["@method"].
 
 > `optional` **signatureHeaderName**: `string`
 
-Defined in: src/policies/auth/verify-http-signature.ts:37
+Defined in: [src/policies/auth/verify-http-signature.ts:37](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/verify-http-signature.ts#L37)
 
 Signature header name. Default: "Signature".
 
@@ -69,7 +69,7 @@ Signature header name. Default: "Signature".
 
 > `optional` **signatureInputHeaderName**: `string`
 
-Defined in: src/policies/auth/verify-http-signature.ts:39
+Defined in: [src/policies/auth/verify-http-signature.ts:39](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/verify-http-signature.ts#L39)
 
 Signature-Input header name. Default: "Signature-Input".
 
@@ -79,7 +79,7 @@ Signature-Input header name. Default: "Signature-Input".
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: src/policies/types.ts:33
+Defined in: [src/policies/types.ts:33](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/types.ts#L33)
 
 Skip this policy when condition returns true
 

@@ -7,7 +7,7 @@ title: "latencyInjection"
 
 > `const` **latencyInjection**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: src/policies/resilience/latency-injection.ts:37
+Defined in: [src/policies/resilience/latency-injection.ts:37](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/resilience/latency-injection.ts#L37)
 
 Inject artificial latency into the pipeline for chaos/resilience testing.
 

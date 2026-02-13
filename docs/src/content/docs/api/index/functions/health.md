@@ -7,7 +7,7 @@ title: "health"
 
 > **health**(`config?`): [`RouteConfig`](/api/index/interfaces/routeconfig/)
 
-Defined in: src/core/health.ts:76
+Defined in: [src/core/health.ts:76](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/health.ts#L76)
 
 Create a health check route for liveness and upstream probing.
 

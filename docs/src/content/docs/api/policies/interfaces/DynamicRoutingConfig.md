@@ -5,7 +5,7 @@ prev: false
 title: "DynamicRoutingConfig"
 ---
 
-Defined in: src/policies/traffic/dynamic-routing.ts:28
+Defined in: [src/policies/traffic/dynamic-routing.ts:28](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/dynamic-routing.ts#L28)
 
 Configuration for the dynamicRouting policy.
 
@@ -19,7 +19,7 @@ Configuration for the dynamicRouting policy.
 
 > `optional` **fallthrough**: `boolean`
 
-Defined in: src/policies/traffic/dynamic-routing.ts:32
+Defined in: [src/policies/traffic/dynamic-routing.ts:32](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/dynamic-routing.ts#L32)
 
 If true and no rule matches, call next() normally. If false, throw 404. Default: true.
 
@@ -29,7 +29,7 @@ If true and no rule matches, call next() normally. If false, throw 404. Default:
 
 > **rules**: [`RoutingRule`](/api/policies/interfaces/routingrule/)[]
 
-Defined in: src/policies/traffic/dynamic-routing.ts:30
+Defined in: [src/policies/traffic/dynamic-routing.ts:30](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/dynamic-routing.ts#L30)
 
 Ordered list of routing rules. First match wins. Required.
 
@@ -39,7 +39,7 @@ Ordered list of routing rules. First match wins. Required.
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: src/policies/types.ts:33
+Defined in: [src/policies/types.ts:33](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/types.ts#L33)
 
 Skip this policy when condition returns true
 

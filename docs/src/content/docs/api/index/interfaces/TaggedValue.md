@@ -5,7 +5,7 @@ prev: false
 title: "TaggedValue"
 ---
 
-Defined in: src/observability/metrics.ts:13
+Defined in: [src/observability/metrics.ts:13](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/observability/metrics.ts#L13)
 
 A single tagged metric data point.
 
@@ -15,7 +15,7 @@ A single tagged metric data point.
 
 > `optional` **tags**: `Record`\<`string`, `string`\>
 
-Defined in: src/observability/metrics.ts:15
+Defined in: [src/observability/metrics.ts:15](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/observability/metrics.ts#L15)
 
 ***
 
@@ -23,4 +23,4 @@ Defined in: src/observability/metrics.ts:15
 
 > **value**: `number`
 
-Defined in: src/observability/metrics.ts:14
+Defined in: [src/observability/metrics.ts:14](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/observability/metrics.ts#L14)

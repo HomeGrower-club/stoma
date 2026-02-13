@@ -5,7 +5,7 @@ prev: false
 title: "RbacConfig"
 ---
 
-Defined in: src/policies/auth/rbac.ts:13
+Defined in: [src/policies/auth/rbac.ts:13](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/rbac.ts#L13)
 
 Configuration for the rbac policy.
 
@@ -19,7 +19,7 @@ Configuration for the rbac policy.
 
 > `optional` **denyMessage**: `string`
 
-Defined in: src/policies/auth/rbac.ts:27
+Defined in: [src/policies/auth/rbac.ts:27](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/rbac.ts#L27)
 
 Custom deny message. Default: "Access denied: insufficient permissions".
 
@@ -29,7 +29,7 @@ Custom deny message. Default: "Access denied: insufficient permissions".
 
 > `optional` **permissionDelimiter**: `string`
 
-Defined in: src/policies/auth/rbac.ts:23
+Defined in: [src/policies/auth/rbac.ts:23](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/rbac.ts#L23)
 
 Delimiter for permission string. Default: ",".
 
@@ -39,7 +39,7 @@ Delimiter for permission string. Default: ",".
 
 > `optional` **permissionHeader**: `string`
 
-Defined in: src/policies/auth/rbac.ts:21
+Defined in: [src/policies/auth/rbac.ts:21](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/rbac.ts#L21)
 
 Header containing permissions. Default: "x-user-permissions".
 
@@ -49,7 +49,7 @@ Header containing permissions. Default: "x-user-permissions".
 
 > `optional` **permissions**: `string`[]
 
-Defined in: src/policies/auth/rbac.ts:19
+Defined in: [src/policies/auth/rbac.ts:19](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/rbac.ts#L19)
 
 Required permissions — pass if user has ALL of these.
 
@@ -59,7 +59,7 @@ Required permissions — pass if user has ALL of these.
 
 > `optional` **roleDelimiter**: `string`
 
-Defined in: src/policies/auth/rbac.ts:25
+Defined in: [src/policies/auth/rbac.ts:25](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/rbac.ts#L25)
 
 Delimiter for role string. Default: ",".
 
@@ -69,7 +69,7 @@ Delimiter for role string. Default: ",".
 
 > `optional` **roleHeader**: `string`
 
-Defined in: src/policies/auth/rbac.ts:15
+Defined in: [src/policies/auth/rbac.ts:15](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/rbac.ts#L15)
 
 Header name containing the user's role(s). Default: "x-user-role".
 
@@ -79,7 +79,7 @@ Header name containing the user's role(s). Default: "x-user-role".
 
 > `optional` **roles**: `string`[]
 
-Defined in: src/policies/auth/rbac.ts:17
+Defined in: [src/policies/auth/rbac.ts:17](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/auth/rbac.ts#L17)
 
 Allowed roles — pass if user has ANY of these.
 
@@ -89,7 +89,7 @@ Allowed roles — pass if user has ANY of these.
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: src/policies/types.ts:33
+Defined in: [src/policies/types.ts:33](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/types.ts#L33)
 
 Skip this policy when condition returns true
 

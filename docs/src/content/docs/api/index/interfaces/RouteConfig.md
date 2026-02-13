@@ -5,7 +5,7 @@ prev: false
 title: "RouteConfig"
 ---
 
-Defined in: src/core/types.ts:109
+Defined in: [src/core/types.ts:109](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L109)
 
 Individual route configuration
 
@@ -15,7 +15,7 @@ Individual route configuration
 
 > `optional` **metadata**: `Record`\<`string`, `unknown`\>
 
-Defined in: src/core/types.ts:117
+Defined in: [src/core/types.ts:117](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L117)
 
 Route-level metadata for logging/observability
 
@@ -25,7 +25,7 @@ Route-level metadata for logging/observability
 
 > `optional` **methods**: [`HttpMethod`](/api/index/type-aliases/httpmethod/)[]
 
-Defined in: src/core/types.ts:113
+Defined in: [src/core/types.ts:113](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L113)
 
 Allowed HTTP methods. Defaults to all.
 
@@ -35,7 +35,7 @@ Allowed HTTP methods. Defaults to all.
 
 > **path**: `string`
 
-Defined in: src/core/types.ts:111
+Defined in: [src/core/types.ts:111](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L111)
 
 Route path pattern (Hono syntax, e.g. "/users/:id")
 
@@ -45,6 +45,6 @@ Route path pattern (Hono syntax, e.g. "/users/:id")
 
 > **pipeline**: [`PipelineConfig`](/api/index/interfaces/pipelineconfig/)
 
-Defined in: src/core/types.ts:115
+Defined in: [src/core/types.ts:115](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L115)
 
 Pipeline to process this route

@@ -7,7 +7,7 @@ title: "withSkip"
 
 > **withSkip**(`skipFn`, `handler`): `MiddlewareHandler`
 
-Defined in: src/policies/sdk/helpers.ts:68
+Defined in: [src/policies/sdk/helpers.ts:68](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/helpers.ts#L68)
 
 Wrap a middleware handler with skip logic.
 

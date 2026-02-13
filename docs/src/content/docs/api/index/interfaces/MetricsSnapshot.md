@@ -5,7 +5,7 @@ prev: false
 title: "MetricsSnapshot"
 ---
 
-Defined in: src/observability/metrics.ts:25
+Defined in: [src/observability/metrics.ts:25](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/observability/metrics.ts#L25)
 
 Point-in-time snapshot of all collected metrics.
 
@@ -15,7 +15,7 @@ Point-in-time snapshot of all collected metrics.
 
 > **counters**: `Record`\<`string`, [`TaggedValue`](/api/index/interfaces/taggedvalue/)[]\>
 
-Defined in: src/observability/metrics.ts:26
+Defined in: [src/observability/metrics.ts:26](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/observability/metrics.ts#L26)
 
 ***
 
@@ -23,7 +23,7 @@ Defined in: src/observability/metrics.ts:26
 
 > **gauges**: `Record`\<`string`, [`TaggedValue`](/api/index/interfaces/taggedvalue/)[]\>
 
-Defined in: src/observability/metrics.ts:28
+Defined in: [src/observability/metrics.ts:28](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/observability/metrics.ts#L28)
 
 ***
 
@@ -31,4 +31,4 @@ Defined in: src/observability/metrics.ts:28
 
 > **histograms**: `Record`\<`string`, [`HistogramEntry`](/api/index/interfaces/histogramentry/)[]\>
 
-Defined in: src/observability/metrics.ts:27
+Defined in: [src/observability/metrics.ts:27](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/observability/metrics.ts#L27)

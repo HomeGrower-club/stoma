@@ -5,7 +5,7 @@ prev: false
 title: "TrafficShadowConfig"
 ---
 
-Defined in: src/policies/traffic/traffic-shadow.ts:25
+Defined in: [src/policies/traffic/traffic-shadow.ts:25](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/traffic-shadow.ts#L25)
 
 Configuration for the trafficShadow policy.
 
@@ -19,7 +19,7 @@ Configuration for the trafficShadow policy.
 
 > `optional` **methods**: `string`[]
 
-Defined in: src/policies/traffic/traffic-shadow.ts:31
+Defined in: [src/policies/traffic/traffic-shadow.ts:31](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/traffic-shadow.ts#L31)
 
 Only mirror these HTTP methods. Default: `["GET", "POST", "PUT", "PATCH", "DELETE"]`.
 
@@ -29,7 +29,7 @@ Only mirror these HTTP methods. Default: `["GET", "POST", "PUT", "PATCH", "DELET
 
 > `optional` **mirrorBody**: `boolean`
 
-Defined in: src/policies/traffic/traffic-shadow.ts:33
+Defined in: [src/policies/traffic/traffic-shadow.ts:33](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/traffic-shadow.ts#L33)
 
 Include request body in shadow request. Default: `true`.
 
@@ -39,7 +39,7 @@ Include request body in shadow request. Default: `true`.
 
 > `optional` **onError**: (`error`) => `void`
 
-Defined in: src/policies/traffic/traffic-shadow.ts:37
+Defined in: [src/policies/traffic/traffic-shadow.ts:37](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/traffic-shadow.ts#L37)
 
 Optional error handler for shadow failures. Default: silent.
 
@@ -59,7 +59,7 @@ Optional error handler for shadow failures. Default: silent.
 
 > `optional` **percentage**: `number`
 
-Defined in: src/policies/traffic/traffic-shadow.ts:29
+Defined in: [src/policies/traffic/traffic-shadow.ts:29](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/traffic-shadow.ts#L29)
 
 Percentage of traffic to mirror, 0-100. Default: `100`.
 
@@ -69,7 +69,7 @@ Percentage of traffic to mirror, 0-100. Default: `100`.
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: src/policies/types.ts:33
+Defined in: [src/policies/types.ts:33](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/types.ts#L33)
 
 Skip this policy when condition returns true
 
@@ -93,7 +93,7 @@ Skip this policy when condition returns true
 
 > **target**: `string`
 
-Defined in: src/policies/traffic/traffic-shadow.ts:27
+Defined in: [src/policies/traffic/traffic-shadow.ts:27](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/traffic-shadow.ts#L27)
 
 URL of the shadow upstream (required).
 
@@ -103,6 +103,6 @@ URL of the shadow upstream (required).
 
 > `optional` **timeout**: `number`
 
-Defined in: src/policies/traffic/traffic-shadow.ts:35
+Defined in: [src/policies/traffic/traffic-shadow.ts:35](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/traffic/traffic-shadow.ts#L35)
 
 Timeout for shadow request in ms. Default: `5000`.

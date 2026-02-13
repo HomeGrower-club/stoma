@@ -5,7 +5,7 @@ prev: false
 title: "RegisteredRoute"
 ---
 
-Defined in: src/core/types.ts:194
+Defined in: [src/core/types.ts:194](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L194)
 
 Registered route information for admin introspection.
 
@@ -15,7 +15,7 @@ Registered route information for admin introspection.
 
 > **methods**: `string`[]
 
-Defined in: src/core/types.ts:196
+Defined in: [src/core/types.ts:196](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L196)
 
 ***
 
@@ -23,7 +23,7 @@ Defined in: src/core/types.ts:196
 
 > **path**: `string`
 
-Defined in: src/core/types.ts:195
+Defined in: [src/core/types.ts:195](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L195)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: src/core/types.ts:195
 
 > **policyNames**: `string`[]
 
-Defined in: src/core/types.ts:197
+Defined in: [src/core/types.ts:197](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L197)
 
 ***
 
@@ -39,4 +39,4 @@ Defined in: src/core/types.ts:197
 
 > **upstreamType**: `string`
 
-Defined in: src/core/types.ts:198
+Defined in: [src/core/types.ts:198](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L198)

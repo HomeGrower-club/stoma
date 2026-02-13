@@ -5,7 +5,7 @@ prev: false
 title: "AdminConfig"
 ---
 
-Defined in: src/core/types.ts:182
+Defined in: [src/core/types.ts:182](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L182)
 
 Configuration for the admin introspection API.
 
@@ -15,7 +15,7 @@ Configuration for the admin introspection API.
 
 > `optional` **auth**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: src/core/types.ts:188
+Defined in: [src/core/types.ts:188](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L188)
 
 Optional auth check — return `false` to deny access.
 
@@ -35,7 +35,7 @@ Optional auth check — return `false` to deny access.
 
 > **enabled**: `boolean`
 
-Defined in: src/core/types.ts:184
+Defined in: [src/core/types.ts:184](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L184)
 
 Enable admin routes. Default: `false`.
 
@@ -45,7 +45,7 @@ Enable admin routes. Default: `false`.
 
 > `optional` **metrics**: [`MetricsCollector`](/api/index/interfaces/metricscollector/)
 
-Defined in: src/core/types.ts:190
+Defined in: [src/core/types.ts:190](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L190)
 
 MetricsCollector instance for the `/metrics` endpoint.
 
@@ -55,6 +55,6 @@ MetricsCollector instance for the `/metrics` endpoint.
 
 > `optional` **prefix**: `string`
 
-Defined in: src/core/types.ts:186
+Defined in: [src/core/types.ts:186](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L186)
 
 Path prefix for admin routes. Default: `"___gateway"`.

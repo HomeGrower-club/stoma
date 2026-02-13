@@ -5,7 +5,7 @@ prev: false
 title: "HandlerUpstream"
 ---
 
-Defined in: src/core/types.ts:165
+Defined in: [src/core/types.ts:165](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L165)
 
 Invoke a custom handler function directly. Useful for health checks,
 mock responses, or routes that don't proxy to an upstream.
@@ -16,7 +16,7 @@ mock responses, or routes that don't proxy to an upstream.
 
 > **handler**: (`c`) => `Response` \| `Promise`\<`Response`\>
 
-Defined in: src/core/types.ts:168
+Defined in: [src/core/types.ts:168](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L168)
 
 Handler function receiving the Hono context and returning a Response.
 
@@ -36,4 +36,4 @@ Handler function receiving the Hono context and returning a Response.
 
 > **type**: `"handler"`
 
-Defined in: src/core/types.ts:166
+Defined in: [src/core/types.ts:166](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/types.ts#L166)
