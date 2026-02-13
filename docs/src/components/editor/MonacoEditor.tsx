@@ -9,48 +9,6 @@ import MonacoReact from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { useCallback, useRef } from "react";
 
-/**
- * Minimal Hono type stubs for Monaco IntelliSense.
- *
- * The stoma type bundle (`stoma-bundle.d.ts`) has `import { Context, ... } from 'hono'`
- * at the top. Monaco can't resolve bare-specifier imports, so we register these stubs
- * at the expected node_modules path so the TS language service can follow the import.
- */
-const HONO_TYPE_STUBS = `
-declare module "hono" {
-  export interface Context<E = any, P extends string = any, I = any> {
-    req: {
-      method: string;
-      url: string;
-      path: string;
-      header(name: string): string | undefined;
-      query(key: string): string | undefined;
-      raw: Request;
-      text(): Promise<string>;
-      json<T = any>(): Promise<T>;
-      param(key: string): string | undefined;
-    };
-    json<T = {}>(data: T, status?: number): Response;
-    text(data: string, status?: number): Response;
-    html(data: string, status?: number): Response;
-    body(data: string | ArrayBuffer | ReadableStream | null, status?: number): Response;
-    redirect(url: string, status?: number): Response;
-    header(name: string, value: string): void;
-    status(code: number): void;
-    set(key: string, value: unknown): void;
-    get(key: string): unknown;
-  }
-  export type Next = () => Promise<void>;
-  export type MiddlewareHandler<E = any, P extends string = string, I = {}> =
-    (c: Context<E, P, I>, next: Next) => Response | Promise<Response | void>;
-  export class Hono<E = any> {
-    fetch(request: Request, ...rest: unknown[]): Response | Promise<Response>;
-    request(path: string, init?: RequestInit): Response | Promise<Response>;
-    on(method: string | string[], path: string, ...handlers: MiddlewareHandler[]): Hono<E>;
-  }
-}
-`;
-
 interface MonacoEditorProps {
   defaultValue: string;
   onChange: (value: string) => void;
@@ -81,16 +39,9 @@ export function MonacoEditor({ defaultValue, onChange }: MonacoEditorProps) {
         noEmit: true,
       });
 
-      // Register minimal Hono type stubs so the stoma bundle's
-      // `import { Context, ... } from 'hono'` resolves in Monaco.
-      monaco.languages.typescript.typescriptDefaults.addExtraLib(
-        HONO_TYPE_STUBS,
-        "file:///node_modules/hono/index.d.ts"
-      );
-
-      // Fetch and register Stoma type declarations.
-      // The bundle is registered at the main entry AND at each subpath so
-      // imports like `@homegrower-club/stoma/sdk` resolve in Monaco.
+      // Fetch and register Stoma + Hono type declarations (single self-contained bundle).
+      // Registered at the main entry AND at each subpath so imports like
+      // `@homegrower-club/stoma/sdk` resolve in Monaco.
       fetch("/stoma-bundle.d.ts")
         .then((res) => {
           if (!res.ok) throw new Error(`${res.status}`);

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { GatewayError } from "../../../core/errors";
+import type { PolicyInput } from "../../../core/protocol";
 import { ipFilter } from "../ip-filter";
 
 describe("ipFilter", () => {
@@ -211,5 +212,161 @@ describe("ipFilter", () => {
       headers: { "cf-connecting-ip": "10.0.0.1" },
     });
     expect(res.status).toBe(403);
+  });
+
+  // --- Policy metadata ---
+
+  it("should declare request-headers phase", () => {
+    const policy = ipFilter({ deny: ["10.0.0.1"] });
+    expect(policy.phases).toEqual(["request-headers"]);
+  });
+
+  it("should expose an evaluate.onRequest function", () => {
+    const policy = ipFilter({ deny: ["10.0.0.1"] });
+    expect(policy.evaluate).toBeDefined();
+    expect(policy.evaluate!.onRequest).toBeTypeOf("function");
+    expect(policy.evaluate!.onResponse).toBeUndefined();
+  });
+});
+
+// ─── Protocol-agnostic evaluate tests ─────────────────────────────────
+describe("ipFilter.evaluate", () => {
+  /** Build a minimal PolicyInput with the given clientIp and headers. */
+  function makeInput(opts: { clientIp?: string; headers?: Record<string, string> }): PolicyInput {
+    return {
+      phase: "request-headers",
+      method: "GET",
+      path: "/test",
+      headers: new Headers(opts.headers ?? {}),
+      clientIp: opts.clientIp,
+      attributes: new Map(),
+      protocol: "http",
+    };
+  }
+
+  const noopCtx = {
+    debug: (() => {}) as never,
+    trace: (() => {}) as never,
+    requestId: "test-req",
+    traceId: "0".repeat(32),
+    adapter: undefined,
+  };
+
+  // --- Deny mode ---
+
+  it("should continue for IPs not in deny list", async () => {
+    const policy = ipFilter({ deny: ["10.0.0.1"], mode: "deny" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "192.168.1.1" }),
+      noopCtx,
+    );
+    expect(result.action).toBe("continue");
+  });
+
+  it("should reject IPs in deny list", async () => {
+    const policy = ipFilter({ deny: ["10.0.0.1"], mode: "deny" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "10.0.0.1" }),
+      noopCtx,
+    );
+    expect(result).toEqual({
+      action: "reject",
+      status: 403,
+      code: "ip_denied",
+      message: "Access denied",
+    });
+  });
+
+  it("should reject IPs matching CIDR range", async () => {
+    const policy = ipFilter({ deny: ["10.0.0.0/8"], mode: "deny" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "10.255.255.255" }),
+      noopCtx,
+    );
+    expect(result.action).toBe("reject");
+  });
+
+  // --- Allow mode ---
+
+  it("should continue for IPs in allow list", async () => {
+    const policy = ipFilter({ allow: ["192.168.1.0/24"], mode: "allow" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "192.168.1.100" }),
+      noopCtx,
+    );
+    expect(result.action).toBe("continue");
+  });
+
+  it("should reject IPs not in allow list", async () => {
+    const policy = ipFilter({ allow: ["192.168.1.0/24"], mode: "allow" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "10.0.0.1" }),
+      noopCtx,
+    );
+    expect(result.action).toBe("reject");
+  });
+
+  // --- clientIp vs header fallback ---
+
+  it("should prefer clientIp over header extraction", async () => {
+    const policy = ipFilter({ deny: ["1.2.3.4"], mode: "deny" });
+    // clientIp is the denied IP, but headers have a different one
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "1.2.3.4", headers: { "cf-connecting-ip": "5.6.7.8" } }),
+      noopCtx,
+    );
+    expect(result.action).toBe("reject");
+  });
+
+  it("should fall back to header extraction when clientIp is absent", async () => {
+    const policy = ipFilter({ deny: ["1.2.3.4"], mode: "deny" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ headers: { "cf-connecting-ip": "1.2.3.4" } }),
+      noopCtx,
+    );
+    expect(result.action).toBe("reject");
+  });
+
+  it("should use 'unknown' when neither clientIp nor headers are present", async () => {
+    const policy = ipFilter({ deny: ["10.0.0.0/8"], mode: "deny" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({}),
+      noopCtx,
+    );
+    expect(result.action).toBe("continue");
+  });
+
+  // --- Parity with handler ---
+
+  it("should produce the same decision as handler for identical inputs", async () => {
+    const config = { deny: ["10.0.0.0/8", "172.16.0.0/12"], mode: "deny" as const };
+    const policy = ipFilter(config);
+
+    const testIps = ["10.0.0.1", "172.20.1.1", "8.8.8.8", "192.168.1.1"];
+    for (const ip of testIps) {
+      // evaluate path
+      const evalResult = await policy.evaluate!.onRequest!(
+        makeInput({ clientIp: ip }),
+        noopCtx,
+      );
+
+      // handler path (via Hono app)
+      const app = new Hono();
+      app.use("/*", async (c, next) => {
+        try {
+          await policy.handler(c, next);
+        } catch (err) {
+          if (err instanceof GatewayError) {
+            return c.json({ blocked: true }, 403);
+          }
+          throw err;
+        }
+      });
+      app.get("/test", (c) => c.json({ blocked: false }));
+      const res = await app.request("/test", { headers: { "cf-connecting-ip": ip } });
+      const handlerBlocked = res.status === 403;
+
+      expect(evalResult.action === "reject").toBe(handlerBlocked);
+    }
   });
 });
