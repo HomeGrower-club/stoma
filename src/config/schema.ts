@@ -69,6 +69,22 @@ const RouteSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
+const TracingConfigSchema = z
+  .object({
+    exporter: z.any(),
+    serviceName: z.string().optional(),
+    serviceVersion: z.string().optional(),
+    sampleRate: z.number().min(0).max(1).optional(),
+  })
+  .optional();
+
+const ScopeConfigSchema = z.object({
+  prefix: z.string().min(1, "Scope prefix is required"),
+  policies: z.array(PolicySchema).optional(),
+  routes: z.array(z.lazy(() => RouteSchema)).min(1, "Scope requires at least one route"),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
 const GatewayConfigSchema = z.object({
   name: z.string().optional(),
   basePath: z.string().optional(),
@@ -91,6 +107,16 @@ const GatewayConfigSchema = z.object({
       }),
     ])
     .optional(),
+  debugHeaders: z
+    .union([
+      z.boolean(),
+      z.object({
+        requestHeader: z.string().optional(),
+        allow: z.array(z.string()).optional(),
+      }),
+    ])
+    .optional(),
+  tracing: TracingConfigSchema,
 });
 
 // ---------------------------------------------------------------------------
@@ -104,6 +130,8 @@ export {
   UpstreamSchema,
   PolicySchema,
   HttpMethodSchema,
+  TracingConfigSchema,
+  ScopeConfigSchema,
 };
 
 // ---------------------------------------------------------------------------

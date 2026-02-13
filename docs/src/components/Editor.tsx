@@ -7,7 +7,7 @@
  *
  * Hydrated client-only via Astro's `client:only="react"` directive.
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DEFAULT_CODE } from "../editor/default-code";
 import { MonacoEditor } from "./editor/MonacoEditor";
 import { RequestBuilder } from "./editor/RequestBuilder";
@@ -23,8 +23,24 @@ const STATUS_LABELS: Record<string, string> = {
   error: "Error",
 };
 
+function getInitialParams() {
+  if (typeof window === "undefined") return { code: DEFAULT_CODE, autorun: false, title: null as string | null };
+  const params = new URLSearchParams(window.location.search);
+  const urlCode = params.get("code");
+  let code = DEFAULT_CODE;
+  if (urlCode) {
+    try { code = atob(urlCode); } catch { /* ignore invalid base64 */ }
+  }
+  return {
+    code,
+    autorun: params.get("autorun") === "true",
+    title: params.get("title"),
+  };
+}
+
 export default function Editor() {
-  const codeRef = useRef(DEFAULT_CODE);
+  const initial = useRef(getInitialParams());
+  const codeRef = useRef(initial.current.code);
   const { status, error, routes, gatewayName, deploy, sendRequest } =
     useGatewayWorker();
   const [response, setResponse] = useState<ResponseData | null>(null);
@@ -64,6 +80,15 @@ export default function Editor() {
 
   const isCompiling = status === "compiling" || status === "deploying";
 
+  // Auto-compile on mount when ?autorun=true
+  const autorunDone = useRef(false);
+  useEffect(() => {
+    if (initial.current.autorun && !autorunDone.current && status === "idle") {
+      autorunDone.current = true;
+      deploy(codeRef.current);
+    }
+  }, [status, deploy]);
+
   return (
     <div className="ed-root">
       {/* Header bar */}
@@ -73,7 +98,9 @@ export default function Editor() {
             Stoma
           </a>
           <span className="ed-header-divider">/</span>
-          <span className="ed-header-title">Editor</span>
+          <span className="ed-header-title">
+            {initial.current.title ?? "Editor"}
+          </span>
         </div>
         <div className="ed-header-right">
           <button
@@ -94,7 +121,7 @@ export default function Editor() {
         {/* Left: Monaco editor */}
         <div className="ed-pane-left">
           <MonacoEditor
-            defaultValue={DEFAULT_CODE}
+            defaultValue={initial.current.code}
             onChange={handleCodeChange}
           />
           {/* Status bar below editor */}

@@ -35,7 +35,7 @@ import {
 } from "../utils/trace-context";
 import type { DebugHeadersConfig } from "./types";
 import type { ReadableSpan, TracingConfig } from "../observability/tracing";
-import { SpanBuilder, generateOtelSpanId, shouldSample } from "../observability/tracing";
+import { SemConv, SpanBuilder, generateOtelSpanId, shouldSample } from "../observability/tracing";
 
 const noopDebugFactory = () => noopDebugLogger;
 
@@ -101,9 +101,12 @@ export function policiesToMiddleware(policies: Policy[]): MiddlewareHandler[] {
     const wrappedHandler: MiddlewareHandler = async (c, next) => {
       const start = Date.now();
 
-      // Fast path: when tracing is off, avoid allocating trace-only
-      // variables (calledNext, errorMsg) and the tracedNext closure.
-      if (c.get(TRACE_REQUESTED_KEY) !== true) {
+      // Fast path: when neither policy trace nor OTel tracing is active,
+      // avoid allocating trace-only variables and the tracedNext closure.
+      if (
+        c.get(TRACE_REQUESTED_KEY) !== true &&
+        c.get("_otelSpans") === undefined
+      ) {
         try {
           await originalHandler(c, next);
         } finally {
@@ -118,8 +121,8 @@ export function policiesToMiddleware(policies: Policy[]): MiddlewareHandler[] {
         return;
       }
 
-      // Slow path: tracing active — track calledNext, errors, and
-      // push baseline entries for the context injector to assemble.
+      // Slow path: tracing active (policy trace, OTel, or both) —
+      // track calledNext, errors, and push entries.
       let calledNext = false;
       let errorMsg: string | null = null;
 
@@ -143,17 +146,40 @@ export function policiesToMiddleware(policies: Policy[]): MiddlewareHandler[] {
         timings.push({ name: policy.name, durationMs });
         c.set("_policyTimings", timings);
 
-        // Accumulate trace baseline entries
-        const entries = (c.get(TRACE_ENTRIES_KEY) ??
-          []) as PolicyTraceBaseline[];
-        entries.push({
-          name: policy.name,
-          priority: policyPriority,
-          durationMs,
-          calledNext,
-          error: errorMsg,
-        });
-        c.set(TRACE_ENTRIES_KEY, entries);
+        // Accumulate trace baseline entries (policy trace system)
+        if (c.get(TRACE_REQUESTED_KEY) === true) {
+          const entries = (c.get(TRACE_ENTRIES_KEY) ??
+            []) as PolicyTraceBaseline[];
+          entries.push({
+            name: policy.name,
+            priority: policyPriority,
+            durationMs,
+            calledNext,
+            error: errorMsg,
+          });
+          c.set(TRACE_ENTRIES_KEY, entries);
+        }
+
+        // OTel: create INTERNAL child span per policy
+        const otelSpans = c.get("_otelSpans") as ReadableSpan[] | undefined;
+        if (otelSpans !== undefined) {
+          const rootSpan = c.get("_otelRootSpan") as SpanBuilder;
+          const span = new SpanBuilder(
+            `policy:${policy.name}`,
+            "INTERNAL",
+            rootSpan.traceId,
+            generateOtelSpanId(),
+            rootSpan.spanId,
+            start,
+          );
+          span
+            .setAttribute("policy.name", policy.name)
+            .setAttribute("policy.priority", policyPriority);
+          if (errorMsg) {
+            span.setStatus("ERROR", errorMsg);
+          }
+          otelSpans.push(span.end());
+        }
       }
     };
     return wrappedHandler;
@@ -179,7 +205,8 @@ export function createContextInjector(
   debugFactory: (namespace: string) => DebugLogger = noopDebugFactory,
   requestIdHeader = "x-request-id",
   adapter?: GatewayAdapter,
-  debugHeaders?: boolean | DebugHeadersConfig
+  debugHeaders?: boolean | DebugHeadersConfig,
+  tracing?: TracingConfig,
 ): MiddlewareHandler {
   // Pre-compute debug header config once at construction time
   const debugHeadersConfig =
@@ -208,6 +235,28 @@ export function createContextInjector(
       adapter,
     };
     c.set(GATEWAY_CONTEXT_KEY, ctx);
+
+    // OTel tracing: create root SERVER span if sampled
+    let otelRootSpan: SpanBuilder | undefined;
+    if (tracing && shouldSample(tracing.sampleRate ?? 1.0)) {
+      const otelSpanId = generateOtelSpanId();
+      otelRootSpan = new SpanBuilder(
+        `${c.req.method} ${routePath}`,
+        "SERVER",
+        traceId,
+        otelSpanId,
+        parsed?.parentId,
+        ctx.startTime,
+      );
+      otelRootSpan
+        .setAttribute(SemConv.HTTP_METHOD, c.req.method)
+        .setAttribute(SemConv.HTTP_ROUTE, routePath)
+        .setAttribute(SemConv.URL_PATH, new URL(c.req.url).pathname)
+        .setAttribute("gateway.name", gatewayName);
+
+      c.set("_otelRootSpan", otelRootSpan);
+      c.set("_otelSpans", [] as ReadableSpan[]);
+    }
 
     // Parse client debug header request before policies run
     if (debugHeadersConfig) {
@@ -268,6 +317,28 @@ export function createContextInjector(
         };
 
         c.res.headers.set("x-stoma-trace", JSON.stringify(trace));
+      }
+    }
+
+    // OTel tracing: finalize root span and export
+    if (otelRootSpan) {
+      otelRootSpan
+        .setAttribute(SemConv.HTTP_STATUS_CODE, c.res.status)
+        .setStatus(
+          c.res.status >= 500 ? "ERROR" : c.res.status >= 400 ? "UNSET" : "OK",
+        );
+
+      const rootReadable = otelRootSpan.end();
+      const childSpans = (c.get("_otelSpans") ?? []) as ReadableSpan[];
+      const allSpans = [rootReadable, ...childSpans];
+
+      // Export asynchronously — don't block the response
+      const exportPromise = tracing!.exporter.export(allSpans).catch(() => {
+        // Swallow export errors — tracing must never break the request
+      });
+
+      if (adapter?.waitUntil) {
+        adapter.waitUntil(exportPromise);
       }
     }
   };

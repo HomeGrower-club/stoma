@@ -1,5 +1,9 @@
 /**
  * Default gateway configuration code shown in the Monaco editor.
+ *
+ * New to Stoma? Start with the Policy Authoring tutorial series at
+ * /policy-authoring/your-first-policy/ — each page has "Open in Editor"
+ * buttons that pre-load the tutorial code here.
  */
 export const DEFAULT_CODE = `import {
   createGateway,

@@ -101,6 +101,10 @@ export default defineConfig({
           autogenerate: { directory: "recipes" },
         },
         {
+          label: "Policy Authoring",
+          autogenerate: { directory: "policy-authoring" },
+        },
+        {
           label: "Guides",
           autogenerate: { directory: "guides" },
         },

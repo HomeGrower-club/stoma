@@ -1,0 +1,504 @@
+---
+title: Your First Custom Policy
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import EditorLink from "../../../components/EditorLink.astro";
+
+Stoma's power comes from policies -- small, composable middleware units that
+inspect, transform, or reject requests as they flow through the gateway.
+In this tutorial you will build a policy that adds an `x-request-time` header
+to every response, showing how long the gateway took to process the request.
+Each step builds on the last, progressively introducing more of the SDK.
+
+export const STEP1_CODE = `import { createGateway } from "@homegrower-club/stoma";
+import type { Policy } from "@homegrower-club/stoma";
+
+function requestTime(): Policy {
+  return {
+    name: "request-time",
+    priority: 50,
+    handler: async (c, next) => {
+      const start = Date.now();
+      await next();
+      c.res.headers.set("x-request-time", \`\${Date.now() - start}ms\`);
+    },
+  };
+}
+
+export async function createPlaygroundGateway() {
+  return createGateway({
+    name: "tutorial",
+    basePath: "/api",
+    routes: [
+      {
+        path: "/hello",
+        methods: ["GET"],
+        pipeline: {
+          policies: [requestTime()],
+          upstream: {
+            type: "handler",
+            handler: (c) => c.json({ message: "Hello from Stoma!" }),
+          },
+        },
+      },
+    ],
+  });
+}`;
+
+export const STEP2_CODE = `import { createGateway, definePolicy, Priority } from "@homegrower-club/stoma";
+
+const requestTime = definePolicy({
+  name: "request-time",
+  priority: Priority.REQUEST_TRANSFORM,
+  handler: async (c, next, { debug }) => {
+    const start = Date.now();
+    await next();
+    const elapsed = Date.now() - start;
+    c.res.headers.set("x-request-time", \`\${elapsed}ms\`);
+    debug("request processed in %dms", elapsed);
+  },
+});
+
+export async function createPlaygroundGateway() {
+  return createGateway({
+    name: "tutorial",
+    basePath: "/api",
+    debug: true,
+    routes: [
+      {
+        path: "/hello",
+        methods: ["GET"],
+        pipeline: {
+          policies: [requestTime()],
+          upstream: {
+            type: "handler",
+            handler: (c) => c.json({ message: "Hello from Stoma!" }),
+          },
+        },
+      },
+    ],
+  });
+}`;
+
+export const STEP3_CODE = `import { createGateway, definePolicy, Priority } from "@homegrower-club/stoma";
+import type { PolicyConfig } from "@homegrower-club/stoma";
+
+interface RequestTimeConfig extends PolicyConfig {
+  headerName?: string;
+}
+
+const requestTime = definePolicy<RequestTimeConfig>({
+  name: "request-time",
+  priority: Priority.REQUEST_TRANSFORM,
+  defaults: { headerName: "x-request-time" },
+  handler: async (c, next, { config, debug }) => {
+    const start = Date.now();
+    await next();
+    const elapsed = Date.now() - start;
+    c.res.headers.set(config.headerName!, \`\${elapsed}ms\`);
+    debug("set %s to %dms", config.headerName, elapsed);
+  },
+});
+
+export async function createPlaygroundGateway() {
+  return createGateway({
+    name: "tutorial",
+    basePath: "/api",
+    debug: true,
+    routes: [
+      {
+        path: "/hello",
+        methods: ["GET"],
+        pipeline: {
+          policies: [requestTime()],
+          upstream: {
+            type: "handler",
+            handler: (c) => c.json({ message: "Hello from Stoma!" }),
+          },
+        },
+      },
+      {
+        path: "/custom",
+        methods: ["GET"],
+        pipeline: {
+          policies: [requestTime({ headerName: "x-processing-time" })],
+          upstream: {
+            type: "handler",
+            handler: (c) => c.json({ message: "Custom header name!" }),
+          },
+        },
+      },
+    ],
+  });
+}`;
+
+export const STEP4_CODE = `import {
+  createGateway,
+  definePolicy,
+  Priority,
+  GatewayError,
+} from "@homegrower-club/stoma";
+import type { PolicyConfig } from "@homegrower-club/stoma";
+
+interface RequestTimeConfig extends PolicyConfig {
+  headerName?: string;
+  requireAuth?: boolean;
+}
+
+const requestTime = definePolicy<RequestTimeConfig>({
+  name: "request-time",
+  priority: Priority.REQUEST_TRANSFORM,
+  defaults: { headerName: "x-request-time", requireAuth: false },
+  handler: async (c, next, { config, debug }) => {
+    if (config.requireAuth && !c.req.header("authorization")) {
+      debug("rejected: missing authorization header");
+      throw new GatewayError(401, "unauthorized", "Authorization header required");
+    }
+
+    const start = Date.now();
+    await next();
+    const elapsed = Date.now() - start;
+    c.res.headers.set(config.headerName!, \`\${elapsed}ms\`);
+    debug("set %s to %dms", config.headerName, elapsed);
+  },
+});
+
+export async function createPlaygroundGateway() {
+  return createGateway({
+    name: "tutorial",
+    basePath: "/api",
+    debug: true,
+    routes: [
+      {
+        path: "/public",
+        methods: ["GET"],
+        pipeline: {
+          policies: [requestTime()],
+          upstream: {
+            type: "handler",
+            handler: (c) => c.json({ message: "Public endpoint" }),
+          },
+        },
+      },
+      {
+        path: "/private",
+        methods: ["GET"],
+        pipeline: {
+          policies: [requestTime({ requireAuth: true })],
+          upstream: {
+            type: "handler",
+            handler: (c) => c.json({ message: "Authenticated!" }),
+          },
+        },
+      },
+    ],
+  });
+}`;
+
+<Steps>
+
+1. **The minimal Policy object**
+
+    A `Policy` is just an object with three fields:
+
+    - **`name`** -- a unique string used for deduplication when merging global and route policies.
+    - **`handler`** -- a standard Hono `MiddlewareHandler`.
+    - **`priority`** -- a number that controls execution order (lower runs first).
+
+    That is the entire interface. Here is a policy written from scratch, with no SDK:
+
+    ```typescript
+    import { createGateway } from "@homegrower-club/stoma";
+    import type { Policy } from "@homegrower-club/stoma";
+
+    function requestTime(): Policy {
+      return {
+        name: "request-time",
+        priority: 50,
+        handler: async (c, next) => {
+          const start = Date.now();
+          await next();
+          c.res.headers.set("x-request-time", `${Date.now() - start}ms`);
+        },
+      };
+    }
+
+    export async function createPlaygroundGateway() {
+      return createGateway({
+        name: "tutorial",
+        basePath: "/api",
+        routes: [
+          {
+            path: "/hello",
+            methods: ["GET"],
+            pipeline: {
+              policies: [requestTime()],
+              upstream: {
+                type: "handler",
+                handler: (c) => c.json({ message: "Hello from Stoma!" }),
+              },
+            },
+          },
+        ],
+      });
+    }
+    ```
+
+    <EditorLink code={STEP1_CODE} label="Try it in the editor" title="Step 1: Minimal Policy" />
+
+    The handler calls `await next()` to let the rest of the pipeline (and the upstream)
+    execute, then sets a header on the response. Because `next()` is awaited, the
+    elapsed time includes everything downstream.
+
+    <Aside type="tip">
+    The `type: "handler"` upstream is the simplest upstream type -- it runs an
+    inline function instead of proxying to another service. It is perfect for
+    tutorials and lightweight endpoints.
+    </Aside>
+
+2. **Upgrade to `definePolicy()`**
+
+    The manual approach works, but the SDK gives you more for free. The
+    `definePolicy()` function handles config merging, conditional skip logic,
+    debug logging, and gateway context injection automatically. It returns a
+    **factory function** -- call it with optional config to get a `Policy`.
+
+    ```typescript
+    import { createGateway, definePolicy, Priority } from "@homegrower-club/stoma";
+
+    const requestTime = definePolicy({
+      name: "request-time",
+      priority: Priority.REQUEST_TRANSFORM,
+      handler: async (c, next, { debug }) => {
+        const start = Date.now();
+        await next();
+        const elapsed = Date.now() - start;
+        c.res.headers.set("x-request-time", `${elapsed}ms`);
+        debug("request processed in %dms", elapsed);
+      },
+    });
+
+    export async function createPlaygroundGateway() {
+      return createGateway({
+        name: "tutorial",
+        basePath: "/api",
+        debug: true,
+        routes: [
+          {
+            path: "/hello",
+            methods: ["GET"],
+            pipeline: {
+              policies: [requestTime()],
+              upstream: {
+                type: "handler",
+                handler: (c) => c.json({ message: "Hello from Stoma!" }),
+              },
+            },
+          },
+        ],
+      });
+    }
+    ```
+
+    <EditorLink code={STEP2_CODE} label="Try it in the editor" title="Step 2: definePolicy()" />
+
+    Three things changed:
+
+    - **`Priority.REQUEST_TRANSFORM`** replaces the magic number `50`. The `Priority`
+      enum has named constants for every tier in the pipeline -- `OBSERVABILITY` (0)
+      through `MOCK` (999).
+    - **`debug`** is a pre-namespaced logger scoped to `stoma:policy:request-time`. It
+      is always callable -- when debug is off, it is a zero-overhead no-op.
+    - **`definePolicy` returns a factory.** You call `requestTime()` (with parentheses)
+      to get the actual `Policy` object. This is where user config will go next.
+
+    <Aside type="note">
+    Setting `debug: true` on the gateway config enables all debug namespaces.
+    In production you can filter with a pattern like `"stoma:policy:*"` to see
+    only policy logs.
+    </Aside>
+
+3. **Add typed configuration**
+
+    Most real policies need configuration. Define an interface that extends
+    `PolicyConfig`, set `defaults`, and the SDK merges user overrides automatically.
+
+    ```typescript
+    import { createGateway, definePolicy, Priority } from "@homegrower-club/stoma";
+    import type { PolicyConfig } from "@homegrower-club/stoma";
+
+    interface RequestTimeConfig extends PolicyConfig {
+      headerName?: string;
+    }
+
+    const requestTime = definePolicy<RequestTimeConfig>({
+      name: "request-time",
+      priority: Priority.REQUEST_TRANSFORM,
+      defaults: { headerName: "x-request-time" },
+      handler: async (c, next, { config, debug }) => {
+        const start = Date.now();
+        await next();
+        const elapsed = Date.now() - start;
+        c.res.headers.set(config.headerName!, `${elapsed}ms`);
+        debug("set %s to %dms", config.headerName, elapsed);
+      },
+    });
+
+    export async function createPlaygroundGateway() {
+      return createGateway({
+        name: "tutorial",
+        basePath: "/api",
+        debug: true,
+        routes: [
+          {
+            path: "/hello",
+            methods: ["GET"],
+            pipeline: {
+              policies: [requestTime()],
+              upstream: {
+                type: "handler",
+                handler: (c) => c.json({ message: "Hello from Stoma!" }),
+              },
+            },
+          },
+          {
+            path: "/custom",
+            methods: ["GET"],
+            pipeline: {
+              policies: [requestTime({ headerName: "x-processing-time" })],
+              upstream: {
+                type: "handler",
+                handler: (c) => c.json({ message: "Custom header name!" }),
+              },
+            },
+          },
+        ],
+      });
+    }
+    ```
+
+    <EditorLink code={STEP3_CODE} label="Try it in the editor" title="Step 3: Typed Configuration" />
+
+    Now the factory accepts an optional config object. On `/hello`, calling
+    `requestTime()` with no arguments uses the default header name
+    `x-request-time`. On `/custom`, passing
+    `{ headerName: "x-processing-time" }` overrides it.
+
+    The `defaults` object is shallow-merged with whatever the caller passes in.
+    Fields the caller omits get the default value.
+
+    <Aside type="tip">
+    Extending `PolicyConfig` gives your config the standard `skip` field for
+    free. Callers can pass `skip: (c) => someCondition` to conditionally bypass
+    your policy on a per-request basis -- `definePolicy` handles the check
+    before your handler runs.
+    </Aside>
+
+4. **Add error handling**
+
+    Policies reject requests by throwing a `GatewayError`. This short-circuits
+    the pipeline -- no further policies or upstream handler execute. The gateway
+    catches it and returns a structured JSON response.
+
+    ```typescript
+    import {
+      createGateway,
+      definePolicy,
+      Priority,
+      GatewayError,
+    } from "@homegrower-club/stoma";
+    import type { PolicyConfig } from "@homegrower-club/stoma";
+
+    interface RequestTimeConfig extends PolicyConfig {
+      headerName?: string;
+      requireAuth?: boolean;
+    }
+
+    const requestTime = definePolicy<RequestTimeConfig>({
+      name: "request-time",
+      priority: Priority.REQUEST_TRANSFORM,
+      defaults: { headerName: "x-request-time", requireAuth: false },
+      handler: async (c, next, { config, debug }) => {
+        if (config.requireAuth && !c.req.header("authorization")) {
+          debug("rejected: missing authorization header");
+          throw new GatewayError(401, "unauthorized", "Authorization header required");
+        }
+
+        const start = Date.now();
+        await next();
+        const elapsed = Date.now() - start;
+        c.res.headers.set(config.headerName!, `${elapsed}ms`);
+        debug("set %s to %dms", config.headerName, elapsed);
+      },
+    });
+
+    export async function createPlaygroundGateway() {
+      return createGateway({
+        name: "tutorial",
+        basePath: "/api",
+        debug: true,
+        routes: [
+          {
+            path: "/public",
+            methods: ["GET"],
+            pipeline: {
+              policies: [requestTime()],
+              upstream: {
+                type: "handler",
+                handler: (c) => c.json({ message: "Public endpoint" }),
+              },
+            },
+          },
+          {
+            path: "/private",
+            methods: ["GET"],
+            pipeline: {
+              policies: [requestTime({ requireAuth: true })],
+              upstream: {
+                type: "handler",
+                handler: (c) => c.json({ message: "Authenticated!" }),
+              },
+            },
+          },
+        ],
+      });
+    }
+    ```
+
+    <EditorLink code={STEP4_CODE} label="Try it in the editor" title="Step 4: Error Handling" />
+
+    Hitting `/api/private` without an `Authorization` header now returns:
+
+    ```json
+    {
+      "error": "unauthorized",
+      "message": "Authorization header required",
+      "statusCode": 401
+    }
+    ```
+
+    `GatewayError` accepts three arguments: HTTP status code, a machine-readable
+    error code, and a human-readable message. The gateway serializes it into the
+    structured JSON format above.
+
+    <Aside type="note">
+    You can also short-circuit by returning a `Response` directly without calling
+    `next()`. Use `c.json({ ... }, 403)` or `c.text("Blocked", 403)` for custom
+    response formats. `GatewayError` is preferred because it produces a
+    consistent error shape across all policies.
+    </Aside>
+
+</Steps>
+
+## What's next?
+
+You now know the four building blocks of every Stoma policy: the `Policy`
+interface, `definePolicy()`, typed configuration, and error handling. From here:
+
+- [Common Policy Patterns](/policy-authoring/policy-patterns/) -- 6 real-world patterns like pre/post processing, conditional bypass, and cross-policy communication.
+- [Testing Custom Policies](/policy-authoring/policy-testing/) -- how to test what you built using `createPolicyTestHarness()`.
+- [Policy Cookbook](/policy-authoring/cookbook/) -- 10 copy-paste recipes for common gateway tasks.
+- [Custom Policies Reference](/policies/custom-policies/) -- full SDK reference including `resolveConfig`, `policyDebug`, `withSkip`, and the manual approach.

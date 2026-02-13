@@ -33,6 +33,8 @@
  */
 import { type Context, Hono } from "hono";
 import type { GatewayAdapter } from "../adapters/types";
+import type { ReadableSpan } from "../observability/tracing";
+import { SemConv, SpanBuilder, generateOtelSpanId } from "../observability/tracing";
 import { registerAdminRoutes } from "../observability/admin";
 import { createDebugFactory, noopDebugLogger } from "../utils/debug";
 import { formatTraceparent, generateSpanId } from "../utils/trace-context";
@@ -158,7 +160,8 @@ export function createGateway<TBindings = Record<string, unknown>>(config: Gatew
       debugFactory,
       config.requestIdHeader,
       config.adapter,
-      config.debugHeaders
+      config.debugHeaders,
+      config.tracing,
     );
     const mergedPolicies = buildPolicyChain(
       config.policies ?? [],
@@ -367,6 +370,24 @@ function createServiceBindingUpstream(
       duplex: c.req.raw.body ? "half" : undefined,
     });
 
+    // OTel: create CLIENT span for the service binding call
+    const otelSpans = c.get("_otelSpans") as ReadableSpan[] | undefined;
+    let upstreamSpan: SpanBuilder | undefined;
+    if (otelSpans !== undefined) {
+      const rootSpan = c.get("_otelRootSpan") as SpanBuilder;
+      upstreamSpan = new SpanBuilder(
+        `upstream:service-binding:${upstream.service}`,
+        "CLIENT",
+        rootSpan.traceId,
+        generateOtelSpanId(),
+        rootSpan.spanId,
+      );
+      upstreamSpan
+        .setAttribute(SemConv.HTTP_METHOD, c.req.method)
+        .setAttribute(SemConv.URL_PATH, targetUrl.pathname)
+        .setAttribute("rpc.service", upstream.service);
+    }
+
     const startTime = Date.now();
     const response = await adapter.dispatchBinding(
       upstream.service,
@@ -376,6 +397,14 @@ function createServiceBindingUpstream(
     debug(
       `service-binding responded: ${response.status} (${Date.now() - startTime}ms)`
     );
+
+    // OTel: finalize upstream span
+    if (upstreamSpan) {
+      upstreamSpan
+        .setAttribute(SemConv.HTTP_STATUS_CODE, response.status)
+        .setStatus(response.status >= 500 ? "ERROR" : "OK");
+      otelSpans!.push(upstreamSpan.end());
+    }
 
     // Strip hop-by-hop headers from the upstream response
     const responseHeaders = new Headers(response.headers);
@@ -474,6 +503,24 @@ function createUrlUpstream(upstream: UrlUpstream, debug = noopDebugLogger) {
     // Read the timeout signal if the timeout policy set one
     const timeoutSignal = c.get("_timeoutSignal") as AbortSignal | undefined;
 
+    // OTel: create CLIENT span for the upstream call
+    const otelSpans = c.get("_otelSpans") as ReadableSpan[] | undefined;
+    let upstreamSpan: SpanBuilder | undefined;
+    if (otelSpans !== undefined) {
+      const rootSpan = c.get("_otelRootSpan") as SpanBuilder;
+      upstreamSpan = new SpanBuilder(
+        `upstream:url:${targetUrl.host}`,
+        "CLIENT",
+        rootSpan.traceId,
+        generateOtelSpanId(),
+        rootSpan.spanId,
+      );
+      upstreamSpan
+        .setAttribute(SemConv.HTTP_METHOD, c.req.method)
+        .setAttribute(SemConv.URL_PATH, targetUrl.pathname)
+        .setAttribute(SemConv.SERVER_ADDRESS, targetUrl.host);
+    }
+
     const startTime = Date.now();
     const response = await fetch(
       proxyRequest,
@@ -482,6 +529,14 @@ function createUrlUpstream(upstream: UrlUpstream, debug = noopDebugLogger) {
     debug(
       `upstream responded: ${response.status} (${Date.now() - startTime}ms)`
     );
+
+    // OTel: finalize upstream span
+    if (upstreamSpan) {
+      upstreamSpan
+        .setAttribute(SemConv.HTTP_STATUS_CODE, response.status)
+        .setStatus(response.status >= 500 ? "ERROR" : "OK");
+      otelSpans!.push(upstreamSpan.end());
+    }
 
     // Strip hop-by-hop headers from the upstream response before returning
     const responseHeaders = new Headers(response.headers);

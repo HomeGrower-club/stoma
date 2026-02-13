@@ -33,6 +33,14 @@ export type {
   UpstreamConfig,
 } from "../core/types";
 
+export type {
+  /** Configuration for a route scope: prefix, shared policies, child routes, and metadata. */
+  ScopeConfig,
+} from "../core/scope";
+
+/** Merge multiple partial gateway configs into a single complete config. */
+export { mergeConfigs } from "./merge";
+
 export {
   /** Zod schema for the full GatewayConfig object. */
   GatewayConfigSchema,
