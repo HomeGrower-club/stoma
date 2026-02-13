@@ -4,5 +4,7 @@
   "initialVersions": {
     "@homegrower-club/stoma": "0.0.1"
   },
-  "changesets": []
+  "changesets": [
+    "stoma-rc-010"
+  ]
 }
