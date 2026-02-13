@@ -101,7 +101,7 @@ export class SpanBuilder {
     public readonly traceId: string,
     public readonly spanId: string,
     public readonly parentSpanId?: string,
-    public readonly startTimeMs: number = Date.now(),
+    public readonly startTimeMs: number = Date.now()
   ) {}
 
   /** Set a single attribute. Chainable. */
@@ -113,7 +113,7 @@ export class SpanBuilder {
   /** Record a timestamped event with optional attributes. Chainable. */
   addEvent(
     name: string,
-    attributes?: Record<string, string | number | boolean>,
+    attributes?: Record<string, string | number | boolean>
   ): this {
     this._events.push({ name, timeMs: Date.now(), attributes });
     return this;
@@ -172,7 +172,7 @@ const STATUS_CODE_MAP: Record<SpanStatusCode, number> = {
  * @returns Object with exactly one of `stringValue`, `intValue`, or `boolValue`.
  */
 function toOtlpAttributeValue(
-  value: string | number | boolean,
+  value: string | number | boolean
 ): Record<string, string | number | boolean> {
   if (typeof value === "string") return { stringValue: value };
   if (typeof value === "boolean") return { boolValue: value };
@@ -183,7 +183,7 @@ function toOtlpAttributeValue(
 
 /** Convert a flat attributes map to the OTLP `KeyValue[]` format. */
 function toOtlpAttributes(
-  attrs: Record<string, string | number | boolean>,
+  attrs: Record<string, string | number | boolean>
 ): Array<{ key: string; value: Record<string, string | number | boolean> }> {
   return Object.entries(attrs).map(([key, value]) => ({
     key,
@@ -209,7 +209,7 @@ function msToNanos(ms: number): string {
 function toOtlpPayload(
   spans: ReadableSpan[],
   serviceName: string,
-  serviceVersion?: string,
+  serviceVersion?: string
 ): object {
   const resourceAttributes: Array<{
     key: string;
@@ -305,11 +305,7 @@ export class OTLPSpanExporter implements SpanExporter {
   async export(spans: ReadableSpan[]): Promise<void> {
     if (spans.length === 0) return;
 
-    const payload = toOtlpPayload(
-      spans,
-      this.serviceName,
-      this.serviceVersion,
-    );
+    const payload = toOtlpPayload(spans, this.serviceName, this.serviceVersion);
 
     await fetch(this.endpoint, {
       method: "POST",
@@ -336,7 +332,7 @@ export class ConsoleSpanExporter implements SpanExporter {
         `[trace] ${span.name} ${span.kind} ${span.endTimeMs - span.startTimeMs}ms` +
           ` trace=${span.traceId} span=${span.spanId}` +
           (span.parentSpanId ? ` parent=${span.parentSpanId}` : "") +
-          ` status=${span.status.code}`,
+          ` status=${span.status.code}`
       );
     }
   }

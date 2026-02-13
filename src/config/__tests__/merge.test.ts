@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { GatewayError } from "../../core/errors";
 import { createGateway } from "../../core/gateway";
-import type { AdminConfig, DebugHeadersConfig, RouteConfig } from "../../core/types";
+import type {
+  AdminConfig,
+  DebugHeadersConfig,
+  RouteConfig,
+} from "../../core/types";
 import type { Policy } from "../../policies/types";
 import { mergeConfigs } from "../merge";
 
@@ -12,7 +16,10 @@ const route = (path: string): RouteConfig<any> => ({
   path,
   pipeline: {
     // biome-ignore lint/suspicious/noExplicitAny: minimal test helper
-    upstream: { type: "handler" as const, handler: (c: any) => c.json({ ok: true }) },
+    upstream: {
+      type: "handler" as const,
+      handler: (c: any) => c.json({ ok: true }),
+    },
   },
 });
 
@@ -95,10 +102,7 @@ describe("mergeConfigs - policy deduplication", () => {
     );
 
     expect(merged.policies).toHaveLength(2);
-    expect(merged.policies!.map((p) => p.name)).toEqual([
-      "auth",
-      "rate-limit",
-    ]);
+    expect(merged.policies!.map((p) => p.name)).toEqual(["auth", "rate-limit"]);
   });
 
   it("should handle mix of duplicate and unique policy names", () => {

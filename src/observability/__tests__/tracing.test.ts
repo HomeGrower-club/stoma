@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ConsoleSpanExporter,
+  generateOtelSpanId,
   OTLPSpanExporter,
+  type ReadableSpan,
   SemConv,
   SpanBuilder,
-  generateOtelSpanId,
   shouldSample,
-  type ReadableSpan,
 } from "../tracing";
 
 /** Captured fetch call arguments. */
@@ -27,7 +27,7 @@ describe("SpanBuilder", () => {
       "abcdef1234567890abcdef1234567890",
       "1234567890abcdef",
       "fedcba0987654321",
-      1000,
+      1000
     );
 
     const span = builder.end();
@@ -50,7 +50,7 @@ describe("SpanBuilder", () => {
       "test",
       "INTERNAL",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
     const after = Date.now();
 
@@ -63,7 +63,7 @@ describe("SpanBuilder", () => {
       "root",
       "SERVER",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
     const span = builder.end();
     expect(span.parentSpanId).toBeUndefined();
@@ -74,7 +74,7 @@ describe("SpanBuilder", () => {
       "test",
       "SERVER",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
 
     const result = builder
@@ -98,7 +98,7 @@ describe("SpanBuilder", () => {
       "test",
       "SERVER",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
 
     builder.setAttribute("key", "first").setAttribute("key", "second");
@@ -112,7 +112,7 @@ describe("SpanBuilder", () => {
       "test",
       "SERVER",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
 
     const before = Date.now();
@@ -137,7 +137,7 @@ describe("SpanBuilder", () => {
       "test",
       "SERVER",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
     const span = builder.end();
     expect(span.status).toEqual({ code: "UNSET" });
@@ -148,7 +148,7 @@ describe("SpanBuilder", () => {
       "test",
       "SERVER",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
     builder.setStatus("OK");
     const span = builder.end();
@@ -160,11 +160,14 @@ describe("SpanBuilder", () => {
       "test",
       "SERVER",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
     builder.setStatus("ERROR", "Connection refused");
     const span = builder.end();
-    expect(span.status).toEqual({ code: "ERROR", message: "Connection refused" });
+    expect(span.status).toEqual({
+      code: "ERROR",
+      message: "Connection refused",
+    });
   });
 
   it("should return defensive copies of attributes and events from end()", () => {
@@ -172,7 +175,7 @@ describe("SpanBuilder", () => {
       "test",
       "SERVER",
       "abcdef1234567890abcdef1234567890",
-      "1234567890abcdef",
+      "1234567890abcdef"
     );
 
     builder.setAttribute("key", "value");
@@ -197,7 +200,7 @@ describe("SpanBuilder", () => {
       "abcdef1234567890abcdef1234567890",
       "1234567890abcdef",
       undefined,
-      1000,
+      1000
     );
 
     const span1 = builder.end();
@@ -219,7 +222,7 @@ describe("OTLPSpanExporter", () => {
     fetchCalls = [];
     globalThis.fetch = (async (
       input: RequestInfo | URL,
-      init?: RequestInit,
+      init?: RequestInit
     ) => {
       fetchCalls.push({ url: input as string | URL | Request, init });
       return new Response("", { status: 200 });
@@ -319,7 +322,7 @@ describe("OTLPSpanExporter", () => {
     const body = JSON.parse(fetchCalls[0].init?.body as string);
     const attrs = body.resourceSpans[0].resource.attributes;
     expect(
-      attrs.find((a: { key: string }) => a.key === "service.version"),
+      attrs.find((a: { key: string }) => a.key === "service.version")
     ).toBeUndefined();
   });
 
@@ -407,9 +410,7 @@ describe("OTLPSpanExporter", () => {
       endpoint: "https://collector.example.com/v1/traces",
     });
 
-    await exporter.export([
-      makeSpan({ startTimeMs: 1000, endTimeMs: 1050 }),
-    ]);
+    await exporter.export([makeSpan({ startTimeMs: 1000, endTimeMs: 1050 })]);
 
     const body = JSON.parse(fetchCalls[0].init?.body as string);
     const span = body.resourceSpans[0].scopeSpans[0].spans[0];
@@ -423,9 +424,7 @@ describe("OTLPSpanExporter", () => {
       endpoint: "https://collector.example.com/v1/traces",
     });
 
-    await exporter.export([
-      makeSpan({ parentSpanId: "aaaa0000bbbb1111" }),
-    ]);
+    await exporter.export([makeSpan({ parentSpanId: "aaaa0000bbbb1111" })]);
 
     const body = JSON.parse(fetchCalls[0].init?.body as string);
     const span = body.resourceSpans[0].scopeSpans[0].spans[0];
@@ -626,8 +625,8 @@ describe("ConsoleSpanExporter", () => {
     ]);
 
     expect(debugSpy).toHaveBeenCalledTimes(2);
-    expect((debugSpy.mock.calls[0][0] as string)).toContain("span-1");
-    expect((debugSpy.mock.calls[1][0] as string)).toContain("span-2");
+    expect(debugSpy.mock.calls[0][0] as string).toContain("span-1");
+    expect(debugSpy.mock.calls[1][0] as string).toContain("span-2");
   });
 });
 

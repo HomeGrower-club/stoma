@@ -81,7 +81,7 @@ export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
   handler: (
     c: Context,
     next: Next,
-    ctx: PolicyHandlerContext<TConfig>,
+    ctx: PolicyHandlerContext<TConfig>
   ) => Promise<void> | void;
 
   /**
@@ -114,11 +114,11 @@ export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
   evaluate?: {
     onRequest?: (
       input: PolicyInput,
-      ctx: PolicyEvalHandlerContext<TConfig>,
+      ctx: PolicyEvalHandlerContext<TConfig>
     ) => Promise<PolicyResult>;
     onResponse?: (
       input: PolicyInput,
-      ctx: PolicyEvalHandlerContext<TConfig>,
+      ctx: PolicyEvalHandlerContext<TConfig>
     ) => Promise<PolicyResult>;
   };
 
@@ -164,12 +164,12 @@ export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
  * @returns A factory function: `(config?) => Policy`.
  */
 export function definePolicy<TConfig extends PolicyConfig = PolicyConfig>(
-  definition: PolicyDefinition<TConfig>,
+  definition: PolicyDefinition<TConfig>
 ): (config?: TConfig) => Policy {
   return (userConfig?: TConfig): Policy => {
     const config = resolveConfig<TConfig>(
       (definition.defaults ?? {}) as Partial<TConfig>,
-      userConfig as Partial<TConfig> | undefined,
+      userConfig as Partial<TConfig> | undefined
     );
 
     // Construction-time validation — fail fast on bad config

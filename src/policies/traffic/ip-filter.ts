@@ -59,11 +59,21 @@ export function ipFilter(config: IpFilterConfig): Policy {
   function checkIp(ip: string): PolicyResult {
     if (mode === "allow") {
       if (!isInRange(ip, allowRanges)) {
-        return { action: "reject", status: 403, code: "ip_denied", message: "Access denied" };
+        return {
+          action: "reject",
+          status: 403,
+          code: "ip_denied",
+          message: "Access denied",
+        };
       }
     } else {
       if (isInRange(ip, denyRanges)) {
-        return { action: "reject", status: 403, code: "ip_denied", message: "Access denied" };
+        return {
+          action: "reject",
+          status: 403,
+          code: "ip_denied",
+          message: "Access denied",
+        };
       }
     }
     return { action: "continue" };

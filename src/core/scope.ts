@@ -96,7 +96,7 @@ function joinPaths(prefix: string, path: string): string {
  * @returns Array of route configs with prefix, policies, and metadata applied.
  */
 export function scope<TBindings = Record<string, unknown>>(
-  config: ScopeConfig<TBindings>,
+  config: ScopeConfig<TBindings>
 ): RouteConfig<TBindings>[] {
   const prefix = normalizePrefix(config.prefix);
   const scopePolicies = config.policies ?? [];

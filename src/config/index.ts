@@ -23,6 +23,10 @@
  */
 
 export type {
+  /** Configuration for a route scope: prefix, shared policies, child routes, and metadata. */
+  ScopeConfig,
+} from "../core/scope";
+export type {
   /** Top-level gateway configuration: routes, global policies, error handling, debug, and adapter. */
   GatewayConfig,
   /** Pipeline definition: ordered policy chain leading to an upstream target. */
@@ -32,11 +36,6 @@ export type {
   /** Discriminated union of upstream types: URL proxy, Service Binding, or custom handler. */
   UpstreamConfig,
 } from "../core/types";
-
-export type {
-  /** Configuration for a route scope: prefix, shared policies, child routes, and metadata. */
-  ScopeConfig,
-} from "../core/scope";
 
 /** Merge multiple partial gateway configs into a single complete config. */
 export { mergeConfigs } from "./merge";

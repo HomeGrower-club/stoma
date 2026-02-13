@@ -29,8 +29,8 @@
  * @module protocol
  */
 import type { GatewayAdapter } from "../adapters/types";
-import type { DebugLogger } from "../utils/debug";
 import type { TraceReporter } from "../policies/sdk/trace";
+import type { DebugLogger } from "../utils/debug";
 
 // ─── Processing Phases ─────────────────────────────────────────────────
 
@@ -44,12 +44,12 @@ import type { TraceReporter } from "../policies/sdk/trace";
  * - **WebSocket**: `request-headers` (upgrade) → `request-body` (per-message)
  */
 export type ProcessingPhase =
-	| "request-headers"
-	| "request-body"
-	| "request-trailers"
-	| "response-headers"
-	| "response-body"
-	| "response-trailers";
+  | "request-headers"
+  | "request-body"
+  | "request-trailers"
+  | "response-headers"
+  | "response-body"
+  | "response-trailers";
 
 // ─── Protocol Type ─────────────────────────────────────────────────────
 
@@ -67,67 +67,67 @@ export type ProtocolType = "http" | "grpc" | "websocket";
  * - WebSocket runtime builds it from the upgrade request or message frame
  */
 export interface PolicyInput {
-	/** Current processing phase. */
-	phase: ProcessingPhase;
+  /** Current processing phase. */
+  phase: ProcessingPhase;
 
-	/**
-	 * Request method or action.
-	 *
-	 * - HTTP: `"GET"`, `"POST"`, etc.
-	 * - gRPC: Full method name, e.g. `"users.UserService/GetUser"`
-	 */
-	method: string;
+  /**
+   * Request method or action.
+   *
+   * - HTTP: `"GET"`, `"POST"`, etc.
+   * - gRPC: Full method name, e.g. `"users.UserService/GetUser"`
+   */
+  method: string;
 
-	/**
-	 * Request path or resource identifier.
-	 *
-	 * - HTTP: URL path, e.g. `"/users/123"`
-	 * - gRPC: Service path, e.g. `"/users.UserService/GetUser"`
-	 */
-	path: string;
+  /**
+   * Request path or resource identifier.
+   *
+   * - HTTP: URL path, e.g. `"/users/123"`
+   * - gRPC: Service path, e.g. `"/users.UserService/GetUser"`
+   */
+  path: string;
 
-	/**
-	 * Headers (HTTP) or metadata (gRPC).
-	 *
-	 * Treat as read-only — express modifications via
-	 * {@link PolicyResult} mutations, not by mutating this object.
-	 */
-	headers: Headers;
+  /**
+   * Headers (HTTP) or metadata (gRPC).
+   *
+   * Treat as read-only — express modifications via
+   * {@link PolicyResult} mutations, not by mutating this object.
+   */
+  headers: Headers;
 
-	/**
-	 * Client IP address, extracted by the runtime from protocol-specific
-	 * sources (e.g. `CF-Connecting-IP`, `X-Forwarded-For`, gRPC peer address).
-	 */
-	clientIp?: string;
+  /**
+   * Client IP address, extracted by the runtime from protocol-specific
+   * sources (e.g. `CF-Connecting-IP`, `X-Forwarded-For`, gRPC peer address).
+   */
+  clientIp?: string;
 
-	/**
-	 * Message body, present only during body phases.
-	 *
-	 * May be the full buffered body or a streaming chunk, depending on
-	 * the runtime's buffering mode.
-	 */
-	body?: ArrayBuffer | string;
+  /**
+   * Message body, present only during body phases.
+   *
+   * May be the full buffered body or a streaming chunk, depending on
+   * the runtime's buffering mode.
+   */
+  body?: ArrayBuffer | string;
 
-	/**
-	 * Trailers, present only during trailer phases.
-	 *
-	 * Relevant for gRPC (which uses trailers for status codes and error
-	 * details) and HTTP/2.
-	 */
-	trailers?: Headers;
+  /**
+   * Trailers, present only during trailer phases.
+   *
+   * Relevant for gRPC (which uses trailers for status codes and error
+   * details) and HTTP/2.
+   */
+  trailers?: Headers;
 
-	/**
-	 * Cross-policy attribute bag.
-	 *
-	 * Policies read attributes set by upstream policies and set
-	 * attributes for downstream policies via {@link AttributeMutation}.
-	 * Runtime-populated attributes use the `runtime.*` namespace
-	 * (e.g. `runtime.matched_route`, `runtime.upstream_name`).
-	 */
-	attributes: Map<string, unknown>;
+  /**
+   * Cross-policy attribute bag.
+   *
+   * Policies read attributes set by upstream policies and set
+   * attributes for downstream policies via {@link AttributeMutation}.
+   * Runtime-populated attributes use the `runtime.*` namespace
+   * (e.g. `runtime.matched_route`, `runtime.upstream_name`).
+   */
+  attributes: Map<string, unknown>;
 
-	/** The protocol runtime that constructed this input. */
-	protocol: ProtocolType;
+  /** The protocol runtime that constructed this input. */
+  protocol: ProtocolType;
 }
 
 // ─── Policy Result ─────────────────────────────────────────────────────
@@ -140,9 +140,9 @@ export interface PolicyInput {
  * - `"immediate-response"` — Short-circuit with a complete non-error response.
  */
 export type PolicyResult =
-	| PolicyContinue
-	| PolicyReject
-	| PolicyImmediateResponse;
+  | PolicyContinue
+  | PolicyReject
+  | PolicyImmediateResponse;
 
 /**
  * Allow processing to continue, optionally with mutations.
@@ -151,9 +151,9 @@ export type PolicyResult =
  * `CommonResponse` with header/body mutations.
  */
 export interface PolicyContinue {
-	action: "continue";
-	/** Mutations to apply before continuing to the next policy or upstream. */
-	mutations?: Mutation[];
+  action: "continue";
+  /** Mutations to apply before continuing to the next policy or upstream. */
+  mutations?: Mutation[];
 }
 
 /**
@@ -163,15 +163,15 @@ export interface PolicyContinue {
  * ext_proc `ImmediateResponse` with an error status code.
  */
 export interface PolicyReject {
-	action: "reject";
-	/** HTTP status code (or gRPC status equivalent). */
-	status: number;
-	/** Machine-readable error code (e.g. `"rate_limited"`, `"unauthorized"`). */
-	code: string;
-	/** Human-readable error message. */
-	message: string;
-	/** Additional headers to include on the error response. */
-	headers?: Record<string, string>;
+  action: "reject";
+  /** HTTP status code (or gRPC status equivalent). */
+  status: number;
+  /** Machine-readable error code (e.g. `"rate_limited"`, `"unauthorized"`). */
+  code: string;
+  /** Human-readable error message. */
+  message: string;
+  /** Additional headers to include on the error response. */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -184,13 +184,13 @@ export interface PolicyReject {
  * HTTP middleware, or ext_proc `ImmediateResponse` with a success status.
  */
 export interface PolicyImmediateResponse {
-	action: "immediate-response";
-	/** HTTP status code for the response. */
-	status: number;
-	/** Response headers. */
-	headers?: Record<string, string>;
-	/** Response body. */
-	body?: string | ArrayBuffer;
+  action: "immediate-response";
+  /** HTTP status code for the response. */
+  status: number;
+  /** Response headers. */
+  headers?: Record<string, string>;
+  /** Response body. */
+  body?: string | ArrayBuffer;
 }
 
 // ─── Mutations ─────────────────────────────────────────────────────────
@@ -203,29 +203,29 @@ export interface PolicyImmediateResponse {
  * and Envoy dynamic metadata.
  */
 export type Mutation =
-	| HeaderMutation
-	| BodyMutation
-	| StatusMutation
-	| AttributeMutation;
+  | HeaderMutation
+  | BodyMutation
+  | StatusMutation
+  | AttributeMutation;
 
 /** Add, remove, or append a header value. */
 export interface HeaderMutation {
-	type: "header";
-	/** `"set"` replaces, `"remove"` deletes, `"append"` adds without replacing. */
-	op: "set" | "remove" | "append";
-	/** Header name (case-insensitive). */
-	name: string;
-	/** Header value. Required for `"set"` and `"append"`, ignored for `"remove"`. */
-	value?: string;
+  type: "header";
+  /** `"set"` replaces, `"remove"` deletes, `"append"` adds without replacing. */
+  op: "set" | "remove" | "append";
+  /** Header name (case-insensitive). */
+  name: string;
+  /** Header value. Required for `"set"` and `"append"`, ignored for `"remove"`. */
+  value?: string;
 }
 
 /** Replace or clear the message body. */
 export interface BodyMutation {
-	type: "body";
-	/** `"replace"` substitutes the body, `"clear"` removes it entirely. */
-	op: "replace" | "clear";
-	/** New body content. Required for `"replace"`, ignored for `"clear"`. */
-	content?: string | ArrayBuffer;
+  type: "body";
+  /** `"replace"` substitutes the body, `"clear"` removes it entirely. */
+  op: "replace" | "clear";
+  /** New body content. Required for `"replace"`, ignored for `"clear"`. */
+  content?: string | ArrayBuffer;
 }
 
 /**
@@ -235,9 +235,9 @@ export interface BodyMutation {
  * request phases.
  */
 export interface StatusMutation {
-	type: "status";
-	/** New HTTP status code. */
-	code: number;
+  type: "status";
+  /** New HTTP status code. */
+  code: number;
 }
 
 /**
@@ -247,11 +247,11 @@ export interface StatusMutation {
  * In ext_proc, this maps to Envoy dynamic metadata.
  */
 export interface AttributeMutation {
-	type: "attribute";
-	/** Attribute key. Use namespaced keys (e.g. `"auth.user_id"`) to avoid collisions. */
-	key: string;
-	/** Attribute value. */
-	value: unknown;
+  type: "attribute";
+  /** Attribute key. Use namespaced keys (e.g. `"auth.user_id"`) to avoid collisions. */
+  key: string;
+  /** Attribute value. */
+  value: unknown;
 }
 
 // ─── Policy Evaluator ──────────────────────────────────────────────────
@@ -265,16 +265,16 @@ export interface AttributeMutation {
  * via `PolicyEvalHandlerContext`.
  */
 export interface PolicyEvalContext {
-	/** Debug logger pre-namespaced to `stoma:policy:{name}`. Always callable. */
-	debug: DebugLogger;
-	/** Trace reporter — always callable, no-op when tracing is not active. */
-	trace: TraceReporter;
-	/** Unique request ID for correlation. */
-	requestId: string;
-	/** W3C trace ID (32-hex). */
-	traceId: string;
-	/** Runtime adapter (stores, waitUntil, etc.). */
-	adapter?: GatewayAdapter;
+  /** Debug logger pre-namespaced to `stoma:policy:{name}`. Always callable. */
+  debug: DebugLogger;
+  /** Trace reporter — always callable, no-op when tracing is not active. */
+  trace: TraceReporter;
+  /** Unique request ID for correlation. */
+  requestId: string;
+  /** W3C trace ID (32-hex). */
+  traceId: string;
+  /** Runtime adapter (stores, waitUntil, etc.). */
+  adapter?: GatewayAdapter;
 }
 
 /**
@@ -303,23 +303,23 @@ export interface PolicyEvalContext {
  * ```
  */
 export interface PolicyEvaluator {
-	/**
-	 * Evaluate during request processing phases.
-	 *
-	 * Called for: `request-headers`, `request-body`, `request-trailers`.
-	 */
-	onRequest?: (
-		input: PolicyInput,
-		ctx: PolicyEvalContext,
-	) => Promise<PolicyResult>;
+  /**
+   * Evaluate during request processing phases.
+   *
+   * Called for: `request-headers`, `request-body`, `request-trailers`.
+   */
+  onRequest?: (
+    input: PolicyInput,
+    ctx: PolicyEvalContext
+  ) => Promise<PolicyResult>;
 
-	/**
-	 * Evaluate during response processing phases.
-	 *
-	 * Called for: `response-headers`, `response-body`, `response-trailers`.
-	 */
-	onResponse?: (
-		input: PolicyInput,
-		ctx: PolicyEvalContext,
-	) => Promise<PolicyResult>;
+  /**
+   * Evaluate during response processing phases.
+   *
+   * Called for: `response-headers`, `response-body`, `response-trailers`.
+   */
+  onResponse?: (
+    input: PolicyInput,
+    ctx: PolicyEvalContext
+  ) => Promise<PolicyResult>;
 }

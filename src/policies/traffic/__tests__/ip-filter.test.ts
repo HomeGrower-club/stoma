@@ -232,7 +232,10 @@ describe("ipFilter", () => {
 // ─── Protocol-agnostic evaluate tests ─────────────────────────────────
 describe("ipFilter.evaluate", () => {
   /** Build a minimal PolicyInput with the given clientIp and headers. */
-  function makeInput(opts: { clientIp?: string; headers?: Record<string, string> }): PolicyInput {
+  function makeInput(opts: {
+    clientIp?: string;
+    headers?: Record<string, string>;
+  }): PolicyInput {
     return {
       phase: "request-headers",
       method: "GET",
@@ -258,7 +261,7 @@ describe("ipFilter.evaluate", () => {
     const policy = ipFilter({ deny: ["10.0.0.1"], mode: "deny" });
     const result = await policy.evaluate!.onRequest!(
       makeInput({ clientIp: "192.168.1.1" }),
-      noopCtx,
+      noopCtx
     );
     expect(result.action).toBe("continue");
   });
@@ -267,7 +270,7 @@ describe("ipFilter.evaluate", () => {
     const policy = ipFilter({ deny: ["10.0.0.1"], mode: "deny" });
     const result = await policy.evaluate!.onRequest!(
       makeInput({ clientIp: "10.0.0.1" }),
-      noopCtx,
+      noopCtx
     );
     expect(result).toEqual({
       action: "reject",
@@ -281,7 +284,7 @@ describe("ipFilter.evaluate", () => {
     const policy = ipFilter({ deny: ["10.0.0.0/8"], mode: "deny" });
     const result = await policy.evaluate!.onRequest!(
       makeInput({ clientIp: "10.255.255.255" }),
-      noopCtx,
+      noopCtx
     );
     expect(result.action).toBe("reject");
   });
@@ -292,7 +295,7 @@ describe("ipFilter.evaluate", () => {
     const policy = ipFilter({ allow: ["192.168.1.0/24"], mode: "allow" });
     const result = await policy.evaluate!.onRequest!(
       makeInput({ clientIp: "192.168.1.100" }),
-      noopCtx,
+      noopCtx
     );
     expect(result.action).toBe("continue");
   });
@@ -301,7 +304,7 @@ describe("ipFilter.evaluate", () => {
     const policy = ipFilter({ allow: ["192.168.1.0/24"], mode: "allow" });
     const result = await policy.evaluate!.onRequest!(
       makeInput({ clientIp: "10.0.0.1" }),
-      noopCtx,
+      noopCtx
     );
     expect(result.action).toBe("reject");
   });
@@ -312,8 +315,11 @@ describe("ipFilter.evaluate", () => {
     const policy = ipFilter({ deny: ["1.2.3.4"], mode: "deny" });
     // clientIp is the denied IP, but headers have a different one
     const result = await policy.evaluate!.onRequest!(
-      makeInput({ clientIp: "1.2.3.4", headers: { "cf-connecting-ip": "5.6.7.8" } }),
-      noopCtx,
+      makeInput({
+        clientIp: "1.2.3.4",
+        headers: { "cf-connecting-ip": "5.6.7.8" },
+      }),
+      noopCtx
     );
     expect(result.action).toBe("reject");
   });
@@ -322,24 +328,24 @@ describe("ipFilter.evaluate", () => {
     const policy = ipFilter({ deny: ["1.2.3.4"], mode: "deny" });
     const result = await policy.evaluate!.onRequest!(
       makeInput({ headers: { "cf-connecting-ip": "1.2.3.4" } }),
-      noopCtx,
+      noopCtx
     );
     expect(result.action).toBe("reject");
   });
 
   it("should use 'unknown' when neither clientIp nor headers are present", async () => {
     const policy = ipFilter({ deny: ["10.0.0.0/8"], mode: "deny" });
-    const result = await policy.evaluate!.onRequest!(
-      makeInput({}),
-      noopCtx,
-    );
+    const result = await policy.evaluate!.onRequest!(makeInput({}), noopCtx);
     expect(result.action).toBe("continue");
   });
 
   // --- Parity with handler ---
 
   it("should produce the same decision as handler for identical inputs", async () => {
-    const config = { deny: ["10.0.0.0/8", "172.16.0.0/12"], mode: "deny" as const };
+    const config = {
+      deny: ["10.0.0.0/8", "172.16.0.0/12"],
+      mode: "deny" as const,
+    };
     const policy = ipFilter(config);
 
     const testIps = ["10.0.0.1", "172.20.1.1", "8.8.8.8", "192.168.1.1"];
@@ -347,7 +353,7 @@ describe("ipFilter.evaluate", () => {
       // evaluate path
       const evalResult = await policy.evaluate!.onRequest!(
         makeInput({ clientIp: ip }),
-        noopCtx,
+        noopCtx
       );
 
       // handler path (via Hono app)
@@ -363,7 +369,9 @@ describe("ipFilter.evaluate", () => {
         }
       });
       app.get("/test", (c) => c.json({ blocked: false }));
-      const res = await app.request("/test", { headers: { "cf-connecting-ip": ip } });
+      const res = await app.request("/test", {
+        headers: { "cf-connecting-ip": ip },
+      });
       const handlerBlocked = res.status === 403;
 
       expect(evalResult.action === "reject").toBe(handlerBlocked);

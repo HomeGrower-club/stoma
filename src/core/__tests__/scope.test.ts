@@ -227,10 +227,7 @@ describe("scope - policy prepending", () => {
     const routes = scope({
       prefix: "/api",
       policies: [scopePolicy],
-      routes: [
-        makeRoute({ path: "/users" }),
-        makeRoute({ path: "/orders" }),
-      ],
+      routes: [makeRoute({ path: "/users" }), makeRoute({ path: "/orders" })],
     });
 
     for (const route of routes) {
@@ -349,10 +346,7 @@ describe("scope - nesting", () => {
   it("should support nested scopes (inner output fed to outer)", () => {
     const innerRoutes = scope({
       prefix: "/v1",
-      routes: [
-        makeRoute({ path: "/users" }),
-        makeRoute({ path: "/orders" }),
-      ],
+      routes: [makeRoute({ path: "/users" }), makeRoute({ path: "/orders" })],
     });
 
     const outerRoutes = scope({
@@ -404,9 +398,9 @@ describe("scope - nesting", () => {
     // Inner scope already merged its metadata into child routes.
     // Outer scope merges its metadata as base, child (which has inner metadata) wins.
     expect(outerRoutes[0].metadata).toEqual({
-      org: "acme",     // from outer scope
-      team: "inner",   // inner wins over outer
-      version: "v1",   // from inner scope
+      org: "acme", // from outer scope
+      team: "inner", // inner wins over outer
+      version: "v1", // from inner scope
     });
   });
 
@@ -489,10 +483,7 @@ describe("scope - integration with createGateway", () => {
   it("should produce routes that work with createGateway", async () => {
     const routes = scope({
       prefix: "/api/v1",
-      routes: [
-        makeRoute({ path: "/users" }),
-        makeRoute({ path: "/orders" }),
-      ],
+      routes: [makeRoute({ path: "/users" }), makeRoute({ path: "/orders" })],
     });
 
     const gw = createGateway({ routes });
@@ -578,10 +569,7 @@ describe("scope - integration with createGateway", () => {
     });
 
     const gw = createGateway({
-      routes: [
-        makeRoute({ path: "/health" }),
-        ...scopedRoutes,
-      ],
+      routes: [makeRoute({ path: "/health" }), ...scopedRoutes],
     });
 
     const healthRes = await gw.app.request("/health");

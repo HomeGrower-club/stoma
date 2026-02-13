@@ -10,6 +10,13 @@
  */
 import type { Context, MiddlewareHandler } from "hono";
 import type { GatewayAdapter } from "../adapters/types";
+import type { ReadableSpan, TracingConfig } from "../observability/tracing";
+import {
+  generateOtelSpanId,
+  SemConv,
+  SpanBuilder,
+  shouldSample,
+} from "../observability/tracing";
 import {
   getCollectedDebugHeaders,
   parseDebugRequest,
@@ -34,8 +41,6 @@ import {
   parseTraceparent,
 } from "../utils/trace-context";
 import type { DebugHeadersConfig } from "./types";
-import type { ReadableSpan, TracingConfig } from "../observability/tracing";
-import { SemConv, SpanBuilder, generateOtelSpanId, shouldSample } from "../observability/tracing";
 
 const noopDebugFactory = () => noopDebugLogger;
 
@@ -170,7 +175,7 @@ export function policiesToMiddleware(policies: Policy[]): MiddlewareHandler[] {
             rootSpan.traceId,
             generateOtelSpanId(),
             rootSpan.spanId,
-            start,
+            start
           );
           span
             .setAttribute("policy.name", policy.name)
@@ -206,7 +211,7 @@ export function createContextInjector(
   requestIdHeader = "x-request-id",
   adapter?: GatewayAdapter,
   debugHeaders?: boolean | DebugHeadersConfig,
-  tracing?: TracingConfig,
+  tracing?: TracingConfig
 ): MiddlewareHandler {
   // Pre-compute debug header config once at construction time
   const debugHeadersConfig =
@@ -246,7 +251,7 @@ export function createContextInjector(
         traceId,
         otelSpanId,
         parsed?.parentId,
-        ctx.startTime,
+        ctx.startTime
       );
       otelRootSpan
         .setAttribute(SemConv.HTTP_METHOD, c.req.method)
@@ -325,7 +330,7 @@ export function createContextInjector(
       otelRootSpan
         .setAttribute(SemConv.HTTP_STATUS_CODE, c.res.status)
         .setStatus(
-          c.res.status >= 500 ? "ERROR" : c.res.status >= 400 ? "UNSET" : "OK",
+          c.res.status >= 500 ? "ERROR" : c.res.status >= 400 ? "UNSET" : "OK"
         );
 
       const rootReadable = otelRootSpan.end();

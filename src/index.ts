@@ -78,22 +78,20 @@ export type {
 
 // ── Core ────────────────────────────────────────────────────────────────
 
-/** Group routes under a shared path prefix with shared policies and metadata. */
-export { scope } from "./core/scope";
-export type {
-  /** Configuration for a route scope: prefix, shared policies, child routes, and metadata. */
-  ScopeConfig,
-} from "./core/scope";
-
 /** Standard JSON error response shape returned by all gateway errors. */
 export type { ErrorResponse } from "./core/errors";
-
 /** Structured error with HTTP status, machine-readable code, and optional response headers. */
 export { GatewayError } from "./core/errors";
 /** Compile a declarative {@link GatewayConfig} into a Hono app with policy pipelines and upstream dispatch. */
 export { createGateway } from "./core/gateway";
 /** Retrieve the {@link PolicyContext} (request ID, trace ID, timing) from a Hono context. */
 export { getGatewayContext } from "./core/pipeline";
+export type {
+  /** Configuration for a route scope: prefix, shared policies, child routes, and metadata. */
+  ScopeConfig,
+} from "./core/scope";
+/** Group routes under a shared path prefix with shared policies and metadata. */
+export { scope } from "./core/scope";
 export type {
   /** Admin introspection API configuration (auth, prefix, metrics collector). */
   AdminConfig,
@@ -244,17 +242,6 @@ export {
   /** Serialize a {@link MetricsSnapshot} to Prometheus text exposition format. */
   toPrometheusText,
 } from "./observability/metrics";
-
-/** Console span exporter for development and debugging. */
-export {
-  ConsoleSpanExporter,
-  /** OTLP/HTTP JSON span exporter for OpenTelemetry Collectors. */
-  OTLPSpanExporter,
-  /** OTel semantic convention attribute keys (HTTP subset). */
-  SemConv,
-  /** Mutable span builder — accumulates attributes, events, and status during a request lifecycle. */
-  SpanBuilder,
-} from "./observability/tracing";
 export type {
   /** An immutable representation of a completed span. */
   ReadableSpan,
@@ -268,6 +255,16 @@ export type {
   SpanStatusCode,
   /** Configuration for gateway-level tracing. */
   TracingConfig,
+} from "./observability/tracing";
+/** Console span exporter for development and debugging. */
+export {
+  ConsoleSpanExporter,
+  /** OTLP/HTTP JSON span exporter for OpenTelemetry Collectors. */
+  OTLPSpanExporter,
+  /** OTel semantic convention attribute keys (HTTP subset). */
+  SemConv,
+  /** Mutable span builder — accumulates attributes, events, and status during a request lifecycle. */
+  SpanBuilder,
 } from "./observability/tracing";
 
 // ── Policy SDK — shared primitives for built-in and custom policies ─────

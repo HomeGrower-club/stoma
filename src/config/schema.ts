@@ -81,7 +81,9 @@ const TracingConfigSchema = z
 const ScopeConfigSchema = z.object({
   prefix: z.string().min(1, "Scope prefix is required"),
   policies: z.array(PolicySchema).optional(),
-  routes: z.array(z.lazy(() => RouteSchema)).min(1, "Scope requires at least one route"),
+  routes: z
+    .array(z.lazy(() => RouteSchema))
+    .min(1, "Scope requires at least one route"),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 

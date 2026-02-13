@@ -33,9 +33,13 @@
  */
 import { type Context, Hono } from "hono";
 import type { GatewayAdapter } from "../adapters/types";
-import type { ReadableSpan } from "../observability/tracing";
-import { SemConv, SpanBuilder, generateOtelSpanId } from "../observability/tracing";
 import { registerAdminRoutes } from "../observability/admin";
+import type { ReadableSpan } from "../observability/tracing";
+import {
+  generateOtelSpanId,
+  SemConv,
+  SpanBuilder,
+} from "../observability/tracing";
 import { createDebugFactory, noopDebugLogger } from "../utils/debug";
 import { formatTraceparent, generateSpanId } from "../utils/trace-context";
 import { defaultErrorResponse, errorToResponse, GatewayError } from "./errors";
@@ -92,7 +96,9 @@ import type {
  * export default gateway.app;
  * ```
  */
-export function createGateway<TBindings = Record<string, unknown>>(config: GatewayConfig<TBindings>): GatewayInstance {
+export function createGateway<TBindings = Record<string, unknown>>(
+  config: GatewayConfig<TBindings>
+): GatewayInstance {
   if (!config.routes || config.routes.length === 0) {
     throw new GatewayError(
       500,
@@ -161,7 +167,7 @@ export function createGateway<TBindings = Record<string, unknown>>(config: Gatew
       config.requestIdHeader,
       config.adapter,
       config.debugHeaders,
-      config.tracing,
+      config.tracing
     );
     const mergedPolicies = buildPolicyChain(
       config.policies ?? [],
@@ -380,7 +386,7 @@ function createServiceBindingUpstream(
         "CLIENT",
         rootSpan.traceId,
         generateOtelSpanId(),
-        rootSpan.spanId,
+        rootSpan.spanId
       );
       upstreamSpan
         .setAttribute(SemConv.HTTP_METHOD, c.req.method)
@@ -513,7 +519,7 @@ function createUrlUpstream(upstream: UrlUpstream, debug = noopDebugLogger) {
         "CLIENT",
         rootSpan.traceId,
         generateOtelSpanId(),
-        rootSpan.spanId,
+        rootSpan.spanId
       );
       upstreamSpan
         .setAttribute(SemConv.HTTP_METHOD, c.req.method)
