@@ -5,7 +5,7 @@
  */
 import type { Context } from "hono";
 import type { Policy, PolicyConfig } from "../types";
-import { Priority, policyDebug, resolveConfig, safeCall, setDebugHeader, withSkip } from "../sdk";
+import { Priority, policyDebug, resolveConfig, safeCall, setDebugHeader, withSkip, policyTrace } from "../sdk";
 
 // --- Store interface ---
 
@@ -226,9 +226,11 @@ export function cache(config?: CacheConfig): Policy {
 
   const handler: import("hono").MiddlewareHandler = async (c, next) => {
     const debug = policyDebug(c, "cache");
+    const trace = policyTrace(c, "cache");
 
     // Non-cacheable method — pass through with SKIP status
     if (!normalizedMethods.includes(c.req.method.toUpperCase())) {
+      trace("SKIP", { method: c.req.method });
       await next();
       c.res.headers.set(statusHeader, "SKIP");
       return;
@@ -248,6 +250,7 @@ export function cache(config?: CacheConfig): Policy {
     if (cached) {
       debug(`HIT ${key}`);
       setDebugHeader(c, "x-stoma-cache-status", "HIT");
+      trace("HIT", { key });
       // Compute remaining TTL from the internal expiry header (if present)
       const expiresAtStr = cached.headers.get(INTERNAL_EXPIRES_HEADER);
       if (expiresAtStr) {
@@ -291,6 +294,7 @@ export function cache(config?: CacheConfig): Policy {
       if (resolved.bypassDirectives!.some((d) => directives.includes(d.toLowerCase()))) {
         debug(`BYPASS ${key} (cache-control: ${cc})`);
         setDebugHeader(c, "x-stoma-cache-status", "BYPASS");
+        trace("BYPASS", { key, directive: cc });
         c.res.headers.set(statusHeader, "BYPASS");
         return;
       }
@@ -299,6 +303,7 @@ export function cache(config?: CacheConfig): Policy {
     // Store a clone (with internal expiry header) and mark as MISS
     debug(`MISS ${key} (ttl=${resolved.ttlSeconds}s)`);
     setDebugHeader(c, "x-stoma-cache-status", "MISS");
+    trace("MISS", { key, ttl: resolved.ttlSeconds! });
     const storeClone = c.res.clone();
     const storeBody = await storeClone.arrayBuffer();
     const storeHeaders = new Headers(storeClone.headers);

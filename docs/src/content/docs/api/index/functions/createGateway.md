@@ -7,7 +7,7 @@ title: "createGateway"
 
 > **createGateway**(`config`): [`GatewayInstance`](/api/index/interfaces/gatewayinstance/)
 
-Defined in: [src/core/gateway.ts:93](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/core/gateway.ts#L93)
+Defined in: [packages/stoma/src/core/gateway.ts:93](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/core/gateway.ts#L93)
 
 Create a gateway instance from a declarative configuration.
 

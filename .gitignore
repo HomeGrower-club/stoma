@@ -9,6 +9,9 @@ coverage
 docs/.astro/
 docs/dist/
 
+# Generated playground service worker bundle
+docs/public/playground-sw.js
+
 # Internal planning and audit docs
 PLAN.md
 POLICIES_REVIEW_AND_PLAN.md

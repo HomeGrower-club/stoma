@@ -1,3 +1,80 @@
+/* Hero background image for splash template.
+ * Splash pages have data-has-hero but NOT data-has-sidebar.
+ * Starlight's hero styles are in @layer starlight.core — unlayered
+ * CSS (like this file) naturally takes precedence.
+ *
+ * The Hero and page content share the same ContentPanel, so we can't
+ * touch the container. Instead we use a viewport-width breakout on
+ * just the .hero element itself. */
+
+/* Remove gap between header and hero */
+html[data-has-hero]:not([data-has-sidebar]) .content-panel:first-child {
+  padding-top: 0;
+}
+
+html[data-has-hero]:not([data-has-sidebar]) .hero {
+  position: relative;
+  overflow: hidden;
+  grid-template-columns: 1fr;
+  padding-block: clamp(4rem, calc(2rem + 12vmin), 14rem);
+  /* Break out of the constrained parent to full viewport width */
+  width: 100vw;
+  margin-inline-start: 50%;
+  transform: translateX(-50%);
+  padding-inline: var(--sl-content-pad-x);
+}
+
+/* The hero-html div contains our raw <img>, used instead of Starlight's
+ * processed image to avoid the 400px downscale that causes blurriness. */
+html[data-has-hero]:not([data-has-sidebar]) .hero > .hero-html {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  z-index: 0;
+  margin: 0;
+  order: unset;
+  display: block;
+}
+
+html[data-has-hero]:not([data-has-sidebar]) .hero > .hero-html img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.25;
+}
+
+/* Also handle if the image comes through as a direct <img> (file mode) */
+html[data-has-hero]:not([data-has-sidebar]) .hero > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.25;
+  z-index: 0;
+  margin: 0;
+  order: unset;
+}
+
+html[data-has-hero]:not([data-has-sidebar]) .hero > .stack {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+html[data-has-hero]:not([data-has-sidebar]) .hero > .stack .copy {
+  align-items: center;
+}
+
+html[data-has-hero]:not([data-has-sidebar]) .hero > .stack .actions {
+  justify-content: center;
+}
+
 /* Responsive Tables for TypeDoc output */
 .sl-markdown-content table {
   display: block;

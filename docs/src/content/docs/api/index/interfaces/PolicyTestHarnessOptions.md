@@ -5,7 +5,7 @@ prev: false
 title: "PolicyTestHarnessOptions"
 ---
 
-Defined in: [src/policies/sdk/testing.ts:18](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/testing.ts#L18)
+Defined in: [packages/stoma/src/policies/sdk/testing.ts:18](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/testing.ts#L18)
 
 ## Properties
 
@@ -13,7 +13,7 @@ Defined in: [src/policies/sdk/testing.ts:18](https://github.com/HomeGrower-club/
 
 > `optional` **adapter**: [`TestAdapter`](/api/adapters/classes/testadapter/)
 
-Defined in: [src/policies/sdk/testing.ts:29](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/testing.ts#L29)
+Defined in: [packages/stoma/src/policies/sdk/testing.ts:29](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/testing.ts#L29)
 
 Custom adapter to use. If not provided, a [TestAdapter](/api/adapters/classes/testadapter/) is created.
 
@@ -23,7 +23,7 @@ Custom adapter to use. If not provided, a [TestAdapter](/api/adapters/classes/te
 
 > `optional` **gatewayName**: `string`
 
-Defined in: [src/policies/sdk/testing.ts:27](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/testing.ts#L27)
+Defined in: [packages/stoma/src/policies/sdk/testing.ts:27](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/testing.ts#L27)
 
 Gateway name injected into context. Default: `"test-gateway"`.
 
@@ -33,7 +33,7 @@ Gateway name injected into context. Default: `"test-gateway"`.
 
 > `optional` **path**: `string`
 
-Defined in: [src/policies/sdk/testing.ts:25](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/testing.ts#L25)
+Defined in: [packages/stoma/src/policies/sdk/testing.ts:25](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/testing.ts#L25)
 
 Route path pattern for the test app. Default: `"/*"`.
 
@@ -43,7 +43,7 @@ Route path pattern for the test app. Default: `"/*"`.
 
 > `optional` **upstream**: `MiddlewareHandler`
 
-Defined in: [src/policies/sdk/testing.ts:23](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/testing.ts#L23)
+Defined in: [packages/stoma/src/policies/sdk/testing.ts:23](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/testing.ts#L23)
 
 Custom upstream handler. Receives the Hono context after the policy
 runs. Default: returns `{ ok: true }` with status 200.

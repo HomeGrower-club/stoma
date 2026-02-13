@@ -1,12 +1,11 @@
 ---
 title: Stoma
-description: Declarative API gateway as a TypeScript library, built on Hono. Runs on Cloudflare Workers, Deno, Bun, Node.js, and any runtime Hono supports.
+description: Declarative API gateway as a TypeScript library, built on Hono. Runs on Cloudflare Workers, Deno, Bun, Node.js, and any runtime Hono supports (even the browser).
 template: splash
 hero:
-  tagline: The API Gateway for the TypeScript Era.
-  # image:
-  #   file: favicon-32x32.png
-  #   alt: Stoma Logo
+  tagline: Strongly typed, ultra-light, blazing fast - run anywhere Hono runs!
+  image:
+    html: <img src="/leaf-bg-trees.jpg" alt="A lush canopy of green leaves" />
   actions:
     - text: Get Started
       link: /getting-started/installation/
@@ -19,8 +18,17 @@ hero:
 ---
 
 import { Card, CardGrid, Tabs, TabItem, Steps, Aside } from "@astrojs/starlight/components";
+import Playground from "../../components/Playground.tsx";
 
-**Declarative API gateway as a TypeScript library. Runs anywhere Hono runs — Cloudflare Workers, Node.js, Deno, Bun, and more.**
+**Declarative API gateway as a TypeScript library, built on Hono. Runs on Cloudflare Workers, Deno, Bun, Node.js, and any runtime Hono supports.**
+
+## Even in the browser...
+
+<Playground client:load />
+
+
+---
+
 
 ## Why Stoma?
 

@@ -7,7 +7,7 @@ title: "setDebugHeader"
 
 > **setDebugHeader**(`c`, `name`, `value`): `void`
 
-Defined in: [src/policies/sdk/helpers.ts:146](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/helpers.ts#L146)
+Defined in: [packages/stoma/src/policies/sdk/helpers.ts:147](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/helpers.ts#L147)
 
 Set a debug header value for client-requested debug output.
 

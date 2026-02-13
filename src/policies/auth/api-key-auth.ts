@@ -72,24 +72,30 @@ export const apiKeyAuth = definePolicy<ApiKeyAuthConfig>({
   name: "api-key-auth",
   priority: Priority.AUTH,
   defaults: { headerName: "x-api-key" },
-  handler: async (c, next, { config, debug }) => {
+  handler: async (c, next, { config, debug, trace }) => {
     // Try header first
     let key = c.req.header(config.headerName!);
+    let source = "header";
 
     // Fall back to query parameter if configured
     if (!key && config.queryParam) {
       const url = new URL(c.req.url);
       key = url.searchParams.get(config.queryParam) ?? undefined;
+      source = "query";
     }
 
     if (!key) {
+      trace("rejected", { reason: "missing" });
       throw new GatewayError(401, "unauthorized", "Missing API key");
     }
 
     const isValid = await config.validate(key);
     if (!isValid) {
+      trace("rejected", { reason: "invalid" });
       throw new GatewayError(403, "forbidden", "Invalid API key");
     }
+
+    trace("authenticated", { source });
 
     // Forward key identity as a request header if configured
     if (config.forwardKeyIdentity) {

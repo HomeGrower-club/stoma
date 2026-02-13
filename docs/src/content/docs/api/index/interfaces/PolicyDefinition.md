@@ -5,7 +5,7 @@ prev: false
 title: "PolicyDefinition"
 ---
 
-Defined in: [src/policies/sdk/define-policy.ts:35](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/define-policy.ts#L35)
+Defined in: [packages/stoma/src/policies/sdk/define-policy.ts:38](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/define-policy.ts#L38)
 
 Declarative policy definition passed to [definePolicy](/api/index/functions/definepolicy/).
 
@@ -21,7 +21,7 @@ Declarative policy definition passed to [definePolicy](/api/index/functions/defi
 
 > `optional` **defaults**: `Partial`\<`TConfig`\>
 
-Defined in: [src/policies/sdk/define-policy.ts:43](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/define-policy.ts#L43)
+Defined in: [packages/stoma/src/policies/sdk/define-policy.ts:46](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/define-policy.ts#L46)
 
 Default values for optional config fields.
 
@@ -31,7 +31,7 @@ Default values for optional config fields.
 
 > **handler**: (`c`, `next`, `ctx`) => `void` \| `Promise`\<`void`\>
 
-Defined in: [src/policies/sdk/define-policy.ts:56](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/define-policy.ts#L56)
+Defined in: [packages/stoma/src/policies/sdk/define-policy.ts:59](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/define-policy.ts#L59)
 
 The policy handler. Receives the Hono context, `next`, and a
 [PolicyHandlerContext](/api/index/interfaces/policyhandlercontext/) with config, debug, and gateway context.
@@ -60,7 +60,7 @@ The policy handler. Receives the Hono context, `next`, and a
 
 > **name**: `string`
 
-Defined in: [src/policies/sdk/define-policy.ts:39](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/define-policy.ts#L39)
+Defined in: [packages/stoma/src/policies/sdk/define-policy.ts:42](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/define-policy.ts#L42)
 
 Unique policy name (e.g. `"my-auth"`, `"custom-cache"`).
 
@@ -70,7 +70,7 @@ Unique policy name (e.g. `"my-auth"`, `"custom-cache"`).
 
 > `optional` **priority**: `number`
 
-Defined in: [src/policies/sdk/define-policy.ts:41](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/define-policy.ts#L41)
+Defined in: [packages/stoma/src/policies/sdk/define-policy.ts:44](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/define-policy.ts#L44)
 
 Execution priority. Use [Priority](/api/index/variables/priority/) constants. Default: `Priority.DEFAULT` (100).
 
@@ -80,7 +80,7 @@ Execution priority. Use [Priority](/api/index/variables/priority/) constants. De
 
 > `optional` **validate**: (`config`) => `void`
 
-Defined in: [src/policies/sdk/define-policy.ts:51](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/define-policy.ts#L51)
+Defined in: [packages/stoma/src/policies/sdk/define-policy.ts:54](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/define-policy.ts#L54)
 
 Optional construction-time config validation.
 

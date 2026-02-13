@@ -7,7 +7,7 @@ title: "denoAdapter"
 
 > **denoAdapter**(): [`GatewayAdapter`](/api/index/interfaces/gatewayadapter/)
 
-Defined in: [src/adapters/deno.ts:26](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/adapters/deno.ts#L26)
+Defined in: [packages/stoma/src/adapters/deno.ts:26](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/adapters/deno.ts#L26)
 
 Create a GatewayAdapter for Deno. Provides in-memory defaults.
 

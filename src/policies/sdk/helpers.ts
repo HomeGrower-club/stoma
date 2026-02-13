@@ -14,6 +14,7 @@ import type { Context, MiddlewareHandler, Next } from "hono";
 import type { DebugLogger } from "../../utils/debug";
 import { noopDebugLogger } from "../../utils/debug";
 import { getGatewayContext } from "../../core/pipeline";
+import { TRACE_REQUESTED_KEY } from "./trace";
 
 /**
  * Merge default config values with user-provided config.
@@ -203,6 +204,12 @@ export function parseDebugRequest(
   if (requested.size > 0) {
     c.set(DEBUG_REQUESTED_KEY, requested);
   }
+
+  // Activate tracing when "trace" is explicitly requested or "*" wildcard is used.
+  // Respects the allowlist — if an allowlist exists and "trace" isn't in it, tracing is blocked.
+  if (requested.has("trace") || requested.has("*")) {
+    c.set(TRACE_REQUESTED_KEY, true);
+  }
 }
 
 /**
@@ -218,4 +225,18 @@ export function getCollectedDebugHeaders(
   c: Context,
 ): Map<string, string> | undefined {
   return c.get(DEBUG_HEADERS_KEY) as Map<string, string> | undefined;
+}
+
+/**
+ * Check whether the client requested debug output via the `x-stoma-debug` header.
+ *
+ * Returns `true` when any debug header names were requested (i.e. the
+ * `_stomaDebugRequested` context key is a non-empty Set).
+ *
+ * @param c - Hono request context.
+ * @returns `true` if the client sent a valid `x-stoma-debug` request header.
+ */
+export function isDebugRequested(c: Context): boolean {
+  const requested = c.get(DEBUG_REQUESTED_KEY) as Set<string> | undefined;
+  return requested !== undefined && requested.size > 0;
 }

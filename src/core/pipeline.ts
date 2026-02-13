@@ -21,6 +21,16 @@ import {
 } from "../utils/trace-context";
 import type { DebugHeadersConfig } from "./types";
 import { getCollectedDebugHeaders, parseDebugRequest } from "../policies/sdk/helpers";
+import { toSelfTimes } from "../utils/timing";
+import {
+  TRACE_REQUESTED_KEY,
+  TRACE_ENTRIES_KEY,
+  TRACE_DETAILS_KEY,
+  type PolicyTraceBaseline,
+  type PolicyTraceDetail,
+  type PolicyTraceEntry,
+  type PolicyTrace,
+} from "../policies/sdk/trace";
 
 const noopDebugFactory = () => noopDebugLogger;
 
@@ -79,19 +89,56 @@ export function buildPolicyChain(
 export function policiesToMiddleware(policies: Policy[]): MiddlewareHandler[] {
   return policies.map((policy) => {
     const originalHandler = policy.handler;
-    // Wrap with skip logic and per-policy timing
+    const policyPriority = policy.priority ?? 100;
+    // Wrap with skip logic and per-policy timing.
+    // Uses try-finally so timing is recorded even when a policy throws
+    // (e.g. timeout throwing GatewayError on deadline exceeded).
     const wrappedHandler: MiddlewareHandler = async (c, next) => {
+      const tracing = c.get(TRACE_REQUESTED_KEY) === true;
       const start = Date.now();
-      await originalHandler(c, next);
-      const durationMs = Date.now() - start;
+      let calledNext = false;
+      let errorMsg: string | null = null;
 
-      // Accumulate per-policy timing data for metricsReporter
-      const timings = (c.get("_policyTimings") ?? []) as Array<{
-        name: string;
-        durationMs: number;
-      }>;
-      timings.push({ name: policy.name, durationMs });
-      c.set("_policyTimings", timings);
+      try {
+        if (tracing) {
+          // Wrap next() to detect whether the policy called it
+          const tracedNext = async () => {
+            calledNext = true;
+            await next();
+          };
+          await originalHandler(c, tracedNext);
+        } else {
+          await originalHandler(c, next);
+        }
+      } catch (err) {
+        if (tracing) {
+          errorMsg = err instanceof Error ? err.message : String(err);
+        }
+        throw err;
+      } finally {
+        const durationMs = Date.now() - start;
+
+        // Accumulate per-policy timing data for observability policies
+        const timings = (c.get("_policyTimings") ?? []) as Array<{
+          name: string;
+          durationMs: number;
+        }>;
+        timings.push({ name: policy.name, durationMs });
+        c.set("_policyTimings", timings);
+
+        // Accumulate trace baseline entries when tracing is active
+        if (tracing) {
+          const entries = (c.get(TRACE_ENTRIES_KEY) ?? []) as PolicyTraceBaseline[];
+          entries.push({
+            name: policy.name,
+            priority: policyPriority,
+            durationMs,
+            calledNext,
+            error: errorMsg,
+          });
+          c.set(TRACE_ENTRIES_KEY, entries);
+        }
+      }
     };
     return wrappedHandler;
   });
@@ -172,6 +219,33 @@ export function createContextInjector(
         for (const [name, value] of collected) {
           c.res.headers.set(name, value);
         }
+      }
+    }
+
+    // Emit policy trace when tracing was requested
+    if (c.get(TRACE_REQUESTED_KEY) === true) {
+      const rawEntries = c.get(TRACE_ENTRIES_KEY) as PolicyTraceBaseline[] | undefined;
+      if (rawEntries && rawEntries.length > 0) {
+        const details = c.get(TRACE_DETAILS_KEY) as Map<string, PolicyTraceDetail> | undefined;
+
+        // Convert inclusive timings to self-time (execution order)
+        const selfEntries = toSelfTimes(rawEntries);
+
+        // Merge baseline + detail
+        const entries: PolicyTraceEntry[] = selfEntries.map((baseline) => {
+          const detail = details?.get(baseline.name);
+          return detail ? { ...baseline, detail } : baseline;
+        });
+
+        const trace: PolicyTrace = {
+          requestId: ctx.requestId,
+          traceId: ctx.traceId,
+          route: routePath,
+          totalMs: Date.now() - ctx.startTime,
+          entries,
+        };
+
+        c.res.headers.set("x-stoma-trace", JSON.stringify(trace));
       }
     }
   };

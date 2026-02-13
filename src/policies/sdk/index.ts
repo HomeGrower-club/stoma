@@ -50,7 +50,9 @@ export { resolveConfig,
 /** Parse the client's debug header request (internal — used by the pipeline). */
   parseDebugRequest,
 /** Read all collected debug headers (internal — used by the pipeline). */
-  getCollectedDebugHeaders } from "./helpers";
+  getCollectedDebugHeaders,
+/** Check whether the client requested debug output via the `x-stoma-debug` header. */
+  isDebugRequested } from "./helpers";
 
 // Layer 3 — Full convenience wrapper
 
@@ -69,3 +71,23 @@ export { createPolicyTestHarness } from "./testing";
 
 /** Options for {@link createPolicyTestHarness}: custom upstream, path, gateway name, adapter. */
 export type { PolicyTestHarnessOptions } from "./testing";
+
+// Layer 5 — Trace (deep policy debugging)
+
+/** Get a trace reporter for a specific policy — always callable, no-op when not tracing. */
+export { policyTrace,
+/** Shared no-op trace reporter instance. */
+  noopTraceReporter,
+/** Fast-path check: is tracing requested for this request? */
+  isTraceRequested } from "./trace";
+
+export type {
+  /** A trace reporter function: `(action, data?) => void`. */
+  TraceReporter,
+  /** Policy-reported detail (cooperative opt-in). */
+  PolicyTraceDetail,
+  /** Combined baseline + detail for a single policy trace entry. */
+  PolicyTraceEntry,
+  /** Full trace payload emitted as `x-stoma-trace`. */
+  PolicyTrace,
+} from "./trace";

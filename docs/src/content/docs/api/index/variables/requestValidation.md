@@ -7,7 +7,7 @@ title: "requestValidation"
 
 > `const` **requestValidation**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/transform/request-validation.ts:81](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/transform/request-validation.ts#L81)
+Defined in: [packages/stoma/src/policies/transform/request-validation.ts:81](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/transform/request-validation.ts#L81)
 
 Pluggable request body validation policy.
 

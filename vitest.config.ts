@@ -5,7 +5,7 @@ export default defineWorkersConfig({
     include: ["src/**/*.test.ts"],
     poolOptions: {
       workers: {
-        wrangler: { configPath: "./wrangler.toml" },
+        wrangler: { configPath: "./wrangler.jsonc" },
       },
     },
     coverage: {

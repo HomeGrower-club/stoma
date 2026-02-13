@@ -5,7 +5,7 @@ prev: false
 title: "OverrideMethodConfig"
 ---
 
-Defined in: [src/policies/transform/override-method.ts:15](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/transform/override-method.ts#L15)
+Defined in: [packages/stoma/src/policies/transform/override-method.ts:15](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/transform/override-method.ts#L15)
 
 Configuration for the overrideMethod policy.
 
@@ -19,7 +19,7 @@ Configuration for the overrideMethod policy.
 
 > `optional` **allowedMethods**: `string`[]
 
-Defined in: [src/policies/transform/override-method.ts:19](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/transform/override-method.ts#L19)
+Defined in: [packages/stoma/src/policies/transform/override-method.ts:19](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/transform/override-method.ts#L19)
 
 Methods allowed as overrides. Default: `["GET", "PUT", "PATCH", "DELETE"]`.
 
@@ -29,7 +29,7 @@ Methods allowed as overrides. Default: `["GET", "PUT", "PATCH", "DELETE"]`.
 
 > `optional` **header**: `string`
 
-Defined in: [src/policies/transform/override-method.ts:17](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/transform/override-method.ts#L17)
+Defined in: [packages/stoma/src/policies/transform/override-method.ts:17](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/transform/override-method.ts#L17)
 
 Header name to read the override method from. Default: `"X-HTTP-Method-Override"`.
 
@@ -39,7 +39,7 @@ Header name to read the override method from. Default: `"X-HTTP-Method-Override"
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: [src/policies/types.ts:33](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/types.ts#L33)
+Defined in: [packages/stoma/src/policies/types.ts:33](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/types.ts#L33)
 
 Skip this policy when condition returns true
 

@@ -134,6 +134,9 @@ export { metricsReporter } from "./observability/metrics-reporter";
 /** Attach metric tags/dimensions to request context for metricsReporter consumption (priority 0). */
 export { assignMetrics } from "./observability/assign-metrics";
 
+/** Emit W3C Server-Timing and X-Response-Time response headers with per-policy breakdown (priority 1). */
+export { serverTiming } from "./observability/server-timing";
+
 /** Create a health check route with optional upstream probing (returns a RouteConfig). */
 export { health } from "../core/health";
 
@@ -152,6 +155,8 @@ export {
   definePolicy,
   /** Create a minimal test harness for a policy. */
   createPolicyTestHarness,
+  /** Get a trace reporter for a specific policy. */
+  policyTrace,
 } from "./sdk";
 
 export type {
@@ -163,6 +168,14 @@ export type {
   PolicyHandlerContext,
   /** Options for createPolicyTestHarness. */
   PolicyTestHarnessOptions,
+  /** Trace reporter function type. */
+  TraceReporter,
+  /** Policy-reported trace detail. */
+  PolicyTraceDetail,
+  /** Combined trace entry (baseline + detail). */
+  PolicyTraceEntry,
+  /** Full trace payload. */
+  PolicyTrace,
 } from "./sdk";
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -298,6 +311,11 @@ export type { GenerateHttpSignatureConfig } from "./auth/generate-http-signature
 export type { VerifyHttpSignatureConfig,
 /** Key material (HMAC secret or RSA public key) for HTTP signature verification. */
   HttpSignatureKey } from "./auth/verify-http-signature";
+
+/** Configuration for the serverTiming policy. */
+export type { ServerTimingConfig,
+/** Visibility mode for the serverTiming policy. */
+  ServerTimingVisibility } from "./observability/server-timing";
 
 /** Configuration for the health route factory. */
 export type { HealthConfig } from "../core/health";

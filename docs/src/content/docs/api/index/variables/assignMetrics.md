@@ -7,7 +7,7 @@ title: "assignMetrics"
 
 > `const` **assignMetrics**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/observability/assign-metrics.ts:43](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/observability/assign-metrics.ts#L43)
+Defined in: [packages/stoma/src/policies/observability/assign-metrics.ts:43](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/observability/assign-metrics.ts#L43)
 
 Attach metric tags to the request context for downstream consumers.
 

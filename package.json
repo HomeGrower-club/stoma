@@ -9,8 +9,7 @@
   },
   "license": "MIT",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "access": "restricted"
+    "access": "public"
   },
   "exports": {
     ".": {
@@ -69,7 +68,8 @@
     "changeset:publish": "changeset publish"
   },
   "dependencies": {
-    "hono": "^4.7.0"
+    "hono": "^4.7.0",
+    "react-json-pretty": "^2.2.0"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.2",

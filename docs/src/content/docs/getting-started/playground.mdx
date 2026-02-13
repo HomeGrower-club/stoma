@@ -1,0 +1,32 @@
+---
+title: Playground
+description: Try Stoma policies live in your browser — no server required.
+sidebar:
+  order: 4
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import Playground from "../../../components/Playground.tsx";
+
+This page runs a **fully-featured, real Stoma gateway** inside a service worker in your browser. 
+
+Every request below goes through the same policy pipeline that runs in production — rate limiting, caching, auth, timeout — all executing locally.
+
+<Aside type="tip" title="Things to try">
+- Click **GET /echo** twice — the second response is a cache `HIT` (check the `x-cache` header)
+- Click **GET /echo** 6 times within 30 seconds — the 6th request returns `429 Too Many Requests`
+- Click **GET /protected** without a key, then **GET /protected (with key)** — see the `401` → `200` difference
+- Click **GET /slow** — the handler sleeps for 2 seconds but the timeout policy cuts it off at 1 second
+</Aside>
+
+<Playground client:load />
+
+<Aside type="note" title="How it works">
+The playground uses a [Service Worker](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) to intercept `/playground/api/*` requests. Inside the worker, a Stoma gateway is configured with:
+
+- **IndexedDB** for rate limit counters (persists across page reloads)
+- **Cache API** for response caching (standard browser API)
+- **In-memory** circuit breaker state (resets on SW restart)
+
+No network requests leave your browser. View the [playground source code](https://github.com/HomeGrower-club/stoma/tree/main/docs/src/playground) to see how it's built.
+</Aside>

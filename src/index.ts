@@ -219,6 +219,9 @@ export { metricsReporter } from "./policies/observability/metrics-reporter";
 /** Attach metric tags/dimensions to the request context for consumption by metricsReporter (priority 0). */
 export { assignMetrics } from "./policies/observability/assign-metrics";
 
+/** Emit W3C Server-Timing and X-Response-Time response headers with per-policy breakdown (priority 1). */
+export { serverTiming } from "./policies/observability/server-timing";
+
 /** Create a health check route with optional upstream probing (returns a RouteConfig, not a Policy). */
 export { health } from "./core/health";
 
@@ -246,6 +249,8 @@ export {
   definePolicy,
   /** Create a minimal test harness for a policy with error handling, context injection, and configurable upstream. */
   createPolicyTestHarness,
+  /** Get a trace reporter for a specific policy — always callable, no-op when not tracing. */
+  policyTrace,
 } from "./policies/sdk";
 
 export type {
@@ -257,6 +262,14 @@ export type {
   PolicyHandlerContext,
   /** Options for {@link createPolicyTestHarness}: custom upstream, path, gateway name, adapter. */
   PolicyTestHarnessOptions,
+  /** Trace reporter function type. */
+  TraceReporter,
+  /** Policy-reported trace detail. */
+  PolicyTraceDetail,
+  /** Combined trace entry (baseline + detail). */
+  PolicyTraceEntry,
+  /** Full trace payload emitted as `x-stoma-trace`. */
+  PolicyTrace,
 } from "./policies/sdk";
 
 // ── Debug ───────────────────────────────────────────────────────────────
@@ -298,6 +311,11 @@ export type {
 
 /** Configuration for the {@link metricsReporter} policy. */
 export type { MetricsReporterConfig } from "./policies/observability/metrics-reporter";
+
+/** Configuration for the {@link serverTiming} policy. */
+export type { ServerTimingConfig,
+/** Visibility mode for the serverTiming policy. */
+  ServerTimingVisibility } from "./policies/observability/server-timing";
 
 /** Pluggable storage backend for rate limit counters. */
 export type { RateLimitStore,

@@ -5,13 +5,14 @@ prev: false
 title: "PolicyConfig"
 ---
 
-Defined in: [src/policies/types.ts:31](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/types.ts#L31)
+Defined in: [packages/stoma/src/policies/types.ts:31](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/types.ts#L31)
 
 Base configuration shared by all policies
 
 ## Extended by
 
 - [`MetricsReporterConfig`](/api/index/interfaces/metricsreporterconfig/)
+- [`ServerTimingConfig`](/api/index/interfaces/servertimingconfig/)
 - [`TimeoutConfig`](/api/policies/interfaces/timeoutconfig/)
 - [`RetryConfig`](/api/policies/interfaces/retryconfig/)
 - [`IpFilterConfig`](/api/policies/interfaces/ipfilterconfig/)
@@ -52,7 +53,7 @@ Base configuration shared by all policies
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: [src/policies/types.ts:33](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/types.ts#L33)
+Defined in: [packages/stoma/src/policies/types.ts:33](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/types.ts#L33)
 
 Skip this policy when condition returns true
 

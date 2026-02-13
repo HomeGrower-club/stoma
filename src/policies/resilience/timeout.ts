@@ -36,7 +36,7 @@ export const timeout = definePolicy<TimeoutConfig>({
   name: "timeout",
   priority: Priority.TIMEOUT,
   defaults: { timeoutMs: 30_000, message: "Gateway timeout", statusCode: 504 },
-  handler: async (c, next, { config }) => {
+  handler: async (c, next, { config, trace }) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), config.timeoutMs!);
 
@@ -45,6 +45,7 @@ export const timeout = definePolicy<TimeoutConfig>({
     c.set("_timeoutSignal", controller.signal);
 
     try {
+      const start = Date.now();
       await Promise.race([
         next(),
         new Promise<never>((_, reject) => {
@@ -55,6 +56,12 @@ export const timeout = definePolicy<TimeoutConfig>({
           );
         }),
       ]);
+      trace("passed", { budgetMs: config.timeoutMs!, elapsed: Date.now() - start });
+    } catch (err) {
+      if (err instanceof GatewayError && err.code === "gateway_timeout") {
+        trace("fired", { budgetMs: config.timeoutMs! });
+      }
+      throw err;
     } finally {
       clearTimeout(timer);
     }

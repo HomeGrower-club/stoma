@@ -13,6 +13,7 @@ import type { DebugLogger } from "../../utils/debug";
 import { getGatewayContext } from "../../core/pipeline";
 import { Priority } from "./priority";
 import { resolveConfig, policyDebug, withSkip } from "./helpers";
+import { policyTrace, type TraceReporter } from "./trace";
 
 /**
  * Context injected into every `definePolicy` handler invocation.
@@ -25,6 +26,8 @@ export interface PolicyHandlerContext<TConfig> {
   config: TConfig;
   /** Debug logger pre-namespaced to `stoma:policy:{name}`. Always callable. */
   debug: DebugLogger;
+  /** Trace reporter — always callable, no-op when tracing is not active. */
+  trace: TraceReporter;
   /** Gateway context, or `undefined` when running outside a gateway pipeline. */
   gateway: PolicyContext | undefined;
 }
@@ -107,8 +110,9 @@ export function definePolicy<
 
     const rawHandler = async (c: Context, next: Next): Promise<void> => {
       const debug = policyDebug(c, definition.name);
+      const trace = policyTrace(c, definition.name);
       const gateway = getGatewayContext(c);
-      await definition.handler(c, next, { config, debug, gateway });
+      await definition.handler(c, next, { config, debug, trace, gateway });
     };
 
     const handler = withSkip(config.skip, rawHandler);

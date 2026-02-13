@@ -1,6 +1,7 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import starlightTypeDoc, { typeDocSidebarGroup } from "starlight-typedoc";
+import react from "@astrojs/react";
 
 export default defineConfig({
   site: "https://opensource.homegrower.club/stoma",
@@ -8,6 +9,7 @@ export default defineConfig({
     syntaxHighlight: "shiki",
   },
   integrations: [
+    react(),
     starlight({
       title: "Stoma",
       description:

@@ -7,7 +7,7 @@ import type { Context } from "hono";
 import { GatewayError } from "../../core/errors";
 import { extractClientIp } from "../../utils/ip";
 import type { Policy, PolicyConfig } from "../types";
-import { Priority, policyDebug, resolveConfig, safeCall, setDebugHeader, withSkip } from "../sdk";
+import { Priority, policyDebug, resolveConfig, safeCall, setDebugHeader, withSkip, policyTrace } from "../sdk";
 
 export interface RateLimitConfig extends PolicyConfig {
   /** Maximum requests per window */
@@ -153,6 +153,7 @@ export function rateLimit(config: RateLimitConfig): Policy {
 
   const handler: import("hono").MiddlewareHandler = async (c, next) => {
     const debug = policyDebug(c, "rate-limit");
+    const trace = policyTrace(c, "rate-limit");
 
     const resolvedStore = config.store ?? (defaultStore ??= new InMemoryRateLimitStore());
 
@@ -187,6 +188,7 @@ export function rateLimit(config: RateLimitConfig): Policy {
 
     if (count > config.max) {
       debug(`limited (key=${key}, count=${count}, max=${config.max})`);
+      trace("rejected", { key, count, max: config.max });
       const resetHeader = String(resetSeconds);
       throw new GatewayError(resolved.statusCode!, "rate_limited", resolved.message!, {
         "x-ratelimit-limit": String(config.max),
@@ -195,6 +197,8 @@ export function rateLimit(config: RateLimitConfig): Policy {
         "retry-after": resetHeader,
       });
     }
+
+    trace("allowed", { key, count, max: config.max, remaining });
 
     await next();
 

@@ -7,7 +7,7 @@ title: "definePolicy"
 
 > **definePolicy**\<`TConfig`\>(`definition`): (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/sdk/define-policy.ts:92](https://github.com/HomeGrower-club/stoma/blob/603a10a50487a87e6d616a573f00ffc30e2678e1/src/policies/sdk/define-policy.ts#L92)
+Defined in: [packages/stoma/src/policies/sdk/define-policy.ts:95](https://github.com/HomeGrower-club/stoma/blob/84fe1aecb88a4fe423283b627a19d56fda29a9cb/src/policies/sdk/define-policy.ts#L95)
 
 Create a policy factory from a declarative definition.
 
