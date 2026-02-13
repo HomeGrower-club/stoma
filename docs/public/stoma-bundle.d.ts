@@ -28,9 +28,13 @@ export type DebugLogger = (message: string, ...args: unknown[]) => void;
 /**
  * Policy type system — the building blocks of gateway pipelines.
  *
- * A {@link Policy} is a named Hono middleware with priority ordering.
- * Policies are composed into pipelines at the global and route level,
- * merged by name (route-level wins), and sorted by priority ascending.
+ * A {@link Policy} is a named middleware with priority ordering and
+ * optional protocol-agnostic evaluation. Policies are composed into
+ * pipelines at the global and route level, merged by name (route-level
+ * wins), and sorted by priority ascending.
+ *
+ * The HTTP runtime uses {@link Policy.handler} (Hono middleware).
+ * Non-HTTP runtimes (ext_proc, WebSocket) use {@link Policy.evaluate}.
  *
  * The {@link PolicyContext} provides request metadata (ID, timing, debug)
  * to policies at runtime via `getGatewayContext(c)`.
@@ -38,16 +42,45 @@ export type DebugLogger = (message: string, ...args: unknown[]) => void;
  * @module policy-types
  */
 /**
- * A Policy is a named Hono middleware with metadata.
- * Policies are the building blocks of gateway pipelines.
+ * A Policy is a named middleware with priority ordering and optional
+ * protocol-agnostic evaluation.
+ *
+ * - {@link handler} — HTTP runtime entry point (Hono middleware).
+ *   Used by {@link createGateway}.
+ * - {@link evaluate} — Protocol-agnostic entry point. Used by non-HTTP
+ *   runtimes (ext_proc, WebSocket) to invoke the policy without Hono.
+ * - {@link phases} — Which processing phases this policy participates in.
+ *   Used by phase-based runtimes to skip irrelevant policies.
  */
 export interface Policy {
 	/** Unique policy name (e.g. "jwt-auth", "rate-limit") */
 	name: string;
-	/** The Hono middleware handler */
+	/** The Hono middleware handler — HTTP runtime entry point. */
 	handler: MiddlewareHandler;
 	/** Policy priority — lower numbers execute first. Default: 100. */
 	priority?: number;
+	/**
+	 * Protocol-agnostic evaluation entry point.
+	 *
+	 * Used by non-HTTP runtimes (ext_proc, WebSocket) to invoke this
+	 * policy without Hono. The HTTP runtime ({@link createGateway}) uses
+	 * {@link handler} directly and ignores this field.
+	 *
+	 * Policies that implement `evaluate` work across all runtimes.
+	 * Policies that only implement `handler` are HTTP-only.
+	 */
+	evaluate?: PolicyEvaluator;
+	/**
+	 * Processing phases this policy participates in.
+	 *
+	 * Used by phase-based runtimes (ext_proc) to skip policies that don't
+	 * apply to the current processing phase. For example, a JWT auth policy
+	 * only needs `"request-headers"`, while a response transform policy
+	 * needs `"response-headers"` and `"response-body"`.
+	 *
+	 * Default: `["request-headers"]` (most policies only inspect request headers).
+	 */
+	phases?: ProcessingPhase[];
 }
 /** Base configuration shared by all policies */
 export interface PolicyConfig {
@@ -83,91 +116,6 @@ export interface PolicyContext {
 	/** Runtime adapter providing store implementations and runtime-specific capabilities. */
 	adapter?: GatewayAdapter;
 }
-/**
- * Response caching policy with pluggable storage backends.
- *
- * @module cache
- */
-/** Pluggable cache storage backend */
-export interface CacheStore {
-	/** Retrieve a cached response by key. Returns null on miss. */
-	get(key: string): Promise<Response | null>;
-	/** Store a response under key with a TTL in seconds. */
-	put(key: string, response: Response, ttlSeconds: number): Promise<void>;
-	/** Delete a cached entry. Returns true if something was removed. */
-	delete(key: string): Promise<boolean>;
-}
-/** Options for the in-memory cache store. */
-export interface InMemoryCacheStoreOptions {
-	/** Maximum number of cached entries. When exceeded, the oldest entry is evicted (LRU). */
-	maxEntries?: number;
-}
-export declare class InMemoryCacheStore implements CacheStore {
-	private entries;
-	private maxEntries;
-	constructor(options?: InMemoryCacheStoreOptions);
-	get(key: string): Promise<Response | null>;
-	put(key: string, response: Response, ttlSeconds: number): Promise<void>;
-	delete(key: string): Promise<boolean>;
-	/** Remove all entries (for testing) */
-	clear(): void;
-	/** Current number of entries (for testing/inspection) */
-	get size(): number;
-}
-export interface CacheConfig extends PolicyConfig {
-	/** Cache TTL in seconds. Default: 300. */
-	ttlSeconds?: number;
-	/** HTTP methods to cache. Default: ["GET"]. Case-insensitive. */
-	methods?: string[];
-	/** Custom cache key builder. Supports async for body-based keys. Default: method + url (+ body hash for POST/PUT/PATCH). */
-	cacheKeyFn?: (c: Context) => string | Promise<string>;
-	/** Only cache responses with these status codes. When set, responses with other statuses are not cached (5xx is always excluded regardless). */
-	cacheableStatuses?: number[];
-	/** Vary cache key on these request headers. */
-	varyHeaders?: string[];
-	/** Storage backend. Default: InMemoryCacheStore. */
-	store?: CacheStore;
-	/** Respect upstream Cache-Control directives. Default: true. */
-	respectCacheControl?: boolean;
-	/** Response header name for cache status (HIT/MISS/BYPASS/SKIP). Default: `"x-cache"`. */
-	cacheStatusHeader?: string;
-	/** Cache-Control directives that trigger a bypass. Matched at the directive level, not substring. Default: `["no-store", "no-cache"]`. */
-	bypassDirectives?: string[];
-}
-/**
- * Cache upstream responses to reduce latency and load.
- *
- * Sets a cache status header on **every** response:
- * - `HIT` — served from cache
- * - `MISS` — fetched from upstream, now cached
- * - `BYPASS` — upstream Cache-Control directive prevented caching
- * - `SKIP` — not eligible for caching (wrong method or server error status)
- *
- * Server error responses (5xx) are never cached. Store failures degrade
- * gracefully via {@link safeCall} — a broken cache store never crashes the
- * request.
- *
- * For methods with a request body (POST, PUT, PATCH), the default cache key
- * includes a SHA-256 hash of the body to prevent key collisions across
- * different payloads.
- *
- * @param config - Cache TTL, storage backend, and key strategy. All fields optional.
- * @returns A {@link Policy} at priority 40.
- *
- * @example
- * ```ts
- * // Simple 5-minute in-memory cache for GET requests
- * cache({ ttlSeconds: 300 });
- *
- * // Cache with Vary on Accept-Language and custom store
- * cache({
- *   ttlSeconds: 600,
- *   varyHeaders: ["accept-language"],
- *   store: new CacheApiCacheStore(caches.default),
- * });
- * ```
- */
-export declare function cache(config?: CacheConfig): Policy;
 /**
  * Circuit breaker policy — protect upstream services from cascading failures.
  *
@@ -286,6 +234,91 @@ export interface CircuitBreakerConfig extends PolicyConfig {
  */
 export declare function circuitBreaker(config?: CircuitBreakerConfig): Policy;
 /**
+ * Response caching policy with pluggable storage backends.
+ *
+ * @module cache
+ */
+/** Pluggable cache storage backend */
+export interface CacheStore {
+	/** Retrieve a cached response by key. Returns null on miss. */
+	get(key: string): Promise<Response | null>;
+	/** Store a response under key with a TTL in seconds. */
+	put(key: string, response: Response, ttlSeconds: number): Promise<void>;
+	/** Delete a cached entry. Returns true if something was removed. */
+	delete(key: string): Promise<boolean>;
+}
+/** Options for the in-memory cache store. */
+export interface InMemoryCacheStoreOptions {
+	/** Maximum number of cached entries. When exceeded, the oldest entry is evicted (LRU). */
+	maxEntries?: number;
+}
+export declare class InMemoryCacheStore implements CacheStore {
+	private entries;
+	private maxEntries;
+	constructor(options?: InMemoryCacheStoreOptions);
+	get(key: string): Promise<Response | null>;
+	put(key: string, response: Response, ttlSeconds: number): Promise<void>;
+	delete(key: string): Promise<boolean>;
+	/** Remove all entries (for testing) */
+	clear(): void;
+	/** Current number of entries (for testing/inspection) */
+	get size(): number;
+}
+export interface CacheConfig extends PolicyConfig {
+	/** Cache TTL in seconds. Default: 300. */
+	ttlSeconds?: number;
+	/** HTTP methods to cache. Default: ["GET"]. Case-insensitive. */
+	methods?: string[];
+	/** Custom cache key builder. Supports async for body-based keys. Default: method + url (+ body hash for POST/PUT/PATCH). */
+	cacheKeyFn?: (c: Context) => string | Promise<string>;
+	/** Only cache responses with these status codes. When set, responses with other statuses are not cached (5xx is always excluded regardless). */
+	cacheableStatuses?: number[];
+	/** Vary cache key on these request headers. */
+	varyHeaders?: string[];
+	/** Storage backend. Default: InMemoryCacheStore. */
+	store?: CacheStore;
+	/** Respect upstream Cache-Control directives. Default: true. */
+	respectCacheControl?: boolean;
+	/** Response header name for cache status (HIT/MISS/BYPASS/SKIP). Default: `"x-cache"`. */
+	cacheStatusHeader?: string;
+	/** Cache-Control directives that trigger a bypass. Matched at the directive level, not substring. Default: `["no-store", "no-cache"]`. */
+	bypassDirectives?: string[];
+}
+/**
+ * Cache upstream responses to reduce latency and load.
+ *
+ * Sets a cache status header on **every** response:
+ * - `HIT` — served from cache
+ * - `MISS` — fetched from upstream, now cached
+ * - `BYPASS` — upstream Cache-Control directive prevented caching
+ * - `SKIP` — not eligible for caching (wrong method or server error status)
+ *
+ * Server error responses (5xx) are never cached. Store failures degrade
+ * gracefully via {@link safeCall} — a broken cache store never crashes the
+ * request.
+ *
+ * For methods with a request body (POST, PUT, PATCH), the default cache key
+ * includes a SHA-256 hash of the body to prevent key collisions across
+ * different payloads.
+ *
+ * @param config - Cache TTL, storage backend, and key strategy. All fields optional.
+ * @returns A {@link Policy} at priority 40.
+ *
+ * @example
+ * ```ts
+ * // Simple 5-minute in-memory cache for GET requests
+ * cache({ ttlSeconds: 300 });
+ *
+ * // Cache with Vary on Accept-Language and custom store
+ * cache({
+ *   ttlSeconds: 600,
+ *   varyHeaders: ["accept-language"],
+ *   store: new CacheApiCacheStore(caches.default),
+ * });
+ * ```
+ */
+export declare function cache(config?: CacheConfig): Policy;
+/**
  * Rate limiting policy with pluggable counter storage.
  *
  * @module rate-limit
@@ -357,6 +390,329 @@ export interface GatewayAdapter {
 	waitUntil?: (promise: Promise<unknown>) => void;
 	/** Dispatch a request to a named service binding or sidecar. */
 	dispatchBinding?: (service: string, request: Request) => Promise<Response>;
+}
+/**
+ * Policy trace — structured per-policy trace entries for deep debugging.
+ *
+ * Provides a zero-overhead reporter API (`TraceReporter`) that policies
+ * call to record what they did. When tracing is not active, the reporter
+ * is a no-op constant — no allocations, no Map lookups.
+ *
+ * @module trace
+ */
+/** Auto-captured by the pipeline for every policy when tracing is active. */
+export interface PolicyTraceBaseline {
+	name: string;
+	priority: number;
+	durationMs: number;
+	calledNext: boolean;
+	error: string | null;
+}
+/** Policy-reported detail (cooperative opt-in via `trace()`). */
+export interface PolicyTraceDetail {
+	action: string;
+	data?: Record<string, unknown>;
+}
+/** Combined baseline + optional detail for a single policy. */
+export interface PolicyTraceEntry extends PolicyTraceBaseline {
+	detail?: PolicyTraceDetail;
+}
+/** Full trace payload emitted as the `x-stoma-trace` response header. */
+export interface PolicyTrace {
+	requestId: string;
+	traceId: string;
+	route: string;
+	totalMs: number;
+	entries: PolicyTraceEntry[];
+}
+/**
+ * A trace reporter function. Always callable — no-op when tracing is inactive.
+ *
+ * @param action - Human-readable action string (e.g. `"HIT"`, `"allowed"`).
+ * @param data   - Optional structured context data.
+ */
+export type TraceReporter = (action: string, data?: Record<string, unknown>) => void;
+declare const noopTraceReporter: TraceReporter;
+/**
+ * Get a trace reporter for a specific policy.
+ *
+ * When tracing is active (`_stomaTraceRequested` is truthy), returns a
+ * function that stores the detail on the context. When inactive, returns
+ * {@link noopTraceReporter} — a no-op with zero overhead.
+ *
+ * @param c          - Hono request context.
+ * @param policyName - Policy name used as the Map key.
+ * @returns A {@link TraceReporter} — always callable.
+ */
+export declare function policyTrace(c: Context, policyName: string): TraceReporter;
+declare function isTraceRequested(c: Context): boolean;
+/**
+ * Protocol-agnostic types for multi-runtime policy evaluation.
+ *
+ * These types define the contract between policy logic and protocol runtimes.
+ * The HTTP runtime (Hono-based) uses {@link Policy.handler} directly.
+ * Non-HTTP runtimes (ext_proc, WebSocket) use {@link Policy.evaluate}.
+ *
+ * **Architecture:**
+ * ```
+ *                    ┌─────────────────────────────┐
+ *                    │      Policy Definitions      │
+ *                    │  name, priority, evaluate()  │
+ *                    │    (protocol-agnostic)       │
+ *                    └──────────┬──────────────────┘
+ *                               │
+ *              ┌────────────────┼────────────────┐
+ *              │                │                │
+ *    ┌─────────▼──────┐ ┌──────▼──────┐ ┌──────▼───────┐
+ *    │  HTTP Runtime   │ │  ext_proc   │ │  WebSocket   │
+ *    │  (Hono-based)   │ │  (gRPC)     │ │  Runtime     │
+ *    │ createGateway() │ │             │ │              │
+ *    └────────────────┘ └─────────────┘ └──────────────┘
+ * ```
+ *
+ * Hono powers the HTTP runtime. Other runtimes (ext_proc via gRPC,
+ * WebSocket) are peer implementations — same policy definitions,
+ * different wire protocols.
+ *
+ * @module protocol
+ */
+/**
+ * Lifecycle phases a policy can participate in.
+ *
+ * Maps to:
+ * - **HTTP**: `request-headers` → `request-body` → `response-headers` → `response-body`
+ *   (trailers are N/A for HTTP/1.1; available in HTTP/2)
+ * - **ext_proc**: All 6 phases — Envoy sends each as a `ProcessingRequest`
+ * - **WebSocket**: `request-headers` (upgrade) → `request-body` (per-message)
+ */
+export type ProcessingPhase = "request-headers" | "request-body" | "request-trailers" | "response-headers" | "response-body" | "response-trailers";
+/** Identifies the protocol runtime invoking a policy. */
+export type ProtocolType = "http" | "grpc" | "websocket";
+/**
+ * Protocol-agnostic view of what's being processed.
+ *
+ * Constructed by each runtime from its native message type:
+ * - HTTP runtime builds it from Hono's `Context`
+ * - ext_proc runtime builds it from gRPC `ProcessingRequest`
+ * - WebSocket runtime builds it from the upgrade request or message frame
+ */
+export interface PolicyInput {
+	/** Current processing phase. */
+	phase: ProcessingPhase;
+	/**
+	 * Request method or action.
+	 *
+	 * - HTTP: `"GET"`, `"POST"`, etc.
+	 * - gRPC: Full method name, e.g. `"users.UserService/GetUser"`
+	 */
+	method: string;
+	/**
+	 * Request path or resource identifier.
+	 *
+	 * - HTTP: URL path, e.g. `"/users/123"`
+	 * - gRPC: Service path, e.g. `"/users.UserService/GetUser"`
+	 */
+	path: string;
+	/**
+	 * Headers (HTTP) or metadata (gRPC).
+	 *
+	 * Treat as read-only — express modifications via
+	 * {@link PolicyResult} mutations, not by mutating this object.
+	 */
+	headers: Headers;
+	/**
+	 * Client IP address, extracted by the runtime from protocol-specific
+	 * sources (e.g. `CF-Connecting-IP`, `X-Forwarded-For`, gRPC peer address).
+	 */
+	clientIp?: string;
+	/**
+	 * Message body, present only during body phases.
+	 *
+	 * May be the full buffered body or a streaming chunk, depending on
+	 * the runtime's buffering mode.
+	 */
+	body?: ArrayBuffer | string;
+	/**
+	 * Trailers, present only during trailer phases.
+	 *
+	 * Relevant for gRPC (which uses trailers for status codes and error
+	 * details) and HTTP/2.
+	 */
+	trailers?: Headers;
+	/**
+	 * Cross-policy attribute bag.
+	 *
+	 * Policies read attributes set by upstream policies and set
+	 * attributes for downstream policies via {@link AttributeMutation}.
+	 * Runtime-populated attributes use the `runtime.*` namespace
+	 * (e.g. `runtime.matched_route`, `runtime.upstream_name`).
+	 */
+	attributes: Map<string, unknown>;
+	/** The protocol runtime that constructed this input. */
+	protocol: ProtocolType;
+}
+/**
+ * The outcome of a policy evaluation. Discriminated on `action`.
+ *
+ * - `"continue"` — Allow processing to continue, optionally with mutations.
+ * - `"reject"` — Reject with a structured error response.
+ * - `"immediate-response"` — Short-circuit with a complete non-error response.
+ */
+export type PolicyResult = PolicyContinue | PolicyReject | PolicyImmediateResponse;
+/**
+ * Allow processing to continue, optionally with mutations.
+ *
+ * Equivalent to `await next()` in HTTP middleware, or ext_proc
+ * `CommonResponse` with header/body mutations.
+ */
+export interface PolicyContinue {
+	action: "continue";
+	/** Mutations to apply before continuing to the next policy or upstream. */
+	mutations?: Mutation[];
+}
+/**
+ * Reject the request with a structured error.
+ *
+ * Equivalent to `throw new GatewayError(...)` in HTTP middleware, or
+ * ext_proc `ImmediateResponse` with an error status code.
+ */
+export interface PolicyReject {
+	action: "reject";
+	/** HTTP status code (or gRPC status equivalent). */
+	status: number;
+	/** Machine-readable error code (e.g. `"rate_limited"`, `"unauthorized"`). */
+	code: string;
+	/** Human-readable error message. */
+	message: string;
+	/** Additional headers to include on the error response. */
+	headers?: Record<string, string>;
+}
+/**
+ * Short-circuit with a complete non-error response.
+ *
+ * Used for cache hits, mock responses, redirects — cases where the
+ * policy provides the full response and upstream should not be called.
+ *
+ * Equivalent to returning a `Response` without calling `next()` in
+ * HTTP middleware, or ext_proc `ImmediateResponse` with a success status.
+ */
+export interface PolicyImmediateResponse {
+	action: "immediate-response";
+	/** HTTP status code for the response. */
+	status: number;
+	/** Response headers. */
+	headers?: Record<string, string>;
+	/** Response body. */
+	body?: string | ArrayBuffer;
+}
+/**
+ * A discrete modification to apply to the request or response.
+ * Discriminated on `type`.
+ *
+ * Designed to map cleanly to ext_proc `HeaderMutation`, `BodyMutation`,
+ * and Envoy dynamic metadata.
+ */
+export type Mutation = HeaderMutation | BodyMutation | StatusMutation | AttributeMutation;
+/** Add, remove, or append a header value. */
+export interface HeaderMutation {
+	type: "header";
+	/** `"set"` replaces, `"remove"` deletes, `"append"` adds without replacing. */
+	op: "set" | "remove" | "append";
+	/** Header name (case-insensitive). */
+	name: string;
+	/** Header value. Required for `"set"` and `"append"`, ignored for `"remove"`. */
+	value?: string;
+}
+/** Replace or clear the message body. */
+export interface BodyMutation {
+	type: "body";
+	/** `"replace"` substitutes the body, `"clear"` removes it entirely. */
+	op: "replace" | "clear";
+	/** New body content. Required for `"replace"`, ignored for `"clear"`. */
+	content?: string | ArrayBuffer;
+}
+/**
+ * Modify the response status code.
+ *
+ * Only meaningful during response processing phases. Ignored during
+ * request phases.
+ */
+export interface StatusMutation {
+	type: "status";
+	/** New HTTP status code. */
+	code: number;
+}
+/**
+ * Set a cross-policy attribute.
+ *
+ * Downstream policies see this value in {@link PolicyInput.attributes}.
+ * In ext_proc, this maps to Envoy dynamic metadata.
+ */
+export interface AttributeMutation {
+	type: "attribute";
+	/** Attribute key. Use namespaced keys (e.g. `"auth.user_id"`) to avoid collisions. */
+	key: string;
+	/** Attribute value. */
+	value: unknown;
+}
+/**
+ * Runtime-facing evaluation context provided to policy evaluators.
+ *
+ * This is the base context without typed config — runtimes construct
+ * this from their native request representation. The policy SDK
+ * ({@link definePolicy}) extends this with a typed `config` field
+ * via `PolicyEvalHandlerContext`.
+ */
+export interface PolicyEvalContext {
+	/** Debug logger pre-namespaced to `stoma:policy:{name}`. Always callable. */
+	debug: DebugLogger;
+	/** Trace reporter — always callable, no-op when tracing is not active. */
+	trace: TraceReporter;
+	/** Unique request ID for correlation. */
+	requestId: string;
+	/** W3C trace ID (32-hex). */
+	traceId: string;
+	/** Runtime adapter (stores, waitUntil, etc.). */
+	adapter?: GatewayAdapter;
+}
+/**
+ * Protocol-agnostic policy evaluation entry point.
+ *
+ * Implement this on a {@link Policy} to make it work across all runtimes
+ * (HTTP, ext_proc, WebSocket). The HTTP runtime uses {@link Policy.handler}
+ * directly — `evaluate` is consumed by non-HTTP runtimes.
+ *
+ * Runtimes call `onRequest` for request-phase processing and `onResponse`
+ * for response-phase processing. A policy can implement one or both.
+ *
+ * @example
+ * ```ts
+ * // Protocol-agnostic JWT verification
+ * const evaluator: PolicyEvaluator = {
+ *   onRequest: async (input, ctx) => {
+ *     const auth = input.headers.get("authorization");
+ *     if (!auth) return { action: "reject", status: 401, code: "unauthorized", message: "Missing token" };
+ *     // ... verify token ...
+ *     return { action: "continue", mutations: [
+ *       { type: "header", op: "set", name: "x-user-id", value: claims.sub },
+ *     ]};
+ *   },
+ * };
+ * ```
+ */
+export interface PolicyEvaluator {
+	/**
+	 * Evaluate during request processing phases.
+	 *
+	 * Called for: `request-headers`, `request-body`, `request-trailers`.
+	 */
+	onRequest?: (input: PolicyInput, ctx: PolicyEvalContext) => Promise<PolicyResult>;
+	/**
+	 * Evaluate during response processing phases.
+	 *
+	 * Called for: `response-headers`, `response-body`, `response-trailers`.
+	 */
+	onResponse?: (input: PolicyInput, ctx: PolicyEvalContext) => Promise<PolicyResult>;
 }
 /**
  * Pluggable metrics collection for the gateway pipeline.
@@ -435,6 +791,139 @@ export declare class InMemoryMetricsCollector implements MetricsCollector {
  */
 export declare function toPrometheusText(snapshot: MetricsSnapshot): string;
 /**
+ * Lightweight OpenTelemetry-compatible tracing for edge runtimes.
+ *
+ * Provides span creation, OTLP/HTTP JSON export via `fetch()`, and
+ * head-based sampling — all without any runtime dependencies beyond
+ * the Web Platform APIs available in Cloudflare Workers.
+ *
+ * Follows the OTel data model but uses own lightweight types to avoid
+ * pulling in `@opentelemetry/api` (which is not edge-compatible).
+ *
+ * @module tracing
+ */
+export type SpanKind = "SERVER" | "CLIENT" | "INTERNAL";
+export type SpanStatusCode = "UNSET" | "OK" | "ERROR";
+/** An immutable representation of a completed span. */
+export interface ReadableSpan {
+	traceId: string;
+	spanId: string;
+	parentSpanId?: string;
+	name: string;
+	kind: SpanKind;
+	startTimeMs: number;
+	endTimeMs: number;
+	attributes: Record<string, string | number | boolean>;
+	status: {
+		code: SpanStatusCode;
+		message?: string;
+	};
+	events: SpanEvent[];
+}
+/** A timestamped event recorded during a span's lifetime. */
+export interface SpanEvent {
+	name: string;
+	timeMs: number;
+	attributes?: Record<string, string | number | boolean>;
+}
+/**
+ * Pluggable span exporter interface.
+ *
+ * Implementations ship completed spans to a backend (OTLP collector,
+ * console, or any custom destination). Export is expected to be called
+ * via `waitUntil()` so it does not block the response.
+ */
+export interface SpanExporter {
+	export(spans: ReadableSpan[]): Promise<void>;
+	shutdown?(): Promise<void>;
+}
+/** Configuration for gateway-level tracing. */
+export interface TracingConfig {
+	exporter: SpanExporter;
+	serviceName?: string;
+	serviceVersion?: string;
+	/** Head-based sampling rate [0.0, 1.0]. Default: 1.0 */
+	sampleRate?: number;
+}
+/**
+ * OTel semantic convention attribute keys (HTTP subset).
+ *
+ * Uses the stable HTTP semconv names from the OpenTelemetry specification.
+ * @see https://opentelemetry.io/docs/specs/semconv/http/
+ */
+export declare const SemConv: {
+	readonly HTTP_METHOD: "http.request.method";
+	readonly HTTP_ROUTE: "http.route";
+	readonly HTTP_STATUS_CODE: "http.response.status_code";
+	readonly URL_PATH: "url.path";
+	readonly SERVER_ADDRESS: "server.address";
+};
+/**
+ * Mutable span builder — accumulates attributes, events, and status
+ * during a request lifecycle. Call {@link end} to produce an immutable
+ * {@link ReadableSpan}.
+ */
+export declare class SpanBuilder {
+	readonly name: string;
+	readonly kind: SpanKind;
+	readonly traceId: string;
+	readonly spanId: string;
+	readonly parentSpanId?: string | undefined;
+	readonly startTimeMs: number;
+	private _attributes;
+	private _events;
+	private _status;
+	private _endTimeMs?;
+	constructor(name: string, kind: SpanKind, traceId: string, spanId: string, parentSpanId?: string | undefined, startTimeMs?: number);
+	/** Set a single attribute. Chainable. */
+	setAttribute(key: string, value: string | number | boolean): this;
+	/** Record a timestamped event with optional attributes. Chainable. */
+	addEvent(name: string, attributes?: Record<string, string | number | boolean>): this;
+	/** Set the span status. Chainable. */
+	setStatus(code: SpanStatusCode, message?: string): this;
+	/**
+	 * Finalize the span and return an immutable {@link ReadableSpan}.
+	 *
+	 * Sets `endTimeMs` on first call; subsequent calls return the same
+	 * snapshot with defensive copies of mutable fields.
+	 */
+	end(): ReadableSpan;
+}
+/**
+ * OTLP/HTTP JSON span exporter.
+ *
+ * Ships spans to an OpenTelemetry Collector (or compatible endpoint)
+ * using `fetch()` with the OTLP JSON encoding. Designed for edge
+ * runtimes — no gRPC, no protobuf, no Node.js dependencies.
+ *
+ * Export calls should be dispatched via `waitUntil()` so they do not
+ * block the response path.
+ */
+export declare class OTLPSpanExporter implements SpanExporter {
+	private readonly endpoint;
+	private readonly headers;
+	private readonly timeoutMs;
+	private readonly serviceName;
+	private readonly serviceVersion?;
+	constructor(config: {
+		endpoint: string;
+		headers?: Record<string, string>;
+		timeoutMs?: number;
+		serviceName?: string;
+		serviceVersion?: string;
+	});
+	export(spans: ReadableSpan[]): Promise<void>;
+}
+/**
+ * Console span exporter for development and debugging.
+ *
+ * Logs each span to `console.debug()` with a compact one-line format
+ * showing name, kind, duration, trace/span IDs, and status.
+ */
+export declare class ConsoleSpanExporter implements SpanExporter {
+	export(spans: ReadableSpan[]): Promise<void>;
+}
+/**
  * Core type definitions for the stoma gateway.
  *
  * All gateway configuration is expressed through these types. The main entry
@@ -444,14 +933,21 @@ export declare function toPrometheusText(snapshot: MetricsSnapshot): string;
  *
  * @module types
  */
-/** Top-level gateway configuration */
-export interface GatewayConfig {
+/**
+ * Top-level gateway configuration.
+ *
+ * @typeParam TBindings - Worker bindings type (e.g. your `Env` interface).
+ *   Defaults to `Record<string, unknown>` so `service` on
+ *   {@link ServiceBindingUpstream} accepts any string. When you pass your
+ *   own Env type, `service` autocompletes to valid binding names.
+ */
+export interface GatewayConfig<TBindings = Record<string, unknown>> {
 	/** Gateway name, used in logs and metrics */
 	name?: string;
 	/** Base path prefix for all routes (e.g. "/api") */
 	basePath?: string;
 	/** Route definitions */
-	routes: RouteConfig[];
+	routes: RouteConfig<TBindings>[];
 	/** Global policies applied to all routes */
 	policies?: Policy[];
 	/** Global error handler */
@@ -526,6 +1022,30 @@ export interface GatewayConfig {
 	 * ```
 	 */
 	debugHeaders?: boolean | DebugHeadersConfig;
+	/**
+	 * OpenTelemetry-compatible distributed tracing.
+	 *
+	 * When configured, the gateway creates a root SERVER span per request,
+	 * INTERNAL child spans per policy, and CLIENT child spans for upstream
+	 * calls. Spans are exported asynchronously via `adapter.waitUntil()`.
+	 *
+	 * Zero overhead when not configured — no span objects are allocated.
+	 *
+	 * @example
+	 * ```ts
+	 * import { createGateway, OTLPSpanExporter } from "@homegrower-club/stoma";
+	 *
+	 * createGateway({
+	 *   tracing: {
+	 *     exporter: new OTLPSpanExporter({ endpoint: "https://otel-collector/v1/traces" }),
+	 *     serviceName: "my-api",
+	 *     sampleRate: 0.1,
+	 *   },
+	 *   // ...routes
+	 * });
+	 * ```
+	 */
+	tracing?: TracingConfig;
 }
 /** Configuration for client-requested debug headers. */
 export interface DebugHeadersConfig {
@@ -534,26 +1054,38 @@ export interface DebugHeadersConfig {
 	/** Allowlist of debug header names clients can request. When set, only these headers are emitted. Default: all. */
 	allow?: string[];
 }
-/** Individual route configuration */
-export interface RouteConfig {
+/**
+ * Individual route configuration.
+ *
+ * @typeParam TBindings - Worker bindings type, propagated from {@link GatewayConfig}.
+ */
+export interface RouteConfig<TBindings = Record<string, unknown>> {
 	/** Route path pattern (Hono syntax, e.g. "/users/:id") */
 	path: string;
 	/** Allowed HTTP methods. Defaults to all. */
 	methods?: HttpMethod[];
 	/** Pipeline to process this route */
-	pipeline: PipelineConfig;
+	pipeline: PipelineConfig<TBindings>;
 	/** Route-level metadata for logging/observability */
 	metadata?: Record<string, unknown>;
 }
-/** Pipeline: ordered chain of policies leading to an upstream */
-export interface PipelineConfig {
+/**
+ * Pipeline: ordered chain of policies leading to an upstream.
+ *
+ * @typeParam TBindings - Worker bindings type, propagated from {@link RouteConfig}.
+ */
+export interface PipelineConfig<TBindings = Record<string, unknown>> {
 	/** Policies executed in order before the upstream */
 	policies?: Policy[];
 	/** Upstream target configuration */
-	upstream: UpstreamConfig;
+	upstream: UpstreamConfig<TBindings>;
 }
-/** Upstream target — where the request is forwarded */
-export type UpstreamConfig = UrlUpstream | ServiceBindingUpstream | HandlerUpstream;
+/**
+ * Upstream target — where the request is forwarded.
+ *
+ * @typeParam TBindings - Worker bindings type, constrains {@link ServiceBindingUpstream.service}.
+ */
+export type UpstreamConfig<TBindings = Record<string, unknown>> = UrlUpstream | ServiceBindingUpstream<TBindings> | HandlerUpstream;
 /**
  * Proxy to a remote URL. The gateway clones the request, rewrites headers,
  * and forwards it via `fetch()`. SSRF protection ensures the rewritten URL
@@ -571,11 +1103,14 @@ export interface UrlUpstream {
 /**
  * Forward to another Cloudflare Worker via a Service Binding.
  * The binding must be configured in the consumer's `wrangler.toml`.
+ *
+ * @typeParam TBindings - Worker bindings type. When provided, `service`
+ *   autocompletes to valid binding names from your Env interface.
  */
-export interface ServiceBindingUpstream {
+export interface ServiceBindingUpstream<TBindings = Record<string, unknown>> {
 	type: "service-binding";
 	/** Name of the Service Binding in `wrangler.toml` (e.g. `"AUTH_SERVICE"`). */
-	service: string;
+	service: Extract<keyof TBindings, string>;
 	/** Rewrite the path before forwarding to the bound service. */
 	rewritePath?: (path: string) => string;
 }
@@ -630,6 +1165,62 @@ export interface GatewayInstance {
 	/** Internal registry for admin introspection */
 	_registry: GatewayRegistry;
 }
+/**
+ * Route scoping — group routes under a shared path prefix with shared policies.
+ *
+ * `scope()` transforms an array of {@link RouteConfig} by prepending a path
+ * prefix, prepending shared policies, and merging metadata. The output is a
+ * flat `RouteConfig[]` that can be spread directly into `GatewayConfig.routes`.
+ *
+ * Nesting works naturally — pass the output of an inner `scope()` as the
+ * `routes` of an outer `scope()`.
+ *
+ * @module scope
+ *
+ * @example
+ * ```ts
+ * import { createGateway, scope, jwtAuth, rateLimit } from "@homegrower-club/stoma";
+ *
+ * const gateway = createGateway({
+ *   routes: [
+ *     ...scope({
+ *       prefix: "/api/v1",
+ *       policies: [jwtAuth({ secret: "..." })],
+ *       routes: [
+ *         { path: "/users", pipeline: { upstream: { type: "url", target: "https://users.internal" } } },
+ *         { path: "/orders", pipeline: { upstream: { type: "url", target: "https://orders.internal" } } },
+ *       ],
+ *     }),
+ *   ],
+ * });
+ * ```
+ */
+/**
+ * Configuration for a route scope (group).
+ *
+ * @typeParam TBindings - Worker bindings type, propagated to child routes.
+ */
+export interface ScopeConfig<TBindings = Record<string, unknown>> {
+	/** Path prefix prepended to all child routes (e.g. "/api/v1") */
+	prefix: string;
+	/** Policies prepended to every child route's pipeline policies */
+	policies?: Policy[];
+	/** Child routes to scope */
+	routes: RouteConfig<TBindings>[];
+	/** Metadata merged into every child route (child wins on conflict) */
+	metadata?: Record<string, unknown>;
+}
+/**
+ * Group routes under a shared path prefix with shared policies and metadata.
+ *
+ * Returns a flat array of transformed {@link RouteConfig} objects ready to be
+ * spread into `GatewayConfig.routes`.
+ *
+ * @typeParam TBindings - Worker bindings type, propagated to child routes.
+ * @param config - Scope configuration.
+ * @returns Array of route configs with prefix, policies, and metadata applied.
+ */
+export declare function scope<TBindings = Record<string, unknown>>(config: ScopeConfig<TBindings>): RouteConfig<TBindings>[];
 declare class TestAdapter implements GatewayAdapter {
 	private promises;
 	/**
@@ -761,66 +1352,14 @@ declare function parseDebugRequest(c: Context, requestHeaderName: string, allow?
 declare function getCollectedDebugHeaders(c: Context): Map<string, string> | undefined;
 declare function isDebugRequested(c: Context): boolean;
 /**
- * Policy trace — structured per-policy trace entries for deep debugging.
- *
- * Provides a zero-overhead reporter API (`TraceReporter`) that policies
- * call to record what they did. When tracing is not active, the reporter
- * is a no-op constant — no allocations, no Map lookups.
- *
- * @module trace
- */
-/** Auto-captured by the pipeline for every policy when tracing is active. */
-export interface PolicyTraceBaseline {
-	name: string;
-	priority: number;
-	durationMs: number;
-	calledNext: boolean;
-	error: string | null;
-}
-/** Policy-reported detail (cooperative opt-in via `trace()`). */
-export interface PolicyTraceDetail {
-	action: string;
-	data?: Record<string, unknown>;
-}
-/** Combined baseline + optional detail for a single policy. */
-export interface PolicyTraceEntry extends PolicyTraceBaseline {
-	detail?: PolicyTraceDetail;
-}
-/** Full trace payload emitted as the `x-stoma-trace` response header. */
-export interface PolicyTrace {
-	requestId: string;
-	traceId: string;
-	route: string;
-	totalMs: number;
-	entries: PolicyTraceEntry[];
-}
-/**
- * A trace reporter function. Always callable — no-op when tracing is inactive.
- *
- * @param action - Human-readable action string (e.g. `"HIT"`, `"allowed"`).
- * @param data   - Optional structured context data.
- */
-export type TraceReporter = (action: string, data?: Record<string, unknown>) => void;
-declare const noopTraceReporter: TraceReporter;
-/**
- * Get a trace reporter for a specific policy.
- *
- * When tracing is active (`_stomaTraceRequested` is truthy), returns a
- * function that stores the detail on the context. When inactive, returns
- * {@link noopTraceReporter} — a no-op with zero overhead.
- *
- * @param c          - Hono request context.
- * @param policyName - Policy name used as the Map key.
- * @returns A {@link TraceReporter} — always callable.
- */
-export declare function policyTrace(c: Context, policyName: string): TraceReporter;
-declare function isTraceRequested(c: Context): boolean;
-/**
  * `definePolicy()` — full convenience wrapper for policy authors.
  *
  * Combines {@link resolveConfig}, {@link policyDebug}, and {@link withSkip}
  * into a single declarative API. Takes a {@link PolicyDefinition} and returns
  * a factory function `(config?) => Policy`.
+ *
+ * Supports both HTTP-specific handlers (Hono middleware) and protocol-agnostic
+ * evaluators for multi-runtime policies (ext_proc, WebSocket).
  *
  * @module define-policy
  */
@@ -841,6 +1380,17 @@ export interface PolicyHandlerContext<TConfig> {
 	gateway: PolicyContext | undefined;
 }
 /**
+ * Context injected into `definePolicy` evaluate handlers.
+ *
+ * Parallel to {@link PolicyHandlerContext} but protocol-agnostic —
+ * no Hono types. Extends the runtime-facing {@link PolicyEvalContext}
+ * with the fully-merged, typed config.
+ */
+export interface PolicyEvalHandlerContext<TConfig> extends PolicyEvalContext {
+	/** Fully merged config (defaults + user overrides). */
+	config: TConfig;
+}
+/**
  * Declarative policy definition passed to {@link definePolicy}.
  */
 export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
@@ -859,10 +1409,53 @@ export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
 	 */
 	validate?: (config: TConfig) => void;
 	/**
-	 * The policy handler. Receives the Hono context, `next`, and a
+	 * The HTTP policy handler. Receives the Hono context, `next`, and a
 	 * {@link PolicyHandlerContext} with config, debug, and gateway context.
+	 *
+	 * Used by the HTTP runtime ({@link createGateway}).
 	 */
 	handler: (c: Context, next: Next, ctx: PolicyHandlerContext<TConfig>) => Promise<void> | void;
+	/**
+	 * Protocol-agnostic evaluator for multi-runtime policies.
+	 *
+	 * Used by non-HTTP runtimes (ext_proc, WebSocket). The HTTP runtime
+	 * uses {@link handler} and ignores this field.
+	 *
+	 * Implement this alongside `handler` to make a policy work across
+	 * all runtimes. The `config` is pre-merged and injected into
+	 * {@link PolicyEvalHandlerContext}.
+	 *
+	 * @example
+	 * ```ts
+	 * const myPolicy = definePolicy<MyConfig>({
+	 *   name: "my-policy",
+	 *   priority: Priority.AUTH,
+	 *   phases: ["request-headers"],
+	 *   handler: async (c, next, { config }) => { ... },
+	 *   evaluate: {
+	 *     onRequest: async (input, { config }) => {
+	 *       const token = input.headers.get("authorization");
+	 *       if (!token) return { action: "reject", status: 401, code: "unauthorized", message: "Missing" };
+	 *       return { action: "continue" };
+	 *     },
+	 *   },
+	 * });
+	 * ```
+	 */
+	evaluate?: {
+		onRequest?: (input: PolicyInput, ctx: PolicyEvalHandlerContext<TConfig>) => Promise<PolicyResult>;
+		onResponse?: (input: PolicyInput, ctx: PolicyEvalHandlerContext<TConfig>) => Promise<PolicyResult>;
+	};
+	/**
+	 * Processing phases this policy participates in.
+	 *
+	 * Used by phase-based runtimes (ext_proc) to skip policies that
+	 * don't apply to the current phase. Passed through to the
+	 * returned {@link Policy.phases}.
+	 *
+	 * Default: `["request-headers"]`.
+	 */
+	phases?: ProcessingPhase[];
 }
 /**
  * Create a policy factory from a declarative definition.
@@ -938,57 +1531,6 @@ export declare function createPolicyTestHarness(policy: Policy, options?: Policy
 	/** Make a test request through the policy pipeline. */
 	request: (reqPath: string, init?: RequestInit) => Response | Promise<Response>;
 };
-/**
- * Proxy policy — per-route header manipulation and timeout control.
- *
- * @module proxy
- */
-export interface ProxyPolicyConfig extends PolicyConfig {
-	/** Headers to add to the proxied request */
-	headers?: Record<string, string>;
-	/** Headers to strip from the proxied request */
-	stripHeaders?: string[];
-	/** Timeout in milliseconds. Default: 30000. */
-	timeout?: number;
-	/**
-	 * Whether to preserve the inbound Host header when proxying to URL upstreams.
-	 * Default: false (Host is rewritten to the upstream target host).
-	 */
-	preserveHost?: boolean;
-}
-/**
- * Apply additional header manipulation and timeout control to the upstream call.
- *
- * Use this when you need per-route header injection, header stripping, or
- * a custom timeout that wraps the upstream dispatch. The core proxy
- * forwarding (URL, Service Binding, Handler) is handled by the gateway's
- * upstream handler — this policy layers on top of it.
- *
- * `preserveHost` applies to URL upstreams, instructing the upstream handler
- * not to rewrite the Host header to the target host.
- *
- * Handles Cloudflare Workers' immutable `Request.headers` by cloning the
- * request when header modifications are needed.
- *
- * @param config - Headers to add/strip, timeout, and host preservation. All fields optional.
- * @returns A {@link Policy} at priority 95 (runs late, just before the upstream call).
- *
- * @example
- * ```ts
- * import { proxy } from "@homegrower-club/stoma/policies";
- *
- * // Add an internal auth header and strip cookies for the upstream
- * proxy({
- *   headers: { "x-internal-key": "secret-123" },
- *   stripHeaders: ["cookie", "x-forwarded-for"],
- *   timeout: 10_000,
- * });
- *
- * // Preserve the original Host header for virtual-host routing
- * proxy({ preserveHost: true });
- * ```
- */
-export declare function proxy(config?: ProxyPolicyConfig): Policy;
 export interface MockConfig extends PolicyConfig {
 	/** HTTP status code to return. Default: 200. */
 	status?: number;
@@ -1042,64 +1584,57 @@ export interface MockConfig extends PolicyConfig {
  * ```
  */
 export declare const mock: (config?: MockConfig | undefined) => Policy;
-/** Clear the unified JWKS cache. Exported for testing. */
-export declare function clearJwksCache(): void;
-export interface JwtAuthConfig extends PolicyConfig {
-	/** JWT secret for HMAC verification */
-	secret?: string;
-	/** JWKS endpoint URL (e.g. Supabase, Auth0) */
-	jwksUrl?: string;
-	/** Expected JWT issuer */
-	issuer?: string;
-	/** Expected JWT audience */
-	audience?: string;
-	/** Header to read the token from. Default: "Authorization" */
-	headerName?: string;
-	/** Token prefix. Default: "Bearer" */
-	tokenPrefix?: string;
-	/** Claims to inject into request headers for upstream consumption */
-	forwardClaims?: Record<string, string>;
-	/** JWKS cache TTL in milliseconds. Default: 300000 (5 minutes). */
-	jwksCacheTtlMs?: number;
-	/** JWKS fetch timeout in milliseconds. Default: 10000 (10 seconds). */
-	jwksTimeoutMs?: number;
-	/** Clock skew tolerance in seconds for expiry checks. Default: 0. */
-	clockSkewSeconds?: number;
-	/** Require the `exp` claim to be present. Default: false. */
-	requireExp?: boolean;
+/**
+ * Proxy policy — per-route header manipulation and timeout control.
+ *
+ * @module proxy
+ */
+export interface ProxyPolicyConfig extends PolicyConfig {
+	/** Headers to add to the proxied request */
+	headers?: Record<string, string>;
+	/** Headers to strip from the proxied request */
+	stripHeaders?: string[];
+	/** Timeout in milliseconds. Default: 30000. */
+	timeout?: number;
+	/**
+	 * Whether to preserve the inbound Host header when proxying to URL upstreams.
+	 * Default: false (Host is rewritten to the upstream target host).
+	 */
+	preserveHost?: boolean;
 }
 /**
- * Validate JWT tokens and optionally forward claims as upstream headers.
+ * Apply additional header manipulation and timeout control to the upstream call.
  *
- * Supports both HMAC (shared secret) and RSA (JWKS endpoint) verification.
- * JWKS responses are cached for 5 minutes. The `none` algorithm is always
- * rejected to prevent signature bypass attacks.
+ * Use this when you need per-route header injection, header stripping, or
+ * a custom timeout that wraps the upstream dispatch. The core proxy
+ * forwarding (URL, Service Binding, Handler) is handled by the gateway's
+ * upstream handler — this policy layers on top of it.
  *
- * @param config - JWT authentication settings. Requires either `secret` (HMAC) or `jwksUrl` (RSA).
- * @returns A {@link Policy} at priority 10 (runs early, before rate limiting).
+ * `preserveHost` applies to URL upstreams, instructing the upstream handler
+ * not to rewrite the Host header to the target host.
+ *
+ * Handles Cloudflare Workers' immutable `Request.headers` by cloning the
+ * request when header modifications are needed.
+ *
+ * @param config - Headers to add/strip, timeout, and host preservation. All fields optional.
+ * @returns A {@link Policy} at priority 95 (runs late, just before the upstream call).
  *
  * @example
  * ```ts
- * // HMAC verification with a shared secret
- * createGateway({
- *   routes: [{
- *     path: "/api/*",
- *     pipeline: {
- *       policies: [jwtAuth({ secret: env.JWT_SECRET })],
- *       upstream: { type: "url", target: "https://backend.internal" },
- *     },
- *   }],
+ * import { proxy } from "@homegrower-club/stoma/policies";
+ *
+ * // Add an internal auth header and strip cookies for the upstream
+ * proxy({
+ *   headers: { "x-internal-key": "secret-123" },
+ *   stripHeaders: ["cookie", "x-forwarded-for"],
+ *   timeout: 10_000,
  * });
  *
- * // JWKS verification (e.g. Supabase, Auth0) with claim forwarding
- * jwtAuth({
- *   jwksUrl: "https://your-project.supabase.co/auth/v1/.well-known/jwks.json",
- *   issuer: "https://your-project.supabase.co/auth/v1",
- *   forwardClaims: { sub: "x-user-id", email: "x-user-email" },
- * });
+ * // Preserve the original Host header for virtual-host routing
+ * proxy({ preserveHost: true });
  * ```
  */
-export declare function jwtAuth(config: JwtAuthConfig): Policy;
+export declare function proxy(config?: ProxyPolicyConfig): Policy;
 export interface ApiKeyAuthConfig extends PolicyConfig {
 	/** Header name to read the API key from. Default: "X-API-Key" */
 	headerName?: string;
@@ -1183,50 +1718,31 @@ export interface BasicAuthConfig extends PolicyConfig {
  * ```
  */
 export declare const basicAuth: (config?: BasicAuthConfig | undefined) => Policy;
-export interface OAuth2Config extends PolicyConfig {
-	/** OAuth2 token introspection endpoint (RFC 7662). */
-	introspectionUrl?: string;
-	/** Client ID for authenticating with the introspection endpoint. */
-	clientId?: string;
-	/** Client secret for authenticating with the introspection endpoint. */
-	clientSecret?: string;
-	/** Local validation function as alternative to introspection. Takes precedence if both provided. */
-	localValidate?: (token: string) => boolean | Promise<boolean>;
-	/** Where to look for the token. Default: "header". */
-	tokenLocation?: "header" | "query";
-	/** Header name when tokenLocation is "header". Default: "authorization". */
-	headerName?: string;
-	/** Prefix to strip from header value. Default: "Bearer". */
-	headerPrefix?: string;
-	/** Query param name when tokenLocation is "query". Default: "access_token". */
-	queryParam?: string;
-	/** Map introspection response fields to request headers. Only applies with introspection. */
-	forwardTokenInfo?: Record<string, string>;
-	/** Cache introspection results for this many seconds. Default: 0 (no cache). */
-	cacheTtlSeconds?: number;
-	/** Required scopes — token must have ALL of these (space-separated scope string). */
-	requiredScopes?: string[];
-	/** Introspection endpoint fetch timeout in milliseconds. Default: 5000. */
-	introspectionTimeoutMs?: number;
+/** Clear the unified JWKS cache. Exported for testing. */
+export declare function clearJwksCache(): void;
+export interface GenerateHttpSignatureConfig extends PolicyConfig {
+	/** Key identifier included in signature parameters. */
+	keyId: string;
+	/** HMAC secret for signing. */
+	secret?: string;
+	/** RSA private key as JWK. */
+	privateKey?: JsonWebKey;
+	/** Signing algorithm identifier (e.g. "hmac-sha256", "rsa-pss-sha512", "rsa-v1_5-sha256"). */
+	algorithm: string;
+	/** Components to include in signature. Default: ["@method", "@path", "@authority"]. */
+	components?: string[];
+	/** Signature header name. Default: "Signature". */
+	signatureHeaderName?: string;
+	/** Signature-Input header name. Default: "Signature-Input". */
+	signatureInputHeaderName?: string;
+	/** Signature label. Default: "sig1". */
+	label?: string;
+	/** Signature expiry in seconds from creation. Optional. */
+	expires?: number;
+	/** Include a nonce parameter. Default: false. */
+	nonce?: boolean;
 }
-export declare const oauth2: (config?: OAuth2Config | undefined) => Policy;
-export interface RbacConfig extends PolicyConfig {
-	/** Header name containing the user's role(s). Default: "x-user-role". */
-	roleHeader?: string;
-	/** Allowed roles — pass if user has ANY of these. */
-	roles?: string[];
-	/** Required permissions — pass if user has ALL of these. */
-	permissions?: string[];
-	/** Header containing permissions. Default: "x-user-permissions". */
-	permissionHeader?: string;
-	/** Delimiter for permission string. Default: ",". */
-	permissionDelimiter?: string;
-	/** Delimiter for role string. Default: ",". */
-	roleDelimiter?: string;
-	/** Custom deny message. Default: "Access denied: insufficient permissions". */
-	denyMessage?: string;
-}
-export declare const rbac: (config?: RbacConfig | undefined) => Policy;
+export declare const generateHttpSignature: (config?: GenerateHttpSignatureConfig | undefined) => Policy;
 export interface GenerateJwtConfig extends PolicyConfig {
 	/** Signing algorithm */
 	algorithm: "HS256" | "HS384" | "HS512" | "RS256" | "RS384" | "RS512";
@@ -1301,29 +1817,106 @@ export interface JwsConfig extends PolicyConfig {
  * ```
  */
 export declare const jws: (config?: JwsConfig | undefined) => Policy;
-export interface GenerateHttpSignatureConfig extends PolicyConfig {
-	/** Key identifier included in signature parameters. */
-	keyId: string;
-	/** HMAC secret for signing. */
+export interface JwtAuthConfig extends PolicyConfig {
+	/** JWT secret for HMAC verification */
 	secret?: string;
-	/** RSA private key as JWK. */
-	privateKey?: JsonWebKey;
-	/** Signing algorithm identifier (e.g. "hmac-sha256", "rsa-pss-sha512", "rsa-v1_5-sha256"). */
-	algorithm: string;
-	/** Components to include in signature. Default: ["@method", "@path", "@authority"]. */
-	components?: string[];
-	/** Signature header name. Default: "Signature". */
-	signatureHeaderName?: string;
-	/** Signature-Input header name. Default: "Signature-Input". */
-	signatureInputHeaderName?: string;
-	/** Signature label. Default: "sig1". */
-	label?: string;
-	/** Signature expiry in seconds from creation. Optional. */
-	expires?: number;
-	/** Include a nonce parameter. Default: false. */
-	nonce?: boolean;
+	/** JWKS endpoint URL (e.g. Supabase, Auth0) */
+	jwksUrl?: string;
+	/** Expected JWT issuer */
+	issuer?: string;
+	/** Expected JWT audience */
+	audience?: string;
+	/** Header to read the token from. Default: "Authorization" */
+	headerName?: string;
+	/** Token prefix. Default: "Bearer" */
+	tokenPrefix?: string;
+	/** Claims to inject into request headers for upstream consumption */
+	forwardClaims?: Record<string, string>;
+	/** JWKS cache TTL in milliseconds. Default: 300000 (5 minutes). */
+	jwksCacheTtlMs?: number;
+	/** JWKS fetch timeout in milliseconds. Default: 10000 (10 seconds). */
+	jwksTimeoutMs?: number;
+	/** Clock skew tolerance in seconds for expiry checks. Default: 0. */
+	clockSkewSeconds?: number;
+	/** Require the `exp` claim to be present. Default: false. */
+	requireExp?: boolean;
 }
-export declare const generateHttpSignature: (config?: GenerateHttpSignatureConfig | undefined) => Policy;
+/**
+ * Validate JWT tokens and optionally forward claims as upstream headers.
+ *
+ * Supports both HMAC (shared secret) and RSA (JWKS endpoint) verification.
+ * JWKS responses are cached for 5 minutes. The `none` algorithm is always
+ * rejected to prevent signature bypass attacks.
+ *
+ * @param config - JWT authentication settings. Requires either `secret` (HMAC) or `jwksUrl` (RSA).
+ * @returns A {@link Policy} at priority 10 (runs early, before rate limiting).
+ *
+ * @example
+ * ```ts
+ * // HMAC verification with a shared secret
+ * createGateway({
+ *   routes: [{
+ *     path: "/api/*",
+ *     pipeline: {
+ *       policies: [jwtAuth({ secret: env.JWT_SECRET })],
+ *       upstream: { type: "url", target: "https://backend.internal" },
+ *     },
+ *   }],
+ * });
+ *
+ * // JWKS verification (e.g. Supabase, Auth0) with claim forwarding
+ * jwtAuth({
+ *   jwksUrl: "https://your-project.supabase.co/auth/v1/.well-known/jwks.json",
+ *   issuer: "https://your-project.supabase.co/auth/v1",
+ *   forwardClaims: { sub: "x-user-id", email: "x-user-email" },
+ * });
+ * ```
+ */
+export declare function jwtAuth(config: JwtAuthConfig): Policy;
+export interface OAuth2Config extends PolicyConfig {
+	/** OAuth2 token introspection endpoint (RFC 7662). */
+	introspectionUrl?: string;
+	/** Client ID for authenticating with the introspection endpoint. */
+	clientId?: string;
+	/** Client secret for authenticating with the introspection endpoint. */
+	clientSecret?: string;
+	/** Local validation function as alternative to introspection. Takes precedence if both provided. */
+	localValidate?: (token: string) => boolean | Promise<boolean>;
+	/** Where to look for the token. Default: "header". */
+	tokenLocation?: "header" | "query";
+	/** Header name when tokenLocation is "header". Default: "authorization". */
+	headerName?: string;
+	/** Prefix to strip from header value. Default: "Bearer". */
+	headerPrefix?: string;
+	/** Query param name when tokenLocation is "query". Default: "access_token". */
+	queryParam?: string;
+	/** Map introspection response fields to request headers. Only applies with introspection. */
+	forwardTokenInfo?: Record<string, string>;
+	/** Cache introspection results for this many seconds. Default: 0 (no cache). */
+	cacheTtlSeconds?: number;
+	/** Required scopes — token must have ALL of these (space-separated scope string). */
+	requiredScopes?: string[];
+	/** Introspection endpoint fetch timeout in milliseconds. Default: 5000. */
+	introspectionTimeoutMs?: number;
+}
+export declare const oauth2: (config?: OAuth2Config | undefined) => Policy;
+export interface RbacConfig extends PolicyConfig {
+	/** Header name containing the user's role(s). Default: "x-user-role". */
+	roleHeader?: string;
+	/** Allowed roles — pass if user has ANY of these. */
+	roles?: string[];
+	/** Required permissions — pass if user has ALL of these. */
+	permissions?: string[];
+	/** Header containing permissions. Default: "x-user-permissions". */
+	permissionHeader?: string;
+	/** Delimiter for permission string. Default: ",". */
+	permissionDelimiter?: string;
+	/** Delimiter for role string. Default: ",". */
+	roleDelimiter?: string;
+	/** Custom deny message. Default: "Access denied: insufficient permissions". */
+	denyMessage?: string;
+}
+export declare const rbac: (config?: RbacConfig | undefined) => Policy;
 export interface HttpSignatureKey {
 	/** HMAC secret. */
 	secret?: string;
@@ -1347,36 +1940,53 @@ export interface VerifyHttpSignatureConfig extends PolicyConfig {
 	label?: string;
 }
 export declare const verifyHttpSignature: (config?: VerifyHttpSignatureConfig | undefined) => Policy;
-export interface IpFilterConfig extends PolicyConfig {
-	/** IPs or CIDR ranges to allow (allowlist mode). */
-	allow?: string[];
-	/** IPs or CIDR ranges to deny (denylist mode). */
-	deny?: string[];
-	/** Filter mode. Default: "deny". */
-	mode?: "allow" | "deny";
-	/** Ordered list of headers to inspect for the client IP. Default: `["cf-connecting-ip", "x-forwarded-for"]`. */
-	ipHeaders?: string[];
+export interface RoutingRule {
+	/** Human-readable rule name for debugging. */
+	name?: string;
+	/** Condition that determines if this rule applies. */
+	condition: (c: Context) => boolean | Promise<boolean>;
+	/** Target upstream URL to route to. */
+	target: string;
+	/** Optional path rewrite function. */
+	rewritePath?: (path: string) => string;
+	/** Optional headers to add to the upstream request. */
+	headers?: Record<string, string>;
+}
+export interface DynamicRoutingConfig extends PolicyConfig {
+	/** Ordered list of routing rules. First match wins. Required. */
+	rules: Array<RoutingRule>;
+	/** If true and no rule matches, call next() normally. If false, throw 404. Default: true. */
+	fallthrough?: boolean;
 }
 /**
- * Block or allow requests based on client IP address or CIDR range.
+ * Evaluate routing rules and expose the first match on request context.
  *
- * Supports both allowlist and denylist modes. Client IP is extracted from
- * `CF-Connecting-IP` (Cloudflare) or `X-Forwarded-For`. Accepts individual
- * IPs (`192.168.1.1`) and CIDR notation (`10.0.0.0/8`).
+ * Evaluates rules in order. The first matching rule's target, rewritePath,
+ * and headers are set as context variables for downstream consumption.
  *
- * @param config - IP filter rules and mode selection.
- * @returns A {@link Policy} at priority 1 (runs before everything else).
+ * @param config - Routing rules and fallthrough behavior.
+ * @returns A {@link Policy} at priority 50 (REQUEST_TRANSFORM).
  *
  * @example
  * ```ts
- * // Allow only internal IPs
- * ipFilter({ mode: "allow", allow: ["10.0.0.0/8", "172.16.0.0/12"] });
- *
- * // Block known bad actors
- * ipFilter({ deny: ["203.0.113.0/24", "198.51.100.42"] });
+ * dynamicRouting({
+ *   rules: [
+ *     {
+ *       name: "v2-api",
+ *       condition: (c) => c.req.header("x-api-version") === "2",
+ *       target: "https://api-v2.internal",
+ *       rewritePath: (path) => path.replace("/api/", "/v2/"),
+ *     },
+ *     {
+ *       name: "default",
+ *       condition: () => true,
+ *       target: "https://api-v1.internal",
+ *     },
+ *   ],
+ * });
  * ```
  */
-export declare function ipFilter(config: IpFilterConfig): Policy;
+export declare const dynamicRouting: (config?: DynamicRoutingConfig | undefined) => Policy;
 export interface GeoIpFilterConfig extends PolicyConfig {
 	/** Country codes to allow (e.g. `["US", "CA", "GB"]`). Used in "allow" mode. */
 	allow?: string[];
@@ -1407,46 +2017,132 @@ export interface GeoIpFilterConfig extends PolicyConfig {
  * ```
  */
 export declare function geoIpFilter(config?: GeoIpFilterConfig): Policy;
-export interface SslEnforceConfig extends PolicyConfig {
-	/** Redirect HTTP to HTTPS (301). If false, block with 403. Default: true. */
-	redirect?: boolean;
-	/** HSTS max-age in seconds. Default: 31536000 (1 year). */
-	hstsMaxAge?: number;
-	/** Add includeSubDomains to HSTS header. Default: false. */
-	includeSubDomains?: boolean;
-	/** Add preload to HSTS header. Default: false. */
-	preload?: boolean;
+export interface HttpCalloutConfig extends PolicyConfig {
+	/** Target URL — static string or dynamic function. Required. */
+	url: string | ((c: Context) => string | Promise<string>);
+	/** HTTP method. Default: "GET". */
+	method?: string;
+	/** Request headers — static values or dynamic functions. */
+	headers?: Record<string, string | ((c: Context) => string | Promise<string>)>;
+	/** Request body — static or dynamic. JSON-serialized if object. */
+	body?: unknown | ((c: Context) => unknown | Promise<unknown>);
+	/** Timeout in ms. Default: 5000. */
+	timeout?: number;
+	/** Callback to process the callout response. Required. */
+	onResponse: (response: Response, c: Context) => void | Promise<void>;
+	/** Error handler. Default: throw GatewayError 502. */
+	onError?: (error: unknown, c: Context) => void | Promise<void>;
+	/** If true, throw on non-2xx response. Default: true. */
+	abortOnFailure?: boolean;
 }
 /**
- * Enforce HTTPS and append HSTS headers on secure responses.
+ * Make an external HTTP call mid-pipeline.
  *
- * Detects protocol from `x-forwarded-proto` (or request URL protocol).
- * For non-HTTPS requests, either redirects to HTTPS (301) or throws 403.
+ * Resolves URL, headers, and body (static or dynamic), makes the fetch,
+ * and calls the `onResponse` callback to process the result. Errors are
+ * handled via `onError` or default to a 502 GatewayError.
  *
- * @param config - Redirect behavior and HSTS settings.
- * @returns A {@link Policy} at priority 5 (EARLY).
+ * @security When the `url` parameter is a dynamic function that derives
+ * the callout target from request data (headers, path, query, or body),
+ * this policy is vulnerable to Server-Side Request Forgery (SSRF). An
+ * attacker could manipulate request data to make the worker issue requests
+ * to internal services, metadata endpoints (e.g. cloud provider instance
+ * metadata), or other unintended targets. Hardcode callout URLs whenever
+ * possible. If dynamic URLs are required, validate them against an
+ * explicit allowlist of permitted hosts and schemes.
+ *
+ * @param config - Callout target, method, headers, body, and response handler.
+ * @returns A {@link Policy} at priority 50 (REQUEST_TRANSFORM).
+ *
+ * @example
+ * ```ts
+ * httpCallout({
+ *   url: "https://auth.example.com/validate",
+ *   method: "POST",
+ *   headers: { authorization: (c) => c.req.header("authorization") ?? "" },
+ *   body: (c) => ({ path: c.req.path }),
+ *   onResponse: async (res, c) => {
+ *     const data = await res.json();
+ *     c.set("userId", data.userId);
+ *   },
+ * });
+ * ```
  */
-export declare const sslEnforce: (config?: SslEnforceConfig | undefined) => Policy;
-export interface RequestLimitConfig extends PolicyConfig {
-	/** Maximum allowed body size in bytes (based on Content-Length). */
-	maxBytes: number;
-	/** Custom error message. Default: "Request body too large". */
-	message?: string;
+export declare const httpCallout: (config?: HttpCalloutConfig | undefined) => Policy;
+export interface InterruptConfig extends PolicyConfig {
+	/** Predicate that determines whether to short-circuit. Required. */
+	condition: (c: Context) => boolean | Promise<boolean>;
+	/** HTTP status code for the interrupt response. Default: 200. */
+	statusCode?: number;
+	/** Response body. String → text/plain, object → application/json, undefined → empty. */
+	body?: unknown;
+	/** Additional response headers. */
+	headers?: Record<string, string>;
 }
 /**
- * Reject requests whose declared Content-Length exceeds `maxBytes`.
+ * Conditionally short-circuit the pipeline and return a static response.
  *
- * This policy checks only the `Content-Length` header. If the header is
- * absent or invalid, the request passes through. Notably, requests using
- * chunked transfer encoding (`Transfer-Encoding: chunked`) do not include
- * a `Content-Length` header and will bypass this check entirely. For strict
- * body size enforcement, combine this policy with a body-reading policy
- * that enforces limits on the actual stream length.
+ * Evaluates a predicate against the incoming request context. When the
+ * condition returns `true`, the pipeline is interrupted — a response is
+ * returned immediately and `next()` is never called (upstream is skipped).
+ * When the condition returns `false`, the pipeline continues normally.
  *
- * @param config - Maximum byte limit and optional custom message.
- * @returns A {@link Policy} at priority 5 (EARLY).
+ * @param config - Condition predicate, status code, body, and headers.
+ * @returns A {@link Policy} at priority 100 (default — users typically set a custom priority).
+ *
+ * @example
+ * ```ts
+ * // Maintenance mode
+ * interrupt({
+ *   condition: (c) => c.req.header("x-maintenance") === "true",
+ *   statusCode: 503,
+ *   body: { maintenance: true, message: "Back soon" },
+ *   headers: { "retry-after": "300" },
+ * });
+ *
+ * // Health check short-circuit
+ * interrupt({
+ *   condition: (c) => c.req.path === "/healthz",
+ *   body: "ok",
+ * });
+ * ```
  */
-export declare const requestLimit: (config?: RequestLimitConfig | undefined) => Policy;
+export declare const interrupt: (config?: InterruptConfig | undefined) => Policy;
+/**
+ * IP allowlist/denylist filtering policy.
+ *
+ * @module ip-filter
+ */
+export interface IpFilterConfig extends PolicyConfig {
+	/** IPs or CIDR ranges to allow (allowlist mode). */
+	allow?: string[];
+	/** IPs or CIDR ranges to deny (denylist mode). */
+	deny?: string[];
+	/** Filter mode. Default: "deny". */
+	mode?: "allow" | "deny";
+	/** Ordered list of headers to inspect for the client IP. Default: `["cf-connecting-ip", "x-forwarded-for"]`. */
+	ipHeaders?: string[];
+}
+/**
+ * Block or allow requests based on client IP address or CIDR range.
+ *
+ * Supports both allowlist and denylist modes. Client IP is extracted from
+ * `CF-Connecting-IP` (Cloudflare) or `X-Forwarded-For`. Accepts individual
+ * IPs (`192.168.1.1`) and CIDR notation (`10.0.0.0/8`).
+ *
+ * @param config - IP filter rules and mode selection.
+ * @returns A {@link Policy} at priority 1 (runs before everything else).
+ *
+ * @example
+ * ```ts
+ * // Allow only internal IPs
+ * ipFilter({ mode: "allow", allow: ["10.0.0.0/8", "172.16.0.0/12"] });
+ *
+ * // Block known bad actors
+ * ipFilter({ deny: ["203.0.113.0/24", "198.51.100.42"] });
+ * ```
+ */
+export declare function ipFilter(config: IpFilterConfig): Policy;
 export interface JsonThreatProtectionConfig extends PolicyConfig {
 	/** Maximum nesting depth. Default: `20`. */
 	maxDepth?: number;
@@ -1538,6 +2234,77 @@ export interface RegexThreatProtectionConfig extends PolicyConfig {
  * ```
  */
 export declare const regexThreatProtection: (config?: RegexThreatProtectionConfig | undefined) => Policy;
+export interface RequestLimitConfig extends PolicyConfig {
+	/** Maximum allowed body size in bytes (based on Content-Length). */
+	maxBytes: number;
+	/** Custom error message. Default: "Request body too large". */
+	message?: string;
+}
+/**
+ * Reject requests whose declared Content-Length exceeds `maxBytes`.
+ *
+ * This policy checks only the `Content-Length` header. If the header is
+ * absent or invalid, the request passes through. Notably, requests using
+ * chunked transfer encoding (`Transfer-Encoding: chunked`) do not include
+ * a `Content-Length` header and will bypass this check entirely. For strict
+ * body size enforcement, combine this policy with a body-reading policy
+ * that enforces limits on the actual stream length.
+ *
+ * @param config - Maximum byte limit and optional custom message.
+ * @returns A {@link Policy} at priority 5 (EARLY).
+ */
+export declare const requestLimit: (config?: RequestLimitConfig | undefined) => Policy;
+export interface ResourceFilterConfig extends PolicyConfig {
+	/** Filter mode: "deny" removes listed fields, "allow" keeps only listed fields */
+	mode: "allow" | "deny";
+	/** Field paths to filter. Supports dot-notation (e.g. "user.password") */
+	fields: string[];
+	/** Content types to filter. Default: ["application/json"] */
+	contentTypes?: string[];
+	/** Apply filtering to array items. Default: true */
+	applyToArrayItems?: boolean;
+}
+/**
+ * Strip or allow fields from JSON responses.
+ *
+ * @example
+ * ```ts
+ * import { resourceFilter } from "@homegrower-club/stoma";
+ *
+ * // Remove sensitive fields
+ * resourceFilter({
+ *   mode: "deny",
+ *   fields: ["password", "user.ssn"],
+ * });
+ *
+ * // Keep only specific fields
+ * resourceFilter({
+ *   mode: "allow",
+ *   fields: ["id", "name", "email"],
+ * });
+ * ```
+ */
+export declare const resourceFilter: (config?: ResourceFilterConfig | undefined) => Policy;
+export interface SslEnforceConfig extends PolicyConfig {
+	/** Redirect HTTP to HTTPS (301). If false, block with 403. Default: true. */
+	redirect?: boolean;
+	/** HSTS max-age in seconds. Default: 31536000 (1 year). */
+	hstsMaxAge?: number;
+	/** Add includeSubDomains to HSTS header. Default: false. */
+	includeSubDomains?: boolean;
+	/** Add preload to HSTS header. Default: false. */
+	preload?: boolean;
+}
+/**
+ * Enforce HTTPS and append HSTS headers on secure responses.
+ *
+ * Detects protocol from `x-forwarded-proto` (or request URL protocol).
+ * For non-HTTPS requests, either redirects to HTTPS (301) or throws 403.
+ *
+ * @param config - Redirect behavior and HSTS settings.
+ * @returns A {@link Policy} at priority 5 (EARLY).
+ */
+export declare const sslEnforce: (config?: SslEnforceConfig | undefined) => Policy;
 export interface TrafficShadowConfig extends PolicyConfig {
 	/** URL of the shadow upstream (required). */
 	target: string;
@@ -1571,200 +2338,34 @@ export interface TrafficShadowConfig extends PolicyConfig {
  * ```
  */
 export declare const trafficShadow: (config?: TrafficShadowConfig | undefined) => Policy;
-export interface InterruptConfig extends PolicyConfig {
-	/** Predicate that determines whether to short-circuit. Required. */
-	condition: (c: Context) => boolean | Promise<boolean>;
-	/** HTTP status code for the interrupt response. Default: 200. */
-	statusCode?: number;
-	/** Response body. String → text/plain, object → application/json, undefined → empty. */
-	body?: unknown;
-	/** Additional response headers. */
-	headers?: Record<string, string>;
+export interface LatencyInjectionConfig extends PolicyConfig {
+	/** Base delay in milliseconds. Required. */
+	delayMs: number;
+	/** Jitter proportion (0 to 1). Actual delay varies by +/- jitter * delayMs. Default: 0. */
+	jitter?: number;
+	/** Probability of injecting latency (0 to 1). Default: 1 (always). */
+	probability?: number;
 }
 /**
- * Conditionally short-circuit the pipeline and return a static response.
+ * Inject artificial latency into the pipeline for chaos/resilience testing.
  *
- * Evaluates a predicate against the incoming request context. When the
- * condition returns `true`, the pipeline is interrupted — a response is
- * returned immediately and `next()` is never called (upstream is skipped).
- * When the condition returns `false`, the pipeline continues normally.
+ * When active, pauses execution for a configurable duration before calling
+ * `next()`. Supports jitter to vary the delay and a probability setting to
+ * inject latency only a fraction of the time.
  *
- * @param config - Condition predicate, status code, body, and headers.
- * @returns A {@link Policy} at priority 100 (default — users typically set a custom priority).
+ * @param config - Delay duration, jitter, and injection probability.
+ * @returns A {@link Policy} at priority 5 (early pipeline).
  *
  * @example
  * ```ts
- * // Maintenance mode
- * interrupt({
- *   condition: (c) => c.req.header("x-maintenance") === "true",
- *   statusCode: 503,
- *   body: { maintenance: true, message: "Back soon" },
- *   headers: { "retry-after": "300" },
- * });
+ * // Fixed 100ms delay on every request
+ * latencyInjection({ delayMs: 100 });
  *
- * // Health check short-circuit
- * interrupt({
- *   condition: (c) => c.req.path === "/healthz",
- *   body: "ok",
- * });
+ * // 200ms +/- 50% jitter, injected 30% of the time
+ * latencyInjection({ delayMs: 200, jitter: 0.5, probability: 0.3 });
  * ```
  */
-export declare const interrupt: (config?: InterruptConfig | undefined) => Policy;
-export interface RoutingRule {
-	/** Human-readable rule name for debugging. */
-	name?: string;
-	/** Condition that determines if this rule applies. */
-	condition: (c: Context) => boolean | Promise<boolean>;
-	/** Target upstream URL to route to. */
-	target: string;
-	/** Optional path rewrite function. */
-	rewritePath?: (path: string) => string;
-	/** Optional headers to add to the upstream request. */
-	headers?: Record<string, string>;
-}
-export interface DynamicRoutingConfig extends PolicyConfig {
-	/** Ordered list of routing rules. First match wins. Required. */
-	rules: Array<RoutingRule>;
-	/** If true and no rule matches, call next() normally. If false, throw 404. Default: true. */
-	fallthrough?: boolean;
-}
-/**
- * Evaluate routing rules and expose the first match on request context.
- *
- * Evaluates rules in order. The first matching rule's target, rewritePath,
- * and headers are set as context variables for downstream consumption.
- *
- * @param config - Routing rules and fallthrough behavior.
- * @returns A {@link Policy} at priority 50 (REQUEST_TRANSFORM).
- *
- * @example
- * ```ts
- * dynamicRouting({
- *   rules: [
- *     {
- *       name: "v2-api",
- *       condition: (c) => c.req.header("x-api-version") === "2",
- *       target: "https://api-v2.internal",
- *       rewritePath: (path) => path.replace("/api/", "/v2/"),
- *     },
- *     {
- *       name: "default",
- *       condition: () => true,
- *       target: "https://api-v1.internal",
- *     },
- *   ],
- * });
- * ```
- */
-export declare const dynamicRouting: (config?: DynamicRoutingConfig | undefined) => Policy;
-export interface HttpCalloutConfig extends PolicyConfig {
-	/** Target URL — static string or dynamic function. Required. */
-	url: string | ((c: Context) => string | Promise<string>);
-	/** HTTP method. Default: "GET". */
-	method?: string;
-	/** Request headers — static values or dynamic functions. */
-	headers?: Record<string, string | ((c: Context) => string | Promise<string>)>;
-	/** Request body — static or dynamic. JSON-serialized if object. */
-	body?: unknown | ((c: Context) => unknown | Promise<unknown>);
-	/** Timeout in ms. Default: 5000. */
-	timeout?: number;
-	/** Callback to process the callout response. Required. */
-	onResponse: (response: Response, c: Context) => void | Promise<void>;
-	/** Error handler. Default: throw GatewayError 502. */
-	onError?: (error: unknown, c: Context) => void | Promise<void>;
-	/** If true, throw on non-2xx response. Default: true. */
-	abortOnFailure?: boolean;
-}
-/**
- * Make an external HTTP call mid-pipeline.
- *
- * Resolves URL, headers, and body (static or dynamic), makes the fetch,
- * and calls the `onResponse` callback to process the result. Errors are
- * handled via `onError` or default to a 502 GatewayError.
- *
- * @security When the `url` parameter is a dynamic function that derives
- * the callout target from request data (headers, path, query, or body),
- * this policy is vulnerable to Server-Side Request Forgery (SSRF). An
- * attacker could manipulate request data to make the worker issue requests
- * to internal services, metadata endpoints (e.g. cloud provider instance
- * metadata), or other unintended targets. Hardcode callout URLs whenever
- * possible. If dynamic URLs are required, validate them against an
- * explicit allowlist of permitted hosts and schemes.
- *
- * @param config - Callout target, method, headers, body, and response handler.
- * @returns A {@link Policy} at priority 50 (REQUEST_TRANSFORM).
- *
- * @example
- * ```ts
- * httpCallout({
- *   url: "https://auth.example.com/validate",
- *   method: "POST",
- *   headers: { authorization: (c) => c.req.header("authorization") ?? "" },
- *   body: (c) => ({ path: c.req.path }),
- *   onResponse: async (res, c) => {
- *     const data = await res.json();
- *     c.set("userId", data.userId);
- *   },
- * });
- * ```
- */
-export declare const httpCallout: (config?: HttpCalloutConfig | undefined) => Policy;
-export interface ResourceFilterConfig extends PolicyConfig {
-	/** Filter mode: "deny" removes listed fields, "allow" keeps only listed fields */
-	mode: "allow" | "deny";
-	/** Field paths to filter. Supports dot-notation (e.g. "user.password") */
-	fields: string[];
-	/** Content types to filter. Default: ["application/json"] */
-	contentTypes?: string[];
-	/** Apply filtering to array items. Default: true */
-	applyToArrayItems?: boolean;
-}
-/**
- * Strip or allow fields from JSON responses.
- *
- * @example
- * ```ts
- * import { resourceFilter } from "@homegrower-club/stoma";
- *
- * // Remove sensitive fields
- * resourceFilter({
- *   mode: "deny",
- *   fields: ["password", "user.ssn"],
- * });
- *
- * // Keep only specific fields
- * resourceFilter({
- *   mode: "allow",
- *   fields: ["id", "name", "email"],
- * });
- * ```
- */
-export declare const resourceFilter: (config?: ResourceFilterConfig | undefined) => Policy;
-export interface TimeoutConfig extends PolicyConfig {
-	/** Timeout in milliseconds. Default: 30000. */
-	timeoutMs?: number;
-	/** Error message when timeout fires. */
-	message?: string;
-	/** HTTP status code when timeout fires. Default: 504. */
-	statusCode?: number;
-}
-/**
- * Enforce a time budget for downstream execution.
- *
- * Races `next()` against a timer. If the timer fires first, throws a
- * GatewayError (default 504). The timer is always cleaned up, even on
- * downstream errors.
- *
- * @param config - Timeout duration and custom error message. Defaults to 30 seconds.
- * @returns A {@link Policy} at priority 85 (runs late, close to upstream).
- *
- * @example
- * ```ts
- * // 5-second timeout with custom message
- * timeout({ timeoutMs: 5000, message: "Upstream did not respond in time" });
- * ```
- */
-export declare const timeout: (config?: TimeoutConfig | undefined) => Policy;
+export declare const latencyInjection: (config?: LatencyInjectionConfig | undefined) => Policy;
 /**
  * Retry policy — automatic retry with configurable backoff for failed upstream calls.
  *
@@ -1828,110 +2429,31 @@ export interface RetryConfig extends PolicyConfig {
  * ```
  */
 export declare function retry(config?: RetryConfig): Policy;
-export interface LatencyInjectionConfig extends PolicyConfig {
-	/** Base delay in milliseconds. Required. */
-	delayMs: number;
-	/** Jitter proportion (0 to 1). Actual delay varies by +/- jitter * delayMs. Default: 0. */
-	jitter?: number;
-	/** Probability of injecting latency (0 to 1). Default: 1 (always). */
-	probability?: number;
+export interface TimeoutConfig extends PolicyConfig {
+	/** Timeout in milliseconds. Default: 30000. */
+	timeoutMs?: number;
+	/** Error message when timeout fires. */
+	message?: string;
+	/** HTTP status code when timeout fires. Default: 504. */
+	statusCode?: number;
 }
 /**
- * Inject artificial latency into the pipeline for chaos/resilience testing.
+ * Enforce a time budget for downstream execution.
  *
- * When active, pauses execution for a configurable duration before calling
- * `next()`. Supports jitter to vary the delay and a probability setting to
- * inject latency only a fraction of the time.
+ * Races `next()` against a timer. If the timer fires first, throws a
+ * GatewayError (default 504). The timer is always cleaned up, even on
+ * downstream errors.
  *
- * @param config - Delay duration, jitter, and injection probability.
- * @returns A {@link Policy} at priority 5 (early pipeline).
+ * @param config - Timeout duration and custom error message. Defaults to 30 seconds.
+ * @returns A {@link Policy} at priority 85 (runs late, close to upstream).
  *
  * @example
  * ```ts
- * // Fixed 100ms delay on every request
- * latencyInjection({ delayMs: 100 });
- *
- * // 200ms +/- 50% jitter, injected 30% of the time
- * latencyInjection({ delayMs: 200, jitter: 0.5, probability: 0.3 });
+ * // 5-second timeout with custom message
+ * timeout({ timeoutMs: 5000, message: "Upstream did not respond in time" });
  * ```
  */
-export declare const latencyInjection: (config?: LatencyInjectionConfig | undefined) => Policy;
-export interface CorsConfig extends PolicyConfig {
-	/** Allowed origins. Default: "*" */
-	origins?: string | string[] | ((origin: string) => boolean);
-	/** Allowed HTTP methods. Default: all. */
-	methods?: string[];
-	/** Headers the client is allowed to send. */
-	allowHeaders?: string[];
-	/** Headers exposed to the client. */
-	exposeHeaders?: string[];
-	/** Max age for preflight cache in seconds. Default: 86400. */
-	maxAge?: number;
-	/** Allow credentials. Default: false. */
-	credentials?: boolean;
-}
-/**
- * Add Cross-Origin Resource Sharing headers to gateway responses.
- *
- * Wraps Hono's built-in CORS middleware as a composable policy. Handles both
- * simple and preflight (OPTIONS) requests. Runs at priority 5 so CORS headers
- * are applied before auth or other policies reject the request.
- *
- * @param config - Origin rules, allowed methods/headers, and credentials. All fields optional.
- * @returns A {@link Policy} at priority 5 (runs very early).
- *
- * @example
- * ```ts
- * import { createGateway } from "@homegrower-club/stoma";
- * import { cors } from "@homegrower-club/stoma/policies";
- *
- * // Allow any origin (default)
- * createGateway({
- *   policies: [cors()],
- *   routes: [{ path: "/api/*", pipeline: { upstream: { type: "url", target: "https://api.example.com" } } }],
- * });
- *
- * // Restrict to specific origins with credentials
- * cors({
- *   origins: ["https://app.example.com", "https://staging.example.com"],
- *   methods: ["GET", "POST", "PUT", "DELETE"],
- *   credentials: true,
- *   maxAge: 3600,
- * });
- *
- * // Dynamic origin validation
- * cors({
- *   origins: (origin) => origin.endsWith(".example.com"),
- * });
- * ```
- */
-export declare function cors(config?: CorsConfig): Policy;
-export interface OverrideMethodConfig extends PolicyConfig {
-	/** Header name to read the override method from. Default: `"X-HTTP-Method-Override"`. */
-	header?: string;
-	/** Methods allowed as overrides. Default: `["GET", "PUT", "PATCH", "DELETE"]`. */
-	allowedMethods?: string[];
-}
-/**
- * Override the HTTP method of a POST request via a header.
- *
- * Only applies to POST requests — the industry-standard approach for
- * tunneling other methods through POST. Non-POST requests with the
- * override header are ignored.
- *
- * @param config - Header name and allowed override methods.
- * @returns A policy at priority 5 (EARLY).
- *
- * @example
- * ```ts
- * // Default: reads X-HTTP-Method-Override header
- * overrideMethod();
- *
- * // Custom header and restricted methods
- * overrideMethod({ header: "X-Method", allowedMethods: ["PUT", "PATCH"] });
- * ```
- */
-export declare const overrideMethod: (config?: OverrideMethodConfig | undefined) => Policy;
+export declare const timeout: (config?: TimeoutConfig | undefined) => Policy;
 export interface AssignAttributesConfig extends PolicyConfig {
 	/**
 	 * Key-value pairs to set on the Hono context.
@@ -1991,6 +2513,177 @@ export interface AssignContentConfig extends PolicyConfig {
  * ```
  */
 export declare const assignContent: (config?: AssignContentConfig | undefined) => Policy;
+export interface CorsConfig extends PolicyConfig {
+	/** Allowed origins. Default: "*" */
+	origins?: string | string[] | ((origin: string) => boolean);
+	/** Allowed HTTP methods. Default: all. */
+	methods?: string[];
+	/** Headers the client is allowed to send. */
+	allowHeaders?: string[];
+	/** Headers exposed to the client. */
+	exposeHeaders?: string[];
+	/** Max age for preflight cache in seconds. Default: 86400. */
+	maxAge?: number;
+	/** Allow credentials. Default: false. */
+	credentials?: boolean;
+}
+/**
+ * Add Cross-Origin Resource Sharing headers to gateway responses.
+ *
+ * Wraps Hono's built-in CORS middleware as a composable policy. Handles both
+ * simple and preflight (OPTIONS) requests. Runs at priority 5 so CORS headers
+ * are applied before auth or other policies reject the request.
+ *
+ * @param config - Origin rules, allowed methods/headers, and credentials. All fields optional.
+ * @returns A {@link Policy} at priority 5 (runs very early).
+ *
+ * @example
+ * ```ts
+ * import { createGateway } from "@homegrower-club/stoma";
+ * import { cors } from "@homegrower-club/stoma/policies";
+ *
+ * // Allow any origin (default)
+ * createGateway({
+ *   policies: [cors()],
+ *   routes: [{ path: "/api/*", pipeline: { upstream: { type: "url", target: "https://api.example.com" } } }],
+ * });
+ *
+ * // Restrict to specific origins with credentials
+ * cors({
+ *   origins: ["https://app.example.com", "https://staging.example.com"],
+ *   methods: ["GET", "POST", "PUT", "DELETE"],
+ *   credentials: true,
+ *   maxAge: 3600,
+ * });
+ *
+ * // Dynamic origin validation
+ * cors({
+ *   origins: (origin) => origin.endsWith(".example.com"),
+ * });
+ * ```
+ */
+export declare function cors(config?: CorsConfig): Policy;
+/** Result shape returned by the user-provided validation function. */
+export interface JsonValidationResult {
+	valid: boolean;
+	errors?: string[];
+}
+export interface JsonValidationConfig extends PolicyConfig {
+	/** Custom validation function. Takes parsed body, returns validation result. */
+	validate?: (body: unknown) => JsonValidationResult | Promise<JsonValidationResult>;
+	/** Content types to validate. Default: ["application/json"] */
+	contentTypes?: string[];
+	/** HTTP status code on validation failure. Default: 422 */
+	rejectStatus?: number;
+	/** Include validation errors in response. Default: true */
+	errorDetail?: boolean;
+}
+/**
+ * Pluggable JSON body validation policy.
+ *
+ * Validates the request body using a user-provided function. When no
+ * `validate` function is configured, checks that the body is parseable JSON.
+ * Requests with content types not in the configured list pass through
+ * without validation.
+ *
+ * @example
+ * ```ts
+ * import { jsonValidation } from "@homegrower-club/stoma";
+ *
+ * // With Zod
+ * jsonValidation({
+ *   validate: (body) => {
+ *     const result = myZodSchema.safeParse(body);
+ *     return {
+ *       valid: result.success,
+ *       errors: result.success ? undefined : result.error.issues.map(i => i.message),
+ *     };
+ *   },
+ * });
+ *
+ * // Just validate JSON is parseable (no validate function)
+ * jsonValidation();
+ * ```
+ */
+export declare const jsonValidation: (config?: JsonValidationConfig | undefined) => Policy;
+export interface OverrideMethodConfig extends PolicyConfig {
+	/** Header name to read the override method from. Default: `"X-HTTP-Method-Override"`. */
+	header?: string;
+	/** Methods allowed as overrides. Default: `["GET", "PUT", "PATCH", "DELETE"]`. */
+	allowedMethods?: string[];
+}
+/**
+ * Override the HTTP method of a POST request via a header.
+ *
+ * Only applies to POST requests — the industry-standard approach for
+ * tunneling other methods through POST. Non-POST requests with the
+ * override header are ignored.
+ *
+ * @param config - Header name and allowed override methods.
+ * @returns A policy at priority 5 (EARLY).
+ *
+ * @example
+ * ```ts
+ * // Default: reads X-HTTP-Method-Override header
+ * overrideMethod();
+ *
+ * // Custom header and restricted methods
+ * overrideMethod({ header: "X-Method", allowedMethods: ["PUT", "PATCH"] });
+ * ```
+ */
+export declare const overrideMethod: (config?: OverrideMethodConfig | undefined) => Policy;
+/** Result shape returned by validation functions that provide error details. */
+export interface ValidationResult {
+	valid: boolean;
+	errors?: string[];
+}
+export interface RequestValidationConfig extends PolicyConfig {
+	/**
+	 * Synchronous validation function.
+	 * Return `true`/`false` or an object with optional error details.
+	 */
+	validate?: (body: unknown) => boolean | ValidationResult;
+	/**
+	 * Async validation function (e.g., for remote schema validation).
+	 * If both `validate` and `validateAsync` are provided, `validateAsync` takes precedence.
+	 */
+	validateAsync?: (body: unknown) => Promise<boolean | ValidationResult>;
+	/**
+	 * Only validate these content types.
+	 * Requests with other content types pass through without validation.
+	 * Default: `["application/json"]`.
+	 */
+	contentTypes?: string[];
+	/** Custom error message prefix. Default: `"Request validation failed"`. */
+	errorMessage?: string;
+}
+/**
+ * Pluggable request body validation policy.
+ *
+ * Validates the request body using a user-provided sync or async function.
+ * Requests with content types not in the configured list pass through
+ * without validation.
+ *
+ * @example
+ * ```ts
+ * import { requestValidation } from "@homegrower-club/stoma";
+ *
+ * // Simple boolean validator
+ * requestValidation({
+ *   validate: (body) => body != null && typeof body === "object",
+ * });
+ *
+ * // Detailed validation with error messages
+ * requestValidation({
+ *   validate: (body) => {
+ *     const errors: string[] = [];
+ *     if (!body || typeof body !== "object") errors.push("Body must be an object");
+ *     return { valid: errors.length === 0, errors };
+ *   },
+ * });
+ * ```
+ */
+export declare const requestValidation: (config?: RequestValidationConfig | undefined) => Policy;
 export interface RequestTransformConfig extends PolicyConfig {
 	/** Headers to add or overwrite on the outgoing request. */
 	setHeaders?: Record<string, string>;
@@ -2059,101 +2752,120 @@ export declare const requestTransform: (config?: RequestTransformConfig | undefi
  * ```
  */
 export declare const responseTransform: (config?: ResponseTransformConfig | undefined) => Policy;
-/** Result shape returned by validation functions that provide error details. */
-export interface ValidationResult {
-	valid: boolean;
-	errors?: string[];
-}
-export interface RequestValidationConfig extends PolicyConfig {
-	/**
-	 * Synchronous validation function.
-	 * Return `true`/`false` or an object with optional error details.
-	 */
-	validate?: (body: unknown) => boolean | ValidationResult;
-	/**
-	 * Async validation function (e.g., for remote schema validation).
-	 * If both `validate` and `validateAsync` are provided, `validateAsync` takes precedence.
-	 */
-	validateAsync?: (body: unknown) => Promise<boolean | ValidationResult>;
-	/**
-	 * Only validate these content types.
-	 * Requests with other content types pass through without validation.
-	 * Default: `["application/json"]`.
-	 */
-	contentTypes?: string[];
-	/** Custom error message prefix. Default: `"Request validation failed"`. */
-	errorMessage?: string;
+/**
+ * Health check route factory with optional upstream probing.
+ *
+ * @module health
+ */
+export interface HealthConfig {
+	/** Health endpoint path. Default: "/health". */
+	path?: string;
+	/** URLs to probe for upstream health. */
+	upstreamProbes?: string[];
+	/** Include individual upstream statuses in response. Default: false. */
+	includeUpstreamStatus?: boolean;
+	/** Timeout in ms for each upstream probe. Default: 5000. */
+	probeTimeoutMs?: number;
+	/** HTTP method for upstream probes. Default: `"HEAD"`. */
+	probeMethod?: string;
+	/** Status code returned when all probes are unhealthy. Default: 503. */
+	unhealthyStatusCode?: number;
 }
 /**
- * Pluggable request body validation policy.
+ * Create a health check route for liveness and upstream probing.
  *
- * Validates the request body using a user-provided sync or async function.
- * Requests with content types not in the configured list pass through
- * without validation.
+ * Returns a {@link RouteConfig} (not a Policy) — add it directly to the
+ * gateway's `routes` array. Without upstream probes, returns a simple
+ * `{ status: "healthy" }` response. With probes, performs concurrent HEAD
+ * requests (5s timeout each) and reports aggregate status:
+ * - `"healthy"` — all probes passed
+ * - `"degraded"` — some probes failed
+ * - `"unhealthy"` — all probes failed (returns 503)
+ *
+ * @security Enabling `includeUpstreamStatus: true` causes the response to
+ * include the URLs and availability status of internal upstream services.
+ * On public-facing endpoints this leaks internal service topology, which
+ * can aid attackers in reconnaissance (identifying internal hostnames,
+ * ports, and service availability patterns). Restrict health routes that
+ * expose upstream status to internal or admin-only paths, or protect them
+ * with an authentication policy.
+ *
+ * @param config - Endpoint path, upstream probe URLs, and status detail toggle. All fields optional.
+ * @returns A {@link RouteConfig} for a GET health endpoint.
  *
  * @example
  * ```ts
- * import { requestValidation } from "@homegrower-club/stoma";
+ * import { createGateway } from "@homegrower-club/stoma";
+ * import { health } from "@homegrower-club/stoma/policies";
  *
- * // Simple boolean validator
- * requestValidation({
- *   validate: (body) => body != null && typeof body === "object",
+ * createGateway({
+ *   routes: [
+ *     // Simple liveness check at /health
+ *     health(),
+ *
+ *     // Probe upstreams with detailed status at /healthz
+ *     health({
+ *       path: "/healthz",
+ *       upstreamProbes: [
+ *         "https://api.example.com/health",
+ *         "https://auth.example.com/health",
+ *       ],
+ *       includeUpstreamStatus: true,
+ *     }),
+ *
+ *     // ...other routes
+ *   ],
  * });
+ * ```
+ */
+export declare function health<TBindings = Record<string, unknown>>(config?: HealthConfig): RouteConfig<TBindings>;
+export interface AssignMetricsConfig extends PolicyConfig {
+	/**
+	 * Metric tags to attach to the request.
+	 * Values can be static strings or functions that receive the context.
+	 */
+	tags: Record<string, string | ((c: Context) => string | Promise<string>)>;
+}
+/**
+ * Attach metric tags to the request context for downstream consumers.
  *
- * // Detailed validation with error messages
- * requestValidation({
- *   validate: (body) => {
- *     const errors: string[] = [];
- *     if (!body || typeof body !== "object") errors.push("Body must be an object");
- *     return { valid: errors.length === 0, errors };
+ * Tags are resolved (static or dynamic) and stored as a plain object at
+ * `c.get("_metricsTags")`. The {@link metricsReporter} policy (or any custom
+ * observer) can read these tags to enrich collected metrics.
+ *
+ * @param config - Must include `tags` — a record of tag names to values or resolver functions.
+ * @returns A {@link Policy} at priority 0 (OBSERVABILITY).
+ *
+ * @example
+ * ```ts
+ * import { assignMetrics } from "@homegrower-club/stoma";
+ *
+ * assignMetrics({
+ *   tags: {
+ *     service: "users-api",
+ *     region: (c) => c.req.header("cf-ipcountry") ?? "unknown",
  *   },
  * });
  * ```
  */
-export declare const requestValidation: (config?: RequestValidationConfig | undefined) => Policy;
-/** Result shape returned by the user-provided validation function. */
-export interface JsonValidationResult {
-	valid: boolean;
-	errors?: string[];
-}
-export interface JsonValidationConfig extends PolicyConfig {
-	/** Custom validation function. Takes parsed body, returns validation result. */
-	validate?: (body: unknown) => JsonValidationResult | Promise<JsonValidationResult>;
-	/** Content types to validate. Default: ["application/json"] */
-	contentTypes?: string[];
-	/** HTTP status code on validation failure. Default: 422 */
-	rejectStatus?: number;
-	/** Include validation errors in response. Default: true */
-	errorDetail?: boolean;
+export declare const assignMetrics: (config?: AssignMetricsConfig | undefined) => Policy;
+export interface MetricsReporterConfig extends PolicyConfig {
+	/** The metrics collector to record to. */
+	collector: MetricsCollector;
 }
 /**
- * Pluggable JSON body validation policy.
+ * Record standard gateway metrics for every request.
  *
- * Validates the request body using a user-provided function. When no
- * `validate` function is configured, checks that the body is parseable JSON.
- * Requests with content types not in the configured list pass through
- * without validation.
+ * Metrics recorded:
+ * - `gateway_requests_total` (counter) — total requests, tagged by method/path/status/gateway
+ * - `gateway_request_duration_ms` (histogram) — end-to-end request duration
+ * - `gateway_request_errors_total` (counter) — requests with status >= 400
+ * - `gateway_policy_duration_ms` (histogram) — per-policy timing when available
  *
- * @example
- * ```ts
- * import { jsonValidation } from "@homegrower-club/stoma";
- *
- * // With Zod
- * jsonValidation({
- *   validate: (body) => {
- *     const result = myZodSchema.safeParse(body);
- *     return {
- *       valid: result.success,
- *       errors: result.success ? undefined : result.error.issues.map(i => i.message),
- *     };
- *   },
- * });
- *
- * // Just validate JSON is parseable (no validate function)
- * jsonValidation();
- * ```
+ * @param config - Must include a {@link MetricsCollector} instance.
+ * @returns A {@link Policy} at priority 1.
  */
-export declare const jsonValidation: (config?: JsonValidationConfig | undefined) => Policy;
+export declare const metricsReporter: (config?: MetricsReporterConfig | undefined) => Policy;
 export interface RequestLogConfig extends PolicyConfig {
 	/** Additional fields to extract from the request */
 	extractFields?: (c: unknown) => Record<string, unknown>;
@@ -2245,53 +2957,6 @@ export interface LogEntry {
  * ```
  */
 export declare const requestLog: (config?: RequestLogConfig | undefined) => Policy;
-export interface MetricsReporterConfig extends PolicyConfig {
-	/** The metrics collector to record to. */
-	collector: MetricsCollector;
-}
-/**
- * Record standard gateway metrics for every request.
- *
- * Metrics recorded:
- * - `gateway_requests_total` (counter) — total requests, tagged by method/path/status/gateway
- * - `gateway_request_duration_ms` (histogram) — end-to-end request duration
- * - `gateway_request_errors_total` (counter) — requests with status >= 400
- * - `gateway_policy_duration_ms` (histogram) — per-policy timing when available
- *
- * @param config - Must include a {@link MetricsCollector} instance.
- * @returns A {@link Policy} at priority 1.
- */
-export declare const metricsReporter: (config?: MetricsReporterConfig | undefined) => Policy;
-export interface AssignMetricsConfig extends PolicyConfig {
-	/**
-	 * Metric tags to attach to the request.
-	 * Values can be static strings or functions that receive the context.
-	 */
-	tags: Record<string, string | ((c: Context) => string | Promise<string>)>;
-}
-/**
- * Attach metric tags to the request context for downstream consumers.
- *
- * Tags are resolved (static or dynamic) and stored as a plain object at
- * `c.get("_metricsTags")`. The {@link metricsReporter} policy (or any custom
- * observer) can read these tags to enrich collected metrics.
- *
- * @param config - Must include `tags` — a record of tag names to values or resolver functions.
- * @returns A {@link Policy} at priority 0 (OBSERVABILITY).
- *
- * @example
- * ```ts
- * import { assignMetrics } from "@homegrower-club/stoma";
- *
- * assignMetrics({
- *   tags: {
- *     service: "users-api",
- *     region: (c) => c.req.header("cf-ipcountry") ?? "unknown",
- *   },
- * });
- * ```
- */
-export declare const assignMetrics: (config?: AssignMetricsConfig | undefined) => Policy;
 /** Visibility mode controlling when timing headers are emitted. */
 export type ServerTimingVisibility = "always" | "debug-only" | "conditional";
 export interface ServerTimingConfig extends PolicyConfig {
@@ -2320,107 +2985,6 @@ export interface ServerTimingConfig extends PolicyConfig {
  * @returns A {@link Policy} at priority 1 (METRICS).
  */
 export declare const serverTiming: (config?: ServerTimingConfig | undefined) => Policy;
-/**
- * Health check route factory with optional upstream probing.
- *
- * @module health
- */
-export interface HealthConfig {
-	/** Health endpoint path. Default: "/health". */
-	path?: string;
-	/** URLs to probe for upstream health. */
-	upstreamProbes?: string[];
-	/** Include individual upstream statuses in response. Default: false. */
-	includeUpstreamStatus?: boolean;
-	/** Timeout in ms for each upstream probe. Default: 5000. */
-	probeTimeoutMs?: number;
-	/** HTTP method for upstream probes. Default: `"HEAD"`. */
-	probeMethod?: string;
-	/** Status code returned when all probes are unhealthy. Default: 503. */
-	unhealthyStatusCode?: number;
-}
-/**
- * Create a health check route for liveness and upstream probing.
- *
- * Returns a {@link RouteConfig} (not a Policy) — add it directly to the
- * gateway's `routes` array. Without upstream probes, returns a simple
- * `{ status: "healthy" }` response. With probes, performs concurrent HEAD
- * requests (5s timeout each) and reports aggregate status:
- * - `"healthy"` — all probes passed
- * - `"degraded"` — some probes failed
- * - `"unhealthy"` — all probes failed (returns 503)
- *
- * @security Enabling `includeUpstreamStatus: true` causes the response to
- * include the URLs and availability status of internal upstream services.
- * On public-facing endpoints this leaks internal service topology, which
- * can aid attackers in reconnaissance (identifying internal hostnames,
- * ports, and service availability patterns). Restrict health routes that
- * expose upstream status to internal or admin-only paths, or protect them
- * with an authentication policy.
- *
- * @param config - Endpoint path, upstream probe URLs, and status detail toggle. All fields optional.
- * @returns A {@link RouteConfig} for a GET health endpoint.
- *
- * @example
- * ```ts
- * import { createGateway } from "@homegrower-club/stoma";
- * import { health } from "@homegrower-club/stoma/policies";
- *
- * createGateway({
- *   routes: [
- *     // Simple liveness check at /health
- *     health(),
- *
- *     // Probe upstreams with detailed status at /healthz
- *     health({
- *       path: "/healthz",
- *       upstreamProbes: [
- *         "https://api.example.com/health",
- *         "https://auth.example.com/health",
- *       ],
- *       includeUpstreamStatus: true,
- *     }),
- *
- *     // ...other routes
- *   ],
- * });
- * ```
- */
-export declare function health(config?: HealthConfig): RouteConfig;
-/**
- * Create a gateway instance from a declarative configuration.
- *
- * Registers all routes on a Hono app, builds per-route policy pipelines
- * (merging global + route-level policies), and wires up upstream dispatch.
- * Returns a {@link GatewayInstance} whose `.app` property is the Hono app
- * ready to be exported as a Cloudflare Worker default export.
- *
- * @param config - Full gateway configuration including routes, policies, and options.
- * @returns A {@link GatewayInstance} with the configured Hono app.
- * @throws {GatewayError} If no routes are provided.
- *
- * @example
- * ```ts
- * import { createGateway, jwtAuth, rateLimit } from "@homegrower-club/stoma";
- *
- * const gateway = createGateway({
- *   name: "my-api",
- *   basePath: "/api",
- *   routes: [
- *     {
- *       path: "/users/*",
- *       pipeline: {
- *         policies: [jwtAuth({ secret: env.JWT_SECRET }), rateLimit({ max: 100 })],
- *         upstream: { type: "url", target: "https://users-service.internal" },
- *       },
- *     },
- *   ],
- * });
- *
- * export default gateway.app;
- * ```
- */
-export declare function createGateway(config: GatewayConfig): GatewayInstance;
 /**
  * Error handling utilities for the stoma gateway.
  *
@@ -2464,6 +3028,40 @@ export interface ErrorResponse {
 	/** Request ID for tracing, when available. */
 	requestId?: string;
 }
+/**
+ * Create a gateway instance from a declarative configuration.
+ *
+ * Registers all routes on a Hono app, builds per-route policy pipelines
+ * (merging global + route-level policies), and wires up upstream dispatch.
+ * Returns a {@link GatewayInstance} whose `.app` property is the Hono app
+ * ready to be exported as a Cloudflare Worker default export.
+ *
+ * @param config - Full gateway configuration including routes, policies, and options.
+ * @returns A {@link GatewayInstance} with the configured Hono app.
+ * @throws {GatewayError} If no routes are provided.
+ *
+ * @example
+ * ```ts
+ * import { createGateway, jwtAuth, rateLimit } from "@homegrower-club/stoma";
+ *
+ * const gateway = createGateway({
+ *   name: "my-api",
+ *   basePath: "/api",
+ *   routes: [
+ *     {
+ *       path: "/users/*",
+ *       pipeline: {
+ *         policies: [jwtAuth({ secret: env.JWT_SECRET }), rateLimit({ max: 100 })],
+ *         upstream: { type: "url", target: "https://users-service.internal" },
+ *       },
+ *     },
+ *   ],
+ * });
+ *
+ * export default gateway.app;
+ * ```
+ */
+export declare function createGateway<TBindings = Record<string, unknown>>(config: GatewayConfig<TBindings>): GatewayInstance;
 /**
  * Policy pipeline — merges, sorts, and wraps policies as Hono middleware.
  *
@@ -2577,7 +3175,7 @@ export declare class IDBRateLimitStore implements RateLimitStore {
 }
 
 declare namespace sdk {
-	export { PolicyDefinition, PolicyHandlerContext, PolicyTestHarnessOptions, PolicyTrace, PolicyTraceDetail, PolicyTraceEntry, Priority, PriorityLevel, TraceReporter, createPolicyTestHarness, definePolicy, getCollectedDebugHeaders, isDebugRequested, isTraceRequested, noopTraceReporter, parseDebugRequest, policyDebug, policyTrace, resolveConfig, safeCall, setDebugHeader, withSkip };
+	export { PolicyDefinition, PolicyEvalHandlerContext, PolicyHandlerContext, PolicyTestHarnessOptions, PolicyTrace, PolicyTraceDetail, PolicyTraceEntry, Priority, PriorityLevel, TraceReporter, createPolicyTestHarness, definePolicy, getCollectedDebugHeaders, isDebugRequested, isTraceRequested, noopTraceReporter, parseDebugRequest, policyDebug, policyTrace, resolveConfig, safeCall, setDebugHeader, withSkip };
 }
 
 export {

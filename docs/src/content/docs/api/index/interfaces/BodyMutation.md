@@ -5,7 +5,7 @@ prev: false
 title: "BodyMutation"
 ---
 
-Defined in: [src/core/protocol.ts:223](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L223)
+Defined in: [src/core/protocol.ts:223](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L223)
 
 Replace or clear the message body.
 
@@ -15,7 +15,7 @@ Replace or clear the message body.
 
 > `optional` **content**: `string` \| `ArrayBuffer`
 
-Defined in: [src/core/protocol.ts:228](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L228)
+Defined in: [src/core/protocol.ts:228](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L228)
 
 New body content. Required for `"replace"`, ignored for `"clear"`.
 
@@ -25,7 +25,7 @@ New body content. Required for `"replace"`, ignored for `"clear"`.
 
 > **op**: `"replace"` \| `"clear"`
 
-Defined in: [src/core/protocol.ts:226](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L226)
+Defined in: [src/core/protocol.ts:226](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L226)
 
 `"replace"` substitutes the body, `"clear"` removes it entirely.
 
@@ -35,4 +35,4 @@ Defined in: [src/core/protocol.ts:226](https://github.com/HomeGrower-club/stoma/
 
 > **type**: `"body"`
 
-Defined in: [src/core/protocol.ts:224](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L224)
+Defined in: [src/core/protocol.ts:224](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L224)

@@ -88,17 +88,27 @@ export function MonacoEditor({ defaultValue, onChange }: MonacoEditorProps) {
         "file:///node_modules/hono/index.d.ts"
       );
 
-      // Fetch and register Stoma type declarations
+      // Fetch and register Stoma type declarations.
+      // The bundle is registered at the main entry AND at each subpath so
+      // imports like `@homegrower-club/stoma/sdk` resolve in Monaco.
       fetch("/stoma-bundle.d.ts")
         .then((res) => {
           if (!res.ok) throw new Error(`${res.status}`);
           return res.text();
         })
         .then((types) => {
-          monaco.languages.typescript.typescriptDefaults.addExtraLib(
-            types,
-            "file:///node_modules/@homegrower-club/stoma/index.d.ts"
-          );
+          const ts = monaco.languages.typescript.typescriptDefaults;
+          const paths = [
+            "file:///node_modules/@homegrower-club/stoma/index.d.ts",
+            "file:///node_modules/@homegrower-club/stoma/sdk/index.d.ts",
+            "file:///node_modules/@homegrower-club/stoma/config/index.d.ts",
+            "file:///node_modules/@homegrower-club/stoma/adapters/index.d.ts",
+            "file:///node_modules/@homegrower-club/stoma/adapters/cloudflare/index.d.ts",
+            "file:///node_modules/@homegrower-club/stoma/adapters/memory/index.d.ts",
+          ];
+          for (const p of paths) {
+            ts.addExtraLib(types, p);
+          }
         })
         .catch((err) => {
           console.warn("Failed to load Stoma types for IntelliSense:", err);

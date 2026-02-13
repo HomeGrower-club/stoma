@@ -7,7 +7,7 @@ title: "apiKeyAuth"
 
 > `const` **apiKeyAuth**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/auth/api-key-auth.ts:71](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/policies/auth/api-key-auth.ts#L71)
+Defined in: [src/policies/auth/api-key-auth.ts:71](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/auth/api-key-auth.ts#L71)
 
 Validate API keys from headers or query parameters.
 

@@ -5,7 +5,7 @@ prev: false
 title: "PolicyEvaluator"
 ---
 
-Defined in: [src/core/protocol.ts:305](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L305)
+Defined in: [src/core/protocol.ts:305](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L305)
 
 Protocol-agnostic policy evaluation entry point.
 
@@ -38,7 +38,7 @@ const evaluator: PolicyEvaluator = {
 
 > `optional` **onRequest**: (`input`, `ctx`) => `Promise`\<[`PolicyResult`](/api/index/type-aliases/policyresult/)\>
 
-Defined in: [src/core/protocol.ts:311](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L311)
+Defined in: [src/core/protocol.ts:311](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L311)
 
 Evaluate during request processing phases.
 
@@ -64,7 +64,7 @@ Called for: `request-headers`, `request-body`, `request-trailers`.
 
 > `optional` **onResponse**: (`input`, `ctx`) => `Promise`\<[`PolicyResult`](/api/index/type-aliases/policyresult/)\>
 
-Defined in: [src/core/protocol.ts:321](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L321)
+Defined in: [src/core/protocol.ts:321](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L321)
 
 Evaluate during response processing phases.
 

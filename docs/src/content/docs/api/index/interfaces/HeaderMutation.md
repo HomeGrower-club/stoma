@@ -5,7 +5,7 @@ prev: false
 title: "HeaderMutation"
 ---
 
-Defined in: [src/core/protocol.ts:212](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L212)
+Defined in: [src/core/protocol.ts:212](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L212)
 
 Add, remove, or append a header value.
 
@@ -15,7 +15,7 @@ Add, remove, or append a header value.
 
 > **name**: `string`
 
-Defined in: [src/core/protocol.ts:217](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L217)
+Defined in: [src/core/protocol.ts:217](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L217)
 
 Header name (case-insensitive).
 
@@ -25,7 +25,7 @@ Header name (case-insensitive).
 
 > **op**: `"set"` \| `"remove"` \| `"append"`
 
-Defined in: [src/core/protocol.ts:215](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L215)
+Defined in: [src/core/protocol.ts:215](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L215)
 
 `"set"` replaces, `"remove"` deletes, `"append"` adds without replacing.
 
@@ -35,7 +35,7 @@ Defined in: [src/core/protocol.ts:215](https://github.com/HomeGrower-club/stoma/
 
 > **type**: `"header"`
 
-Defined in: [src/core/protocol.ts:213](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L213)
+Defined in: [src/core/protocol.ts:213](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L213)
 
 ***
 
@@ -43,6 +43,6 @@ Defined in: [src/core/protocol.ts:213](https://github.com/HomeGrower-club/stoma/
 
 > `optional` **value**: `string`
 
-Defined in: [src/core/protocol.ts:219](https://github.com/HomeGrower-club/stoma/blob/4764d83fea90804e5e2c02d8c0ed4153d64e412b/src/core/protocol.ts#L219)
+Defined in: [src/core/protocol.ts:219](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/protocol.ts#L219)
 
 Header value. Required for `"set"` and `"append"`, ignored for `"remove"`.
