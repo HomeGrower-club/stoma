@@ -7,7 +7,7 @@ title: "regexThreatProtection"
 
 > `const` **regexThreatProtection**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/traffic/regex-threat-protection.ts:96](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/traffic/regex-threat-protection.ts#L96)
+Defined in: [src/policies/traffic/regex-threat-protection.ts:96](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/traffic/regex-threat-protection.ts#L96)
 
 Regex threat protection policy.
 

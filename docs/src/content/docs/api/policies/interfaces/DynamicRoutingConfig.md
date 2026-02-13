@@ -5,7 +5,7 @@ prev: false
 title: "DynamicRoutingConfig"
 ---
 
-Defined in: [src/policies/traffic/dynamic-routing.ts:28](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/traffic/dynamic-routing.ts#L28)
+Defined in: [src/policies/traffic/dynamic-routing.ts:28](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/traffic/dynamic-routing.ts#L28)
 
 Configuration for the dynamicRouting policy.
 
@@ -19,7 +19,7 @@ Configuration for the dynamicRouting policy.
 
 > `optional` **fallthrough**: `boolean`
 
-Defined in: [src/policies/traffic/dynamic-routing.ts:32](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/traffic/dynamic-routing.ts#L32)
+Defined in: [src/policies/traffic/dynamic-routing.ts:32](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/traffic/dynamic-routing.ts#L32)
 
 If true and no rule matches, call next() normally. If false, throw 404. Default: true.
 
@@ -29,7 +29,7 @@ If true and no rule matches, call next() normally. If false, throw 404. Default:
 
 > **rules**: [`RoutingRule`](/api/policies/interfaces/routingrule/)[]
 
-Defined in: [src/policies/traffic/dynamic-routing.ts:30](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/traffic/dynamic-routing.ts#L30)
+Defined in: [src/policies/traffic/dynamic-routing.ts:30](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/traffic/dynamic-routing.ts#L30)
 
 Ordered list of routing rules. First match wins. Required.
 
@@ -39,7 +39,7 @@ Ordered list of routing rules. First match wins. Required.
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: [src/policies/types.ts:69](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/types.ts#L69)
+Defined in: [src/policies/types.ts:69](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/types.ts#L69)
 
 Skip this policy when condition returns true
 

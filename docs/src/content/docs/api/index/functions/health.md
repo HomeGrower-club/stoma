@@ -7,7 +7,7 @@ title: "health"
 
 > **health**\<`TBindings`\>(`config?`): [`RouteConfig`](/api/index/interfaces/routeconfig/)\<`TBindings`\>
 
-Defined in: [src/core/health.ts:76](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/health.ts#L76)
+Defined in: [src/core/health.ts:76](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/core/health.ts#L76)
 
 Create a health check route for liveness and upstream probing.
 

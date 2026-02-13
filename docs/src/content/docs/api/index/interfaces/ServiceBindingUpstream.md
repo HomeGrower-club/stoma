@@ -5,7 +5,7 @@ prev: false
 title: "ServiceBindingUpstream"
 ---
 
-Defined in: [src/core/types.ts:200](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/types.ts#L200)
+Defined in: [src/core/types.ts:200](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/core/types.ts#L200)
 
 Forward to another Cloudflare Worker via a Service Binding.
 The binding must be configured in the consumer's `wrangler.toml`.
@@ -25,7 +25,7 @@ Worker bindings type. When provided, `service`
 
 > `optional` **rewritePath**: (`path`) => `string`
 
-Defined in: [src/core/types.ts:205](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/types.ts#L205)
+Defined in: [src/core/types.ts:205](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/core/types.ts#L205)
 
 Rewrite the path before forwarding to the bound service.
 
@@ -45,7 +45,7 @@ Rewrite the path before forwarding to the bound service.
 
 > **service**: `Extract`\<keyof `TBindings`, `string`\>
 
-Defined in: [src/core/types.ts:203](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/types.ts#L203)
+Defined in: [src/core/types.ts:203](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/core/types.ts#L203)
 
 Name of the Service Binding in `wrangler.toml` (e.g. `"AUTH_SERVICE"`).
 
@@ -55,4 +55,4 @@ Name of the Service Binding in `wrangler.toml` (e.g. `"AUTH_SERVICE"`).
 
 > **type**: `"service-binding"`
 
-Defined in: [src/core/types.ts:201](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/core/types.ts#L201)
+Defined in: [src/core/types.ts:201](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/core/types.ts#L201)

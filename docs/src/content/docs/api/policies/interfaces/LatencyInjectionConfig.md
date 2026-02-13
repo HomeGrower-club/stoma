@@ -5,7 +5,7 @@ prev: false
 title: "LatencyInjectionConfig"
 ---
 
-Defined in: [src/policies/resilience/latency-injection.ts:10](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/resilience/latency-injection.ts#L10)
+Defined in: [src/policies/resilience/latency-injection.ts:10](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/resilience/latency-injection.ts#L10)
 
 Configuration for the latencyInjection policy.
 
@@ -19,7 +19,7 @@ Configuration for the latencyInjection policy.
 
 > **delayMs**: `number`
 
-Defined in: [src/policies/resilience/latency-injection.ts:12](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/resilience/latency-injection.ts#L12)
+Defined in: [src/policies/resilience/latency-injection.ts:12](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/resilience/latency-injection.ts#L12)
 
 Base delay in milliseconds. Required.
 
@@ -29,7 +29,7 @@ Base delay in milliseconds. Required.
 
 > `optional` **jitter**: `number`
 
-Defined in: [src/policies/resilience/latency-injection.ts:14](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/resilience/latency-injection.ts#L14)
+Defined in: [src/policies/resilience/latency-injection.ts:14](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/resilience/latency-injection.ts#L14)
 
 Jitter proportion (0 to 1). Actual delay varies by +/- jitter * delayMs. Default: 0.
 
@@ -39,7 +39,7 @@ Jitter proportion (0 to 1). Actual delay varies by +/- jitter * delayMs. Default
 
 > `optional` **probability**: `number`
 
-Defined in: [src/policies/resilience/latency-injection.ts:16](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/resilience/latency-injection.ts#L16)
+Defined in: [src/policies/resilience/latency-injection.ts:16](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/resilience/latency-injection.ts#L16)
 
 Probability of injecting latency (0 to 1). Default: 1 (always).
 
@@ -49,7 +49,7 @@ Probability of injecting latency (0 to 1). Default: 1 (always).
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: [src/policies/types.ts:69](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/types.ts#L69)
+Defined in: [src/policies/types.ts:69](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/types.ts#L69)
 
 Skip this policy when condition returns true
 

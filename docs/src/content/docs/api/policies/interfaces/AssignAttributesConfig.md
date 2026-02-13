@@ -5,7 +5,7 @@ prev: false
 title: "AssignAttributesConfig"
 ---
 
-Defined in: [src/policies/transform/assign-attributes.ts:14](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/transform/assign-attributes.ts#L14)
+Defined in: [src/policies/transform/assign-attributes.ts:14](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/transform/assign-attributes.ts#L14)
 
 Configuration for the assignAttributes policy.
 
@@ -19,7 +19,7 @@ Configuration for the assignAttributes policy.
 
 > **attributes**: `Record`\<`string`, `string` \| (`c`) => `string` \| `Promise`\<`string`\>\>
 
-Defined in: [src/policies/transform/assign-attributes.ts:19](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/transform/assign-attributes.ts#L19)
+Defined in: [src/policies/transform/assign-attributes.ts:19](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/transform/assign-attributes.ts#L19)
 
 Key-value pairs to set on the Hono context.
 Values can be static strings or functions that receive the context.
@@ -30,7 +30,7 @@ Values can be static strings or functions that receive the context.
 
 > `optional` **skip**: (`c`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: [src/policies/types.ts:69](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/policies/types.ts#L69)
+Defined in: [src/policies/types.ts:69](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/types.ts#L69)
 
 Skip this policy when condition returns true
 

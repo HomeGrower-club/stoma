@@ -5,7 +5,7 @@ prev: false
 title: "ConsoleSpanExporter"
 ---
 
-Defined in: [src/observability/tracing.ts:332](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/observability/tracing.ts#L332)
+Defined in: [src/observability/tracing.ts:332](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/observability/tracing.ts#L332)
 
 Console span exporter for development and debugging.
 
@@ -32,7 +32,7 @@ showing name, kind, duration, trace/span IDs, and status.
 
 > **export**(`spans`): `Promise`\<`void`\>
 
-Defined in: [src/observability/tracing.ts:333](https://github.com/HomeGrower-club/stoma/blob/366fbbe7f6e2b1e16d5b41730e55deb1ead2b691/src/observability/tracing.ts#L333)
+Defined in: [src/observability/tracing.ts:333](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/observability/tracing.ts#L333)
 
 #### Parameters
 

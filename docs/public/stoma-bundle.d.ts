@@ -5800,10 +5800,6 @@ export declare const interrupt: (config?: InterruptConfig | undefined) => Policy
 /**
  * IP allowlist/denylist filtering policy.
  *
- * Supports both HTTP (`handler`) and protocol-agnostic (`evaluate`) entry
- * points. The evaluate path uses {@link PolicyInput.clientIp} when available
- * (set by the runtime), falling back to header extraction.
- *
  * @module ip-filter
  */
 export interface IpFilterConfig extends PolicyConfig {
