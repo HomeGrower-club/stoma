@@ -1,0 +1,148 @@
+---
+title: Type-Safe Bindings
+draft: false
+description: Use the TBindings generic parameter for IDE autocomplete and compile-time validation of Service Binding names.
+sidebar:
+  order: 5
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+When using [Service Binding upstreams](/concepts/upstreams/), the `service` field is a string that must match a binding name in your `wrangler.toml`. A typo means a runtime 502 error. The `TBindings` generic parameter lets TypeScript catch these mistakes at compile time and gives you IDE autocomplete for valid binding names.
+
+## The generic parameter
+
+`GatewayConfig` accepts an optional type parameter `TBindings` that flows through the entire config tree:
+
+```
+GatewayConfig<TBindings>
+  └─ routes: RouteConfig<TBindings>[]
+       └─ pipeline: PipelineConfig<TBindings>
+            └─ upstream: UpstreamConfig<TBindings>
+                 └─ ServiceBindingUpstream<TBindings>
+                      └─ service: Extract<keyof TBindings, string>
+```
+
+When `TBindings` is provided, the `service` field on `ServiceBindingUpstream` is constrained to `Extract<keyof TBindings, string>` -- only string keys from your bindings type are accepted.
+
+## Basic example
+
+Define an `Env` interface that matches your `wrangler.toml` bindings, then pass it to `createGateway`:
+
+```typescript
+import { createGateway, jwtAuth } from "@homegrower-club/stoma";
+
+// Your Worker's Env interface (matches wrangler.toml bindings)
+interface Env {
+  AUTH_SERVICE: Fetcher;
+  USERS_SERVICE: Fetcher;
+  RATE_LIMIT_KV: KVNamespace;
+}
+
+const gateway = createGateway<Env>({
+  name: "my-api",
+  routes: [
+    {
+      path: "/auth/*",
+      pipeline: {
+        upstream: {
+          type: "service-binding",
+          service: "AUTH_SERVICE", // Autocompletes to "AUTH_SERVICE" | "USERS_SERVICE" | "RATE_LIMIT_KV"
+        },
+      },
+    },
+    {
+      path: "/users/*",
+      pipeline: {
+        policies: [jwtAuth({ secret: "..." })],
+        upstream: {
+          type: "service-binding",
+          service: "USERS_SERVICE", // Valid
+        },
+      },
+    },
+    {
+      path: "/orders/*",
+      pipeline: {
+        upstream: {
+          type: "service-binding",
+          // @ts-expect-error -- "ORDERS_SERVICE" does not exist in Env
+          service: "ORDERS_SERVICE",
+        },
+      },
+    },
+  ],
+});
+```
+
+The third route produces a TypeScript error because `"ORDERS_SERVICE"` is not a key of `Env`. Without the generic parameter, this would silently compile and fail at runtime.
+
+<Aside type="note">
+URL and handler upstreams are unaffected by `TBindings`. The generic only constrains the `service` field on `ServiceBindingUpstream`.
+</Aside>
+
+## Backward compatibility
+
+The default type parameter is `Record<string, unknown>`, which means `Extract<keyof Record<string, unknown>, string>` resolves to `string`. Existing gateway configs that omit the generic continue to accept any string for `service` -- no migration is needed.
+
+```typescript
+// No generic -- service accepts any string (existing behavior)
+const gateway = createGateway({
+  routes: [
+    {
+      path: "/api/*",
+      pipeline: {
+        upstream: {
+          type: "service-binding",
+          service: "ANY_STRING_IS_FINE", // No type error
+        },
+      },
+    },
+  ],
+});
+```
+
+## Works with scope() and mergeConfigs()
+
+Both `scope()` and `mergeConfigs()` accept the same `TBindings` generic parameter, so type safety propagates through route composition and config splitting:
+
+```typescript
+import { createGateway, scope, jwtAuth, cors } from "@homegrower-club/stoma";
+import { mergeConfigs } from "@homegrower-club/stoma/config";
+
+interface Env {
+  AUTH_SERVICE: Fetcher;
+  PROJECTS_SERVICE: Fetcher;
+}
+
+// scope() preserves TBindings
+const apiRoutes = scope<Env>({
+  prefix: "/api/v1",
+  policies: [jwtAuth({ secret: "..." })],
+  routes: [
+    {
+      path: "/projects/*",
+      pipeline: {
+        upstream: {
+          type: "service-binding",
+          service: "PROJECTS_SERVICE", // Type-checked against Env
+        },
+      },
+    },
+  ],
+});
+
+// mergeConfigs() preserves TBindings
+const config = mergeConfigs<Env>(
+  { name: "my-api", policies: [cors()] },
+  { routes: apiRoutes },
+);
+
+const gateway = createGateway<Env>(config);
+```
+
+See [Route Scopes](/guides/route-scopes/) for details on `scope()`.
+
+<Aside type="tip">
+This is a compile-time feature only. The generic parameter is erased during TypeScript compilation and has no effect on runtime behavior. Existing gateway configs work without modification -- add `TBindings` when you want the additional type safety.
+</Aside>

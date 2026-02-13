@@ -73,7 +73,7 @@ interface UpstreamStatus {
  * });
  * ```
  */
-export function health(config?: HealthConfig): RouteConfig {
+export function health<TBindings = Record<string, unknown>>(config?: HealthConfig): RouteConfig<TBindings> {
   const path = config?.path ?? "/health";
   const probes = config?.upstreamProbes ?? [];
   const includeStatus = config?.includeUpstreamStatus ?? false;

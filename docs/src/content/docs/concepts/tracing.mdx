@@ -1,0 +1,285 @@
+---
+title: Distributed Tracing
+draft: false
+description: Lightweight OpenTelemetry-compatible distributed tracing with OTLP/HTTP export, head-based sampling, and zero runtime dependencies.
+sidebar:
+  order: 5
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Stoma includes a lightweight OpenTelemetry-compatible tracing system designed for edge runtimes. It uses the OTel data model (traces, spans, attributes, events) and exports via OTLP/HTTP JSON using `fetch()` -- no gRPC, no protobuf, no Node.js dependencies. When tracing is not configured, there is zero overhead.
+
+## Enabling tracing
+
+Add a `tracing` configuration to your `GatewayConfig`:
+
+```typescript
+import { createGateway } from "@homegrower-club/stoma";
+import { OTLPSpanExporter } from "@homegrower-club/stoma";
+
+const gateway = createGateway({
+  name: "my-api",
+  tracing: {
+    exporter: new OTLPSpanExporter({
+      endpoint: "https://otel-collector.internal:4318/v1/traces",
+    }),
+    serviceName: "my-api-gateway",
+    serviceVersion: "1.0.0",
+    sampleRate: 0.1, // Sample 10% of requests
+  },
+  routes: [/* ... */],
+});
+```
+
+### TracingConfig fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `exporter` | `SpanExporter` | Required. Where to send completed spans. |
+| `serviceName` | `string` | Service name set on the OTel resource. Default: `"stoma-gateway"`. |
+| `serviceVersion` | `string` | Service version set on the OTel resource. Optional. |
+| `sampleRate` | `number` | Head-based sampling rate from `0.0` (none) to `1.0` (all). Default: `1.0`. |
+
+## Built-in exporters
+
+### OTLPSpanExporter
+
+Ships spans to any OTLP-compatible collector (Jaeger, Grafana Tempo, Honeycomb, Datadog OTLP endpoint, etc.) using the OTLP/HTTP JSON encoding via `fetch()`.
+
+```typescript
+import { OTLPSpanExporter } from "@homegrower-club/stoma";
+
+const exporter = new OTLPSpanExporter({
+  endpoint: "https://otel-collector.internal:4318/v1/traces",
+  headers: {
+    Authorization: "Bearer <token>",
+  },
+  timeoutMs: 5000,
+  serviceName: "my-api",
+  serviceVersion: "2.1.0",
+});
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `endpoint` | `string` | Required. OTLP collector URL (e.g. `https://collector:4318/v1/traces`). |
+| `headers` | `Record<string, string>` | Custom headers sent with each export request. Default: `{}`. |
+| `timeoutMs` | `number` | Timeout for the export fetch call. Default: `10000`. |
+| `serviceName` | `string` | Overrides `TracingConfig.serviceName` for this exporter. Default: `"stoma-gateway"`. |
+| `serviceVersion` | `string` | Overrides `TracingConfig.serviceVersion` for this exporter. Optional. |
+
+### ConsoleSpanExporter
+
+Logs each span to `console.debug()` in a compact one-line format. Useful for local development and debugging.
+
+```typescript
+import { ConsoleSpanExporter } from "@homegrower-club/stoma";
+
+const gateway = createGateway({
+  tracing: {
+    exporter: new ConsoleSpanExporter(),
+  },
+  routes: [/* ... */],
+});
+```
+
+Output format:
+
+```
+[trace] GET /api/users SERVER 42ms trace=abcdef... span=123456... status=OK
+[trace] jwt-auth INTERNAL 2ms trace=abcdef... span=789abc... parent=123456... status=OK
+```
+
+## Quick start: local Jaeger
+
+Run Jaeger with OTLP ingestion and point the exporter at it:
+
+```bash
+# Start Jaeger with OTLP receiver (Docker)
+docker run -d --name jaeger \
+  -p 16686:16686 \
+  -p 4318:4318 \
+  jaegertracing/all-in-one:latest
+```
+
+```typescript
+import { createGateway, OTLPSpanExporter, cors, rateLimit } from "@homegrower-club/stoma";
+
+const gateway = createGateway({
+  name: "my-api",
+  tracing: {
+    exporter: new OTLPSpanExporter({
+      endpoint: "http://localhost:4318/v1/traces",
+    }),
+    serviceName: "my-api-gateway",
+    sampleRate: 1.0, // Trace every request in development
+  },
+  policies: [cors(), rateLimit({ max: 100 })],
+  routes: [
+    {
+      path: "/api/*",
+      pipeline: {
+        upstream: { type: "url", target: "https://api.internal" },
+      },
+    },
+  ],
+});
+
+export default gateway.app;
+```
+
+Open `http://localhost:16686` to view traces in the Jaeger UI.
+
+## Span model
+
+Each completed span is represented as a `ReadableSpan`:
+
+```typescript
+interface ReadableSpan {
+  traceId: string;           // 32-hex trace ID (shared across all spans in a trace)
+  spanId: string;            // 16-hex span ID (unique per span)
+  parentSpanId?: string;     // Parent span ID (absent for root spans)
+  name: string;              // Span name (e.g. "GET /api/users", "jwt-auth")
+  kind: SpanKind;            // "SERVER" | "CLIENT" | "INTERNAL"
+  startTimeMs: number;       // Unix timestamp in milliseconds
+  endTimeMs: number;         // Unix timestamp in milliseconds
+  attributes: Record<string, string | number | boolean>;
+  status: { code: SpanStatusCode; message?: string };
+  events: SpanEvent[];       // Timestamped events recorded during the span
+}
+```
+
+### Semantic conventions
+
+Stoma uses the stable HTTP semantic convention attribute keys from the OpenTelemetry specification. The `SemConv` object provides named constants:
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `SemConv.HTTP_METHOD` | `"http.request.method"` | HTTP request method (GET, POST, etc.) |
+| `SemConv.HTTP_ROUTE` | `"http.route"` | Matched route pattern (e.g. `/users/:id`) |
+| `SemConv.HTTP_STATUS_CODE` | `"http.response.status_code"` | HTTP response status code |
+| `SemConv.URL_PATH` | `"url.path"` | Full request URL path |
+| `SemConv.SERVER_ADDRESS` | `"server.address"` | Server hostname |
+
+## Span hierarchy
+
+The gateway creates a hierarchy of spans for each request. See [Architecture](/concepts/architecture/) for the full request lifecycle.
+
+**Root span** (`SERVER`) -- Created by the context injector at the start of each request. Covers the entire gateway processing time including all policies and the upstream call.
+
+**Policy spans** (`INTERNAL`) -- One child span per policy in the pipeline. Created automatically by the policy middleware wrapper. Records the policy name, priority, and execution duration.
+
+**Upstream span** (`CLIENT`) -- Created when dispatching to a URL or Service Binding upstream. The gateway propagates the W3C `traceparent` header with a fresh span ID so the upstream service can continue the trace.
+
+```
+[SERVER] GET /api/users  (42ms)
+  ├─ [INTERNAL] cors  (0ms)
+  ├─ [INTERNAL] jwt-auth  (3ms)
+  ├─ [INTERNAL] rate-limit  (1ms)
+  └─ [CLIENT] upstream: https://api.internal  (35ms)
+       └─ (continued by upstream service via traceparent header)
+```
+
+## Sampling
+
+Head-based sampling is controlled by `TracingConfig.sampleRate`. The decision is made once per request before any spans are created.
+
+| `sampleRate` | Behavior |
+|---|---|
+| `1.0` (default) | Every request is traced. |
+| `0.5` | Approximately 50% of requests are traced. |
+| `0.1` | Approximately 10% of requests are traced. |
+| `0.0` | No requests are traced (tracing disabled). |
+
+When a request is not sampled, no `SpanBuilder` instances are created and no export calls are made. The overhead for unsampled requests is a single `Math.random()` comparison.
+
+## Custom SpanExporter
+
+Implement the `SpanExporter` interface to send spans to any backend:
+
+```typescript
+import type { SpanExporter, ReadableSpan } from "@homegrower-club/stoma";
+
+class DatadogSpanExporter implements SpanExporter {
+  private readonly apiKey: string;
+  private readonly endpoint: string;
+
+  constructor(config: { apiKey: string; site?: string }) {
+    this.apiKey = config.apiKey;
+    this.endpoint = `https://trace.agent.${config.site ?? "datadoghq.com"}/api/v0.2/traces`;
+  }
+
+  async export(spans: ReadableSpan[]): Promise<void> {
+    if (spans.length === 0) return;
+
+    // Transform ReadableSpan[] to Datadog's trace format
+    const ddSpans = spans.map((span) => ({
+      trace_id: span.traceId,
+      span_id: span.spanId,
+      parent_id: span.parentSpanId,
+      name: span.name,
+      start: span.startTimeMs * 1_000_000, // nanoseconds
+      duration: (span.endTimeMs - span.startTimeMs) * 1_000_000,
+      meta: Object.fromEntries(
+        Object.entries(span.attributes)
+          .filter(([, v]) => typeof v === "string")
+      ),
+      error: span.status.code === "ERROR" ? 1 : 0,
+    }));
+
+    await fetch(this.endpoint, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "DD-API-KEY": this.apiKey,
+      },
+      body: JSON.stringify([[...ddSpans]]),
+      signal: AbortSignal.timeout(10_000),
+    });
+  }
+
+  async shutdown(): Promise<void> {
+    // Flush any buffered spans if needed
+  }
+}
+```
+
+The `shutdown()` method is optional. If implemented, it is called when the gateway is shutting down to allow final span flushing.
+
+## Using with waitUntil
+
+Span export happens asynchronously. On Cloudflare Workers, the exporter's `export()` call is dispatched via `adapter.waitUntil()` so it does not block the response. Configure a runtime adapter to enable this:
+
+```typescript
+import { createGateway, OTLPSpanExporter } from "@homegrower-club/stoma";
+import { cloudflareAdapter } from "@homegrower-club/stoma/adapters/cloudflare";
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const gateway = createGateway({
+      adapter: cloudflareAdapter({ ctx }),
+      tracing: {
+        exporter: new OTLPSpanExporter({
+          endpoint: env.OTEL_ENDPOINT,
+          headers: { Authorization: `Bearer ${env.OTEL_TOKEN}` },
+        }),
+        sampleRate: 0.1,
+      },
+      routes: [/* ... */],
+    });
+
+    return gateway.app.fetch(request, env, ctx);
+  },
+};
+```
+
+Without `waitUntil`, span export still works but blocks the response until the export fetch completes.
+
+<Aside type="tip">
+Combine tracing with the [`requestLog`](/policies/observability/) and [`metricsReporter`](/policies/observability/) policies for comprehensive observability. Tracing provides distributed request context and span-level timing, while `requestLog` provides structured logs and `metricsReporter` provides aggregate metrics with Prometheus export.
+</Aside>
+
+<Aside type="note">
+This is a lightweight implementation following the OTel data model, not a full OpenTelemetry SDK. It covers the common case of exporting spans from an edge gateway. For advanced features like baggage propagation, span processors, or multiple simultaneous exporters, use the official `@opentelemetry/api` package and bridge it via a custom `SpanExporter`.
+</Aside>

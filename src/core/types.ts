@@ -11,16 +11,24 @@
 import type { Context, Hono } from "hono";
 import type { GatewayAdapter } from "../adapters/types";
 import type { MetricsCollector } from "../observability/metrics";
+import type { TracingConfig } from "../observability/tracing";
 import type { Policy } from "../policies/types";
 
-/** Top-level gateway configuration */
-export interface GatewayConfig {
+/**
+ * Top-level gateway configuration.
+ *
+ * @typeParam TBindings - Worker bindings type (e.g. your `Env` interface).
+ *   Defaults to `Record<string, unknown>` so `service` on
+ *   {@link ServiceBindingUpstream} accepts any string. When you pass your
+ *   own Env type, `service` autocompletes to valid binding names.
+ */
+export interface GatewayConfig<TBindings = Record<string, unknown>> {
   /** Gateway name, used in logs and metrics */
   name?: string;
   /** Base path prefix for all routes (e.g. "/api") */
   basePath?: string;
   /** Route definitions */
-  routes: RouteConfig[];
+  routes: RouteConfig<TBindings>[];
   /** Global policies applied to all routes */
   policies?: Policy[];
   /** Global error handler */
@@ -95,6 +103,30 @@ export interface GatewayConfig {
    * ```
    */
   debugHeaders?: boolean | DebugHeadersConfig;
+  /**
+   * OpenTelemetry-compatible distributed tracing.
+   *
+   * When configured, the gateway creates a root SERVER span per request,
+   * INTERNAL child spans per policy, and CLIENT child spans for upstream
+   * calls. Spans are exported asynchronously via `adapter.waitUntil()`.
+   *
+   * Zero overhead when not configured — no span objects are allocated.
+   *
+   * @example
+   * ```ts
+   * import { createGateway, OTLPSpanExporter } from "@homegrower-club/stoma";
+   *
+   * createGateway({
+   *   tracing: {
+   *     exporter: new OTLPSpanExporter({ endpoint: "https://otel-collector/v1/traces" }),
+   *     serviceName: "my-api",
+   *     sampleRate: 0.1,
+   *   },
+   *   // ...routes
+   * });
+   * ```
+   */
+  tracing?: TracingConfig;
 }
 
 /** Configuration for client-requested debug headers. */
@@ -105,30 +137,42 @@ export interface DebugHeadersConfig {
   allow?: string[];
 }
 
-/** Individual route configuration */
-export interface RouteConfig {
+/**
+ * Individual route configuration.
+ *
+ * @typeParam TBindings - Worker bindings type, propagated from {@link GatewayConfig}.
+ */
+export interface RouteConfig<TBindings = Record<string, unknown>> {
   /** Route path pattern (Hono syntax, e.g. "/users/:id") */
   path: string;
   /** Allowed HTTP methods. Defaults to all. */
   methods?: HttpMethod[];
   /** Pipeline to process this route */
-  pipeline: PipelineConfig;
+  pipeline: PipelineConfig<TBindings>;
   /** Route-level metadata for logging/observability */
   metadata?: Record<string, unknown>;
 }
 
-/** Pipeline: ordered chain of policies leading to an upstream */
-export interface PipelineConfig {
+/**
+ * Pipeline: ordered chain of policies leading to an upstream.
+ *
+ * @typeParam TBindings - Worker bindings type, propagated from {@link RouteConfig}.
+ */
+export interface PipelineConfig<TBindings = Record<string, unknown>> {
   /** Policies executed in order before the upstream */
   policies?: Policy[];
   /** Upstream target configuration */
-  upstream: UpstreamConfig;
+  upstream: UpstreamConfig<TBindings>;
 }
 
-/** Upstream target — where the request is forwarded */
-export type UpstreamConfig =
+/**
+ * Upstream target — where the request is forwarded.
+ *
+ * @typeParam TBindings - Worker bindings type, constrains {@link ServiceBindingUpstream.service}.
+ */
+export type UpstreamConfig<TBindings = Record<string, unknown>> =
   | UrlUpstream
-  | ServiceBindingUpstream
+  | ServiceBindingUpstream<TBindings>
   | HandlerUpstream;
 
 /**
@@ -149,11 +193,14 @@ export interface UrlUpstream {
 /**
  * Forward to another Cloudflare Worker via a Service Binding.
  * The binding must be configured in the consumer's `wrangler.toml`.
+ *
+ * @typeParam TBindings - Worker bindings type. When provided, `service`
+ *   autocompletes to valid binding names from your Env interface.
  */
-export interface ServiceBindingUpstream {
+export interface ServiceBindingUpstream<TBindings = Record<string, unknown>> {
   type: "service-binding";
   /** Name of the Service Binding in `wrangler.toml` (e.g. `"AUTH_SERVICE"`). */
-  service: string;
+  service: Extract<keyof TBindings, string>;
   /** Rewrite the path before forwarding to the bound service. */
   rewritePath?: (path: string) => string;
 }

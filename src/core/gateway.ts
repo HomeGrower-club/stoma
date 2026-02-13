@@ -90,7 +90,7 @@ import type {
  * export default gateway.app;
  * ```
  */
-export function createGateway(config: GatewayConfig): GatewayInstance {
+export function createGateway<TBindings = Record<string, unknown>>(config: GatewayConfig<TBindings>): GatewayInstance {
   if (!config.routes || config.routes.length === 0) {
     throw new GatewayError(
       500,
@@ -253,8 +253,9 @@ function joinPaths(basePath: string | undefined, routePath: string): string {
 }
 
 /** Create the terminal handler that dispatches to the upstream */
+// biome-ignore lint/suspicious/noExplicitAny: Internal function — TBindings is erased at runtime
 function createUpstreamHandler(
-  route: RouteConfig,
+  route: RouteConfig<any>,
   debug = noopDebugLogger,
   adapter?: GatewayAdapter
 ) {

@@ -43,6 +43,39 @@
  * ```
  */
 
+// ── Protocol — multi-runtime policy evaluation ──────────────────────────
+
+export type {
+  /** Set a cross-policy attribute in PolicyResult mutations. */
+  AttributeMutation,
+  /** Replace or clear the message body in PolicyResult mutations. */
+  BodyMutation,
+  /** Add, remove, or append a header in PolicyResult mutations. */
+  HeaderMutation,
+  /** A discrete modification (header, body, status, attribute) applied via PolicyResult. */
+  Mutation,
+  /** Allow processing to continue, optionally with mutations. */
+  PolicyContinue,
+  /** Runtime-facing evaluation context (no typed config — see PolicyEvalHandlerContext for typed version). */
+  PolicyEvalContext,
+  /** Protocol-agnostic policy evaluation entry point (onRequest, onResponse). */
+  PolicyEvaluator,
+  /** Short-circuit with a complete non-error response (cache hit, mock, redirect). */
+  PolicyImmediateResponse,
+  /** Protocol-agnostic view of what's being processed — constructed by each runtime. */
+  PolicyInput,
+  /** Reject the request with a structured error response. */
+  PolicyReject,
+  /** The outcome of a policy evaluation: continue, reject, or immediate-response. */
+  PolicyResult,
+  /** Lifecycle phase a policy participates in (request-headers, response-body, etc.). */
+  ProcessingPhase,
+  /** Identifies the protocol runtime (http, grpc, websocket). */
+  ProtocolType,
+  /** Modify the response status code in PolicyResult mutations. */
+  StatusMutation,
+} from "./core/protocol";
+
 // ── Core ────────────────────────────────────────────────────────────────
 
 /** Standard JSON error response shape returned by all gateway errors. */
@@ -210,6 +243,8 @@ export {
 export type {
   /** Declarative policy definition passed to {@link definePolicy}. */
   PolicyDefinition,
+  /** Context injected into `definePolicy` evaluate handlers (protocol-agnostic, with typed config). */
+  PolicyEvalHandlerContext,
   /** Context injected into `definePolicy` handlers: merged config, debug logger, and gateway context. */
   PolicyHandlerContext,
   /** Options for {@link createPolicyTestHarness}: custom upstream, path, gateway name, adapter. */

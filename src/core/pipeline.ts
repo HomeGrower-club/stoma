@@ -34,6 +34,8 @@ import {
   parseTraceparent,
 } from "../utils/trace-context";
 import type { DebugHeadersConfig } from "./types";
+import type { ReadableSpan, TracingConfig } from "../observability/tracing";
+import { SpanBuilder, generateOtelSpanId, shouldSample } from "../observability/tracing";
 
 const noopDebugFactory = () => noopDebugLogger;
 

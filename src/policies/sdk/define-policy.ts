@@ -5,10 +5,20 @@
  * into a single declarative API. Takes a {@link PolicyDefinition} and returns
  * a factory function `(config?) => Policy`.
  *
+ * Supports both HTTP-specific handlers (Hono middleware) and protocol-agnostic
+ * evaluators for multi-runtime policies (ext_proc, WebSocket).
+ *
  * @module define-policy
  */
 import type { Context, Next } from "hono";
 import { getGatewayContext } from "../../core/pipeline";
+import type {
+  PolicyEvalContext,
+  PolicyEvaluator,
+  PolicyInput,
+  PolicyResult,
+  ProcessingPhase,
+} from "../../core/protocol";
 import type { DebugLogger } from "../../utils/debug";
 import type { Policy, PolicyConfig, PolicyContext } from "../types";
 import { policyDebug, resolveConfig, withSkip } from "./helpers";
@@ -33,6 +43,18 @@ export interface PolicyHandlerContext<TConfig> {
 }
 
 /**
+ * Context injected into `definePolicy` evaluate handlers.
+ *
+ * Parallel to {@link PolicyHandlerContext} but protocol-agnostic —
+ * no Hono types. Extends the runtime-facing {@link PolicyEvalContext}
+ * with the fully-merged, typed config.
+ */
+export interface PolicyEvalHandlerContext<TConfig> extends PolicyEvalContext {
+  /** Fully merged config (defaults + user overrides). */
+  config: TConfig;
+}
+
+/**
  * Declarative policy definition passed to {@link definePolicy}.
  */
 export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
@@ -51,14 +73,65 @@ export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
    */
   validate?: (config: TConfig) => void;
   /**
-   * The policy handler. Receives the Hono context, `next`, and a
+   * The HTTP policy handler. Receives the Hono context, `next`, and a
    * {@link PolicyHandlerContext} with config, debug, and gateway context.
+   *
+   * Used by the HTTP runtime ({@link createGateway}).
    */
   handler: (
     c: Context,
     next: Next,
-    ctx: PolicyHandlerContext<TConfig>
+    ctx: PolicyHandlerContext<TConfig>,
   ) => Promise<void> | void;
+
+  /**
+   * Protocol-agnostic evaluator for multi-runtime policies.
+   *
+   * Used by non-HTTP runtimes (ext_proc, WebSocket). The HTTP runtime
+   * uses {@link handler} and ignores this field.
+   *
+   * Implement this alongside `handler` to make a policy work across
+   * all runtimes. The `config` is pre-merged and injected into
+   * {@link PolicyEvalHandlerContext}.
+   *
+   * @example
+   * ```ts
+   * const myPolicy = definePolicy<MyConfig>({
+   *   name: "my-policy",
+   *   priority: Priority.AUTH,
+   *   phases: ["request-headers"],
+   *   handler: async (c, next, { config }) => { ... },
+   *   evaluate: {
+   *     onRequest: async (input, { config }) => {
+   *       const token = input.headers.get("authorization");
+   *       if (!token) return { action: "reject", status: 401, code: "unauthorized", message: "Missing" };
+   *       return { action: "continue" };
+   *     },
+   *   },
+   * });
+   * ```
+   */
+  evaluate?: {
+    onRequest?: (
+      input: PolicyInput,
+      ctx: PolicyEvalHandlerContext<TConfig>,
+    ) => Promise<PolicyResult>;
+    onResponse?: (
+      input: PolicyInput,
+      ctx: PolicyEvalHandlerContext<TConfig>,
+    ) => Promise<PolicyResult>;
+  };
+
+  /**
+   * Processing phases this policy participates in.
+   *
+   * Used by phase-based runtimes (ext_proc) to skip policies that
+   * don't apply to the current phase. Passed through to the
+   * returned {@link Policy.phases}.
+   *
+   * Default: `["request-headers"]`.
+   */
+  phases?: ProcessingPhase[];
 }
 
 /**
@@ -91,12 +164,12 @@ export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
  * @returns A factory function: `(config?) => Policy`.
  */
 export function definePolicy<TConfig extends PolicyConfig = PolicyConfig>(
-  definition: PolicyDefinition<TConfig>
+  definition: PolicyDefinition<TConfig>,
 ): (config?: TConfig) => Policy {
   return (userConfig?: TConfig): Policy => {
     const config = resolveConfig<TConfig>(
       (definition.defaults ?? {}) as Partial<TConfig>,
-      userConfig as Partial<TConfig> | undefined
+      userConfig as Partial<TConfig> | undefined,
     );
 
     // Construction-time validation — fail fast on bad config
@@ -113,10 +186,29 @@ export function definePolicy<TConfig extends PolicyConfig = PolicyConfig>(
 
     const handler = withSkip(config.skip, rawHandler);
 
+    // Build the protocol-agnostic evaluator by injecting the merged
+    // config into the runtime-provided PolicyEvalContext.
+    let evaluate: PolicyEvaluator | undefined;
+    if (definition.evaluate) {
+      const defEval = definition.evaluate;
+      evaluate = {
+        onRequest: defEval.onRequest
+          ? (input: PolicyInput, ctx: PolicyEvalContext) =>
+              defEval.onRequest!(input, { ...ctx, config })
+          : undefined,
+        onResponse: defEval.onResponse
+          ? (input: PolicyInput, ctx: PolicyEvalContext) =>
+              defEval.onResponse!(input, { ...ctx, config })
+          : undefined,
+      };
+    }
+
     return {
       name: definition.name,
       priority: definition.priority ?? Priority.DEFAULT,
       handler,
+      evaluate,
+      phases: definition.phases,
     };
   };
 }

@@ -60,6 +60,8 @@ export {
 /** Declarative policy definition passed to {@link definePolicy}. */
 export type {
   PolicyDefinition,
+  /** Context injected into `definePolicy` evaluate handlers (protocol-agnostic, with typed config). */
+  PolicyEvalHandlerContext,
   /** Context injected into `definePolicy` handlers: merged config, debug logger, and gateway context. */
   PolicyHandlerContext,
 } from "./define-policy";

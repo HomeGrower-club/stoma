@@ -118,6 +118,8 @@ export { serverTiming } from "./observability/server-timing";
 export type {
   /** Declarative policy definition passed to definePolicy. */
   PolicyDefinition,
+  /** Context injected into definePolicy evaluate handlers (protocol-agnostic, with typed config). */
+  PolicyEvalHandlerContext,
   /** Context injected into definePolicy handlers. */
   PolicyHandlerContext,
   /** Options for createPolicyTestHarness. */
@@ -263,7 +265,7 @@ export type {
   RequestTransformConfig,
   ResponseTransformConfig,
 } from "./transform/transform";
-/** A composable policy: name, priority, and Hono middleware handler. */
+/** A composable policy: name, priority, Hono middleware handler, and optional protocol-agnostic evaluator. */
 export type {
   Policy,
   /** Base configuration for all policies, including the `skip` bypass predicate. */
@@ -271,3 +273,22 @@ export type {
   /** Per-request gateway context: request ID, trace ID, span ID, timing, and debug factory. */
   PolicyContext,
 } from "./types";
+
+// ── Protocol — multi-runtime types ──────────────────────────────────────
+
+export type {
+  AttributeMutation,
+  BodyMutation,
+  HeaderMutation,
+  Mutation,
+  PolicyContinue,
+  PolicyEvalContext,
+  PolicyEvaluator,
+  PolicyImmediateResponse,
+  PolicyInput,
+  PolicyReject,
+  PolicyResult,
+  ProcessingPhase,
+  ProtocolType,
+  StatusMutation,
+} from "../core/protocol";

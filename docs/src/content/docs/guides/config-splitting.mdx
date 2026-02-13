@@ -1,0 +1,324 @@
+---
+title: Configuration Splitting
+draft: false
+description: Split gateway configuration across multiple files with mergeConfigs() for team ownership, environment overrides, and feature modules.
+sidebar:
+  order: 4
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+As a gateway grows, keeping the entire configuration in a single file becomes
+unwieldy. `mergeConfigs()` accepts any number of partial `GatewayConfig` objects
+and merges them left-to-right into a single complete config. This enables
+patterns like per-domain route files, shared policy sets, and
+environment-specific overrides.
+
+```typescript
+import { mergeConfigs } from "@homegrower-club/stoma";
+```
+
+## Function signature
+
+```typescript
+function mergeConfigs<TBindings = Record<string, unknown>>(
+  ...configs: Array<Partial<GatewayConfig<TBindings>>>
+): GatewayConfig<TBindings>
+```
+
+Accepts one or more partial configs and returns a fully merged `GatewayConfig`.
+Throws a `GatewayError` if the merged result contains zero routes.
+
+## Merge semantics
+
+Each field type follows a specific merge strategy. When multiple configs define
+the same field, the strategy determines how values combine:
+
+| Field | Strategy |
+|-------|----------|
+| `routes` | Concatenated in order (all routes from all configs) |
+| `policies` | Deduplicated by `name` -- later config wins on conflict |
+| `name`, `basePath`, `debug`, `requestIdHeader`, `defaultErrorMessage`, `defaultPolicyPriority`, `defaultMethods`, `onError`, `adapter` | Last-defined wins (`undefined` values are skipped) |
+| `admin` | Shallow-merged when both are objects; last value wins when types differ (e.g. `boolean` replaces `object`) |
+| `debugHeaders` | Same strategy as `admin` |
+
+<Aside type="note">
+Policy deduplication in `mergeConfigs()` uses the same name-based strategy as
+[global/route policy merging](/concepts/policies/#global-and-route-policy-merging).
+If two configs both provide a `cors` policy, the later config's version replaces
+the earlier one.
+</Aside>
+
+## Splitting by domain
+
+Organize route definitions by team or domain, with a shared base config for
+gateway-wide settings:
+
+```typescript
+// gateway/base.ts
+import { cors, requestLog, rateLimit } from "@homegrower-club/stoma";
+import type { GatewayConfig } from "@homegrower-club/stoma";
+
+export const baseConfig: Partial<GatewayConfig> = {
+  name: "platform-api",
+  basePath: "/api",
+  policies: [
+    cors({ origins: ["https://app.example.com"] }),
+    requestLog({ level: "info" }),
+    rateLimit({ max: 500, windowSeconds: 60 }),
+  ],
+};
+```
+
+```typescript
+// gateway/auth-routes.ts
+import { jwtAuth } from "@homegrower-club/stoma";
+import type { GatewayConfig } from "@homegrower-club/stoma";
+
+export const authRoutes: Partial<GatewayConfig> = {
+  routes: [
+    {
+      path: "/auth/login",
+      methods: ["POST"],
+      pipeline: {
+        upstream: { type: "url", target: "https://auth.internal" },
+      },
+    },
+    {
+      path: "/auth/refresh",
+      methods: ["POST"],
+      pipeline: {
+        policies: [jwtAuth({ secret: env.JWT_SECRET })],
+        upstream: { type: "url", target: "https://auth.internal" },
+      },
+    },
+  ],
+};
+```
+
+```typescript
+// gateway/user-routes.ts
+import { jwtAuth, cache } from "@homegrower-club/stoma";
+import type { GatewayConfig } from "@homegrower-club/stoma";
+
+export const userRoutes: Partial<GatewayConfig> = {
+  routes: [
+    {
+      path: "/users/*",
+      pipeline: {
+        policies: [jwtAuth({ secret: env.JWT_SECRET })],
+        upstream: { type: "service-binding", service: "USERS_SERVICE" },
+      },
+    },
+    {
+      path: "/users/:id/profile",
+      methods: ["GET"],
+      pipeline: {
+        policies: [
+          jwtAuth({ secret: env.JWT_SECRET }),
+          cache({ ttlSeconds: 60 }),
+        ],
+        upstream: { type: "service-binding", service: "USERS_SERVICE" },
+      },
+    },
+  ],
+};
+```
+
+```typescript
+// gateway/index.ts
+import { createGateway, mergeConfigs, health } from "@homegrower-club/stoma";
+import { baseConfig } from "./base";
+import { authRoutes } from "./auth-routes";
+import { userRoutes } from "./user-routes";
+
+const gateway = createGateway(
+  mergeConfigs(
+    baseConfig,
+    { routes: [health({ path: "/health" })] },
+    authRoutes,
+    userRoutes,
+  )
+);
+
+export default gateway.app;
+```
+
+Routes are concatenated in the order configs are passed. The global `cors`,
+`requestLog`, and `rateLimit` policies from `baseConfig` apply to every route.
+
+## Environment overrides
+
+Layer environment-specific settings on top of a base configuration:
+
+```typescript
+// gateway/base.ts
+import { cors, requestLog } from "@homegrower-club/stoma";
+import type { GatewayConfig } from "@homegrower-club/stoma";
+
+export const baseConfig: Partial<GatewayConfig> = {
+  name: "my-api",
+  debug: true,
+  admin: true,
+  policies: [cors(), requestLog()],
+  routes: [
+    {
+      path: "/users/*",
+      pipeline: {
+        upstream: { type: "url", target: "https://users.internal" },
+      },
+    },
+  ],
+};
+```
+
+```typescript
+// gateway/production.ts
+import type { GatewayConfig } from "@homegrower-club/stoma";
+import { cloudflareAdapter } from "@homegrower-club/stoma/adapters";
+
+export const productionOverrides: Partial<GatewayConfig> = {
+  debug: false,
+  admin: {
+    enabled: true,
+    auth: (c) => c.req.header("x-admin-key") === env.ADMIN_KEY,
+  },
+  adapter: cloudflareAdapter({
+    rateLimitDo: env.RATE_LIMITER,
+    cache: caches.default,
+  }),
+};
+```
+
+```typescript
+// gateway/index.ts
+import { createGateway, mergeConfigs } from "@homegrower-club/stoma";
+import { baseConfig } from "./base";
+import { productionOverrides } from "./production";
+
+const config = mergeConfigs(baseConfig, productionOverrides);
+const gateway = createGateway(config);
+
+export default gateway.app;
+```
+
+The production overrides disable debug logging and add admin authentication
+without repeating the route definitions or policy list.
+
+## Composition with scope()
+
+Combine `mergeConfigs()` with [`scope()`](/guides/route-scopes/) for
+multi-team gateways where each team owns a versioned route namespace:
+
+```typescript
+import {
+  createGateway,
+  mergeConfigs,
+  scope,
+  jwtAuth,
+  apiKeyAuth,
+  health,
+  cors,
+  requestLog,
+} from "@homegrower-club/stoma";
+
+// Team A owns user routes
+const userRoutes = scope({
+  prefix: "/api/v1/users",
+  policies: [jwtAuth({ secret: env.JWT_SECRET })],
+  metadata: { team: "users" },
+  routes: [
+    {
+      path: "/",
+      pipeline: {
+        upstream: { type: "service-binding", service: "USERS_SERVICE" },
+      },
+    },
+    {
+      path: "/:id",
+      pipeline: {
+        upstream: { type: "service-binding", service: "USERS_SERVICE" },
+      },
+    },
+  ],
+});
+
+// Team B owns webhook routes
+const webhookRoutes = scope({
+  prefix: "/webhooks",
+  policies: [apiKeyAuth({ headerName: "x-webhook-secret", validate: verifyKey })],
+  metadata: { team: "integrations" },
+  routes: [
+    {
+      path: "/stripe",
+      methods: ["POST"],
+      pipeline: {
+        upstream: { type: "url", target: "https://webhooks.internal" },
+      },
+    },
+  ],
+});
+
+const gateway = createGateway(
+  mergeConfigs(
+    {
+      name: "platform-api",
+      policies: [cors(), requestLog()],
+      routes: [health({ path: "/health" })],
+    },
+    { routes: [...userRoutes, ...webhookRoutes] },
+  )
+);
+
+export default gateway.app;
+```
+
+## Type-safe bindings
+
+The `TBindings` generic flows through `mergeConfigs()`, so all partial configs
+share the same Worker bindings type:
+
+```typescript
+interface Env {
+  USERS_SERVICE: Fetcher;
+  RATE_LIMITER: DurableObjectNamespace;
+}
+
+const config = mergeConfigs<Env>(
+  { name: "typed-api" },
+  {
+    routes: [
+      {
+        path: "/users/*",
+        pipeline: {
+          upstream: { type: "service-binding", service: "USERS_SERVICE" },
+        },
+      },
+    ],
+  },
+);
+```
+
+TypeScript will verify that service binding names match the `Env` interface
+across all merged configs.
+
+## Validation
+
+`mergeConfigs()` throws a `GatewayError` if the merged result has zero routes.
+This catches cases where all partial configs omit the `routes` field or only
+provide empty arrays.
+
+For additional runtime validation of the merged config (schema structure,
+upstream URLs, policy shapes), pass the result through Zod validation before
+calling `createGateway()`. See
+[Configuration: Validation](/getting-started/configuration/#validation) for
+details.
+
+```typescript
+import { mergeConfigs } from "@homegrower-club/stoma";
+import { validateConfig } from "@homegrower-club/stoma/config";
+
+const merged = mergeConfigs(baseConfig, routeConfig, overrides);
+const validated = validateConfig(merged);
+const gateway = createGateway(validated);
+```

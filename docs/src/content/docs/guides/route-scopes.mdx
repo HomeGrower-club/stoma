@@ -1,0 +1,222 @@
+---
+title: Route Scopes
+draft: false
+description: Organize routes under shared path prefixes and policies with the scope() function.
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The `scope()` function groups routes under a shared path prefix, prepends shared
+policies, and merges metadata -- eliminating repetition when multiple routes
+share the same base path or middleware stack. It returns a flat `RouteConfig[]`
+that spreads directly into `GatewayConfig.routes`.
+
+```typescript
+import { scope } from "@homegrower-club/stoma";
+```
+
+## ScopeConfig
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `prefix` | `string` | Path prefix prepended to every child route (e.g. `"/api/v1"`). Normalized automatically -- leading `/` is added if missing, trailing `/` is stripped. |
+| `policies` | `Policy[]` | Policies prepended to every child route's pipeline policies. Optional. |
+| `routes` | `RouteConfig[]` | Child routes to scope. |
+| `metadata` | `Record<string, unknown>` | Metadata merged into every child route. Child values win on conflict. Optional. |
+
+`scope()` accepts a `TBindings` generic that propagates to child routes:
+
+```typescript
+scope<MyEnv>({ prefix: "/api", routes: [...] })
+```
+
+## Basic example
+
+Group versioned API routes under a shared prefix with JWT authentication:
+
+```typescript
+import { createGateway, scope, jwtAuth, rateLimit } from "@homegrower-club/stoma";
+
+const gateway = createGateway({
+  routes: [
+    ...scope({
+      prefix: "/api/v1",
+      policies: [
+        jwtAuth({ jwksUrl: "https://auth.example.com/.well-known/jwks.json" }),
+        rateLimit({ max: 200, windowSeconds: 60 }),
+      ],
+      routes: [
+        {
+          path: "/users",
+          pipeline: {
+            upstream: { type: "url", target: "https://users.internal" },
+          },
+        },
+        {
+          path: "/orders",
+          pipeline: {
+            upstream: { type: "url", target: "https://orders.internal" },
+          },
+        },
+      ],
+    }),
+  ],
+});
+```
+
+This produces two routes: `/api/v1/users` and `/api/v1/orders`, both with
+`jwtAuth` and `rateLimit` in their pipelines.
+
+## Policy layering
+
+Scope policies are **prepended** to each child route's existing policies. They
+are not deduplicated by name -- both the scope policy and any route-level policy
+with the same name will appear in the final pipeline array.
+
+```typescript
+const routes = scope({
+  prefix: "/api",
+  policies: [cors(), rateLimit({ max: 100 })],
+  routes: [
+    {
+      path: "/users",
+      pipeline: {
+        policies: [requestValidation({ validate: myValidator })],
+        upstream: { type: "url", target: "https://users.internal" },
+      },
+    },
+  ],
+});
+
+// routes[0].pipeline.policies is:
+// [cors(), rateLimit({ max: 100 }), requestValidation({ ... })]
+```
+
+The resulting array order is: scope policies first, then route policies. When
+this array reaches `createGateway()`, the gateway merges it with
+[global policies](/concepts/policies/#global-and-route-policy-merging) using
+the standard deduplicate-by-name, sort-by-priority algorithm.
+
+<Aside type="note">
+Scope policy prepending is a different mechanism from global/route policy
+merging. Global policies are deduplicated by name (route wins). Scope policies
+are concatenated by position (scope runs before route). Both behaviors compose
+naturally -- scope policies become part of the route's policy array before global
+merge happens.
+</Aside>
+
+## Metadata merging
+
+Scope metadata is shallow-merged into each child route. When both the scope and
+a child route define the same key, the child value wins:
+
+```typescript
+const routes = scope({
+  prefix: "/api",
+  metadata: { team: "platform", version: "v1" },
+  routes: [
+    {
+      path: "/users",
+      metadata: { team: "users", owner: "alice" },
+      pipeline: {
+        upstream: { type: "url", target: "https://users.internal" },
+      },
+    },
+  ],
+});
+
+// routes[0].metadata is:
+// { team: "users", version: "v1", owner: "alice" }
+```
+
+## Nesting
+
+Scopes nest naturally -- pass the output of an inner `scope()` as the `routes`
+of an outer `scope()`. Prefixes accumulate, policies accumulate (outer prepends
+before inner), and metadata accumulates (innermost wins):
+
+```typescript
+const v1Routes = scope({
+  prefix: "/v1",
+  policies: [jwtAuth({ secret: env.JWT_SECRET })],
+  metadata: { version: "v1" },
+  routes: [
+    {
+      path: "/users",
+      pipeline: {
+        upstream: { type: "url", target: "https://users.internal" },
+      },
+    },
+    {
+      path: "/orders",
+      pipeline: {
+        upstream: { type: "url", target: "https://orders.internal" },
+      },
+    },
+  ],
+});
+
+const apiRoutes = scope({
+  prefix: "/api",
+  policies: [cors(), requestLog()],
+  metadata: { team: "platform" },
+  routes: v1Routes,
+});
+
+// apiRoutes[0].path        === "/api/v1/users"
+// apiRoutes[0].policies    === [cors(), requestLog(), jwtAuth(...)]
+// apiRoutes[0].metadata    === { team: "platform", version: "v1" }
+```
+
+Three or more levels work the same way -- each `scope()` call produces a flat
+`RouteConfig[]` that the next level consumes.
+
+## Composition with createGateway
+
+Scoped routes spread alongside non-scoped routes in the `routes` array:
+
+```typescript
+import { createGateway, scope, health, jwtAuth, cors } from "@homegrower-club/stoma";
+
+const apiRoutes = scope({
+  prefix: "/api/v1",
+  policies: [jwtAuth({ secret: env.JWT_SECRET })],
+  routes: [
+    {
+      path: "/users/*",
+      pipeline: {
+        upstream: { type: "service-binding", service: "USERS_SERVICE" },
+      },
+    },
+    {
+      path: "/projects/*",
+      pipeline: {
+        upstream: { type: "service-binding", service: "PROJECTS_SERVICE" },
+      },
+    },
+  ],
+});
+
+const gateway = createGateway({
+  name: "my-api",
+  policies: [cors()],
+  routes: [
+    health({ path: "/health" }),
+    ...apiRoutes,
+  ],
+});
+
+export default gateway.app;
+```
+
+The health check lives at `/health` outside any scope. The API routes live at
+`/api/v1/users/*` and `/api/v1/projects/*` with JWT auth from the scope and
+CORS from the global policies.
+
+<Aside type="tip">
+For large gateways, combine `scope()` with
+[`mergeConfigs()`](/guides/config-splitting/) to split route definitions across
+files while keeping shared prefixes and policies DRY.
+</Aside>
