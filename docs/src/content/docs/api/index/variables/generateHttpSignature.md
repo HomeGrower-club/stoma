@@ -7,7 +7,7 @@ title: "generateHttpSignature"
 
 > `const` **generateHttpSignature**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/auth/generate-http-signature.ts:44](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/auth/generate-http-signature.ts#L44)
+Defined in: [src/policies/auth/generate-http-signature.ts:44](https://github.com/HomeGrower-club/stoma/blob/c02d84b2ff5af3b1f7cb6124493cc3582359d8b0/src/policies/auth/generate-http-signature.ts#L44)
 
 Generate RFC 9421 HTTP Message Signatures on outbound requests (priority 95).
 

@@ -7,7 +7,7 @@ title: "cors"
 
 > **cors**(`config?`): [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/transform/cors.ts:60](https://github.com/HomeGrower-club/stoma/blob/91cf89ae0b96ccb0f8af15ac6a2b07861cac9ef6/src/policies/transform/cors.ts#L60)
+Defined in: [src/policies/transform/cors.ts:60](https://github.com/HomeGrower-club/stoma/blob/c02d84b2ff5af3b1f7cb6124493cc3582359d8b0/src/policies/transform/cors.ts#L60)
 
 Add Cross-Origin Resource Sharing headers to gateway responses.
 
