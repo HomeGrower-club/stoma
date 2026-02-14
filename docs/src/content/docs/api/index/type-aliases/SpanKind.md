@@ -7,4 +7,4 @@ title: "SpanKind"
 
 > **SpanKind** = `"SERVER"` \| `"CLIENT"` \| `"INTERNAL"`
 
-Defined in: [src/observability/tracing.ts:18](https://github.com/HomeGrower-club/stoma/blob/6293f5d254fea2989ebdf0b4b444e914a25475fc/src/observability/tracing.ts#L18)
+Defined in: [src/observability/tracing.ts:18](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/observability/tracing.ts#L18)

@@ -7,7 +7,7 @@ title: "PolicyFactory"
 
 > **PolicyFactory**\<`TConfig`\> = `RequiredKeys`\<`TConfig`\> *extends* `never` ? (`config?`) => [`Policy`](/api/index/interfaces/policy/) : (`config`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/sdk/define-policy.ts:167](https://github.com/HomeGrower-club/stoma/blob/6293f5d254fea2989ebdf0b4b444e914a25475fc/src/policies/sdk/define-policy.ts#L167)
+Defined in: [src/policies/sdk/define-policy.ts:167](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/policies/sdk/define-policy.ts#L167)
 
 Conditional policy factory type.
 

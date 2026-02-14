@@ -7,7 +7,7 @@ title: "UpstreamConfig"
 
 > **UpstreamConfig**\<`TBindings`\> = [`UrlUpstream`](/api/index/interfaces/urlupstream/) \| [`ServiceBindingUpstream`](/api/index/interfaces/servicebindingupstream/)\<`TBindings`\> \| [`HandlerUpstream`](/api/index/interfaces/handlerupstream/)
 
-Defined in: [src/core/types.ts:173](https://github.com/HomeGrower-club/stoma/blob/6293f5d254fea2989ebdf0b4b444e914a25475fc/src/core/types.ts#L173)
+Defined in: [src/core/types.ts:173](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/core/types.ts#L173)
 
 Upstream target — where the request is forwarded.
 

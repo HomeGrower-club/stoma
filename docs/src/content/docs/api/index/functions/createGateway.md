@@ -7,7 +7,7 @@ title: "createGateway"
 
 > **createGateway**\<`TBindings`\>(`config`): [`GatewayInstance`](/api/index/interfaces/gatewayinstance/)
 
-Defined in: [src/core/gateway.ts:100](https://github.com/HomeGrower-club/stoma/blob/6293f5d254fea2989ebdf0b4b444e914a25475fc/src/core/gateway.ts#L100)
+Defined in: [src/core/gateway.ts:100](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/core/gateway.ts#L100)
 
 Create a gateway instance from a declarative configuration.
 
