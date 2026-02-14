@@ -135,7 +135,9 @@ export const requestLog = definePolicy<RequestLogConfig>({
       path: url.pathname,
       statusCode: c.res.status,
       durationMs: Date.now() - startTime,
-      clientIp: extractClientIp(c.req.raw.headers, config.ipHeaders),
+      clientIp: extractClientIp(c.req.raw.headers, {
+        ipHeaders: config.ipHeaders,
+      }),
       userAgent: c.req.header("user-agent") ?? "unknown",
       gatewayName: gateway?.gatewayName ?? "unknown",
       routePath: gateway?.routePath ?? url.pathname,
