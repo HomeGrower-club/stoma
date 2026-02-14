@@ -7,7 +7,7 @@ title: "mergeConfigs"
 
 > **mergeConfigs**\<`TBindings`\>(...`configs`): [`GatewayConfig`](/api/index/interfaces/gatewayconfig/)\<`TBindings`\>
 
-Defined in: [src/config/merge.ts:46](https://github.com/HomeGrower-club/stoma/blob/64d47b2a9c6564c1291a5dd9d515f24b13c13c53/src/config/merge.ts#L46)
+Defined in: [src/config/merge.ts:46](https://github.com/HomeGrower-club/stoma/blob/162619492d6688db22e8617fe051bccc1c9cffc5/src/config/merge.ts#L46)
 
 Merge multiple partial gateway configs into a single complete config.
 

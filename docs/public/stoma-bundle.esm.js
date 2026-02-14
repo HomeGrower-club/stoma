@@ -2136,7 +2136,7 @@ function Dr(e, t = C, r) {
       throw new m(
         502,
         "config_error",
-        `Service binding "${e.service}" requires adapter.dispatchBinding — pass "env" to cloudflareAdapter() or provide a custom dispatchBinding`
+        `Service binding "${e.service}" requires adapter.dispatchBinding - pass "env" to cloudflareAdapter() or provide a custom dispatchBinding`
       );
     const n = new URL(s.req.url);
     let a = n.pathname;
@@ -2312,35 +2312,35 @@ function Ms(e) {
   });
 }
 const S = {
-  /** Observability policies (e.g. requestLog) — wraps everything */
+  /** Observability policies (e.g. requestLog) - wraps everything */
   OBSERVABILITY: 0,
-  /** IP filtering — runs before all other logic */
+  /** IP filtering - runs before all other logic */
   IP_FILTER: 1,
-  /** Metrics collection — just after observability */
+  /** Metrics collection - just after observability */
   METRICS: 1,
-  /** Early pipeline (e.g. cors) — before auth */
+  /** Early pipeline (e.g. cors) - before auth */
   EARLY: 5,
   /** Authentication (e.g. jwtAuth, apiKeyAuth, basicAuth) */
   AUTH: 10,
-  /** Rate limiting — after auth */
+  /** Rate limiting - after auth */
   RATE_LIMIT: 20,
-  /** Circuit breaker — protects upstream */
+  /** Circuit breaker - protects upstream */
   CIRCUIT_BREAKER: 30,
-  /** Caching — before upstream */
+  /** Caching - before upstream */
   CACHE: 40,
-  /** Request header transforms — mid-pipeline */
+  /** Request header transforms - mid-pipeline */
   REQUEST_TRANSFORM: 50,
-  /** Timeout — wraps upstream call */
+  /** Timeout - wraps upstream call */
   TIMEOUT: 85,
-  /** Retry — wraps upstream fetch */
+  /** Retry - wraps upstream fetch */
   RETRY: 90,
-  /** Response header transforms — after upstream */
+  /** Response header transforms - after upstream */
   RESPONSE_TRANSFORM: 92,
-  /** Proxy header manipulation — just before upstream */
+  /** Proxy header manipulation - just before upstream */
   PROXY: 95,
   /** Default priority for unspecified policies */
   DEFAULT: 100,
-  /** Mock — terminal, replaces upstream */
+  /** Mock - terminal, replaces upstream */
   MOCK: 999
 };
 function v(e) {
@@ -2441,7 +2441,7 @@ const qs = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   defaults: { status: 200, delayMs: 0 },
   validate: (e) => {
     e.allowInProduction || console.warn(
-      "[stoma] mock policy active — intended for development/testing only"
+      "[stoma] mock policy active - intended for development/testing only"
     );
   },
   handler: async (e, t, { config: r }) => {
@@ -3718,7 +3718,9 @@ const zs = /* @__PURE__ */ v({
         "config_error",
         "verifyHttpSignature requires at least one key in 'keys'"
       );
-    const n = r.label, a = e.req.header(r.signatureInputHeaderName);
+    const n = r.label, a = e.req.header(
+      r.signatureInputHeaderName
+    );
     if (!a)
       throw new m(
         401,
@@ -4304,7 +4306,7 @@ const en = /* @__PURE__ */ v({
     if (!r.contentTypes.some(
       (u) => n.includes(u)
     )) {
-      s("skipping — content type %s not inspected", n), await t();
+      s("skipping - content type %s not inspected", n), await t();
       return;
     }
     const o = e.req.header("content-length");
@@ -4319,7 +4321,7 @@ const en = /* @__PURE__ */ v({
     }
     const c = await e.req.raw.clone().text();
     if (!c) {
-      s("empty body — passing through"), await t();
+      s("empty body - passing through"), await t();
       return;
     }
     let l;
@@ -4345,7 +4347,7 @@ const en = /* @__PURE__ */ v({
       if (!t.contentTypes.some(
         (i) => s.includes(i)
       ))
-        return r("skipping — content type %s not inspected", s), { action: "continue" };
+        return r("skipping - content type %s not inspected", s), { action: "continue" };
       const a = e.headers.get("content-length");
       if (a) {
         const i = Number.parseInt(a, 10);
@@ -4360,7 +4362,7 @@ const en = /* @__PURE__ */ v({
       let o;
       try {
         if (!e.body)
-          return r("empty body — passing through"), { action: "continue" };
+          return r("empty body - passing through"), { action: "continue" };
         const i = typeof e.body == "string" ? e.body : new TextDecoder().decode(e.body);
         o = JSON.parse(i);
       } catch {
@@ -4414,7 +4416,7 @@ class $t {
    * When the store reaches `maxKeys` capacity and no expired entries can
    * be evicted, returns `{ count: MAX_SAFE_INTEGER, resetAt }` to trigger
    * rate limiting (fail-closed). This prevents unbounded memory growth at
-   * the cost of potentially rejecting legitimate requests — an intentional
+   * the cost of potentially rejecting legitimate requests - an intentional
    * security trade-off where memory safety takes priority over availability.
    */
   async increment(t, r) {
@@ -4495,7 +4497,7 @@ function ds(e, t) {
   if (!r) {
     const s = t.replace(/g/g, "");
     s !== t && console.warn(
-      "[stoma:regex-threat-protection] Stripped 'g' flag — not meaningful with .test()"
+      "[stoma:regex-threat-protection] Stripped 'g' flag - not meaningful with .test()"
     ), r = e.map((n) => ({
       regex: new RegExp(n.regex, s),
       targets: n.targets,
@@ -4514,9 +4516,12 @@ const rn = /* @__PURE__ */ v({
     maxBodyScanLength: 65536
   },
   handler: async (e, t, { config: r, debug: s }) => {
-    const n = ds(r.patterns, r.flags ?? "i");
+    const n = ds(
+      r.patterns,
+      r.flags ?? "i"
+    );
     if (n.length === 0) {
-      s("no patterns configured — passing through"), await t();
+      s("no patterns configured - passing through"), await t();
       return;
     }
     const a = n.some((i) => i.targets.includes("body"));
@@ -4628,7 +4633,7 @@ const nn = /* @__PURE__ */ v({
   },
   handler: async (e, t, { config: r, debug: s }) => {
     if (await t(), r.fields.length === 0) {
-      s("no fields configured — passing through");
+      s("no fields configured - passing through");
       return;
     }
     const n = e.res.headers.get("content-type") ?? "";
@@ -4636,7 +4641,7 @@ const nn = /* @__PURE__ */ v({
       (c) => n.includes(c)
     )) {
       s(
-        "skipping — response content type %s not in %o",
+        "skipping - response content type %s not in %o",
         n,
         r.contentTypes
       );
@@ -4647,7 +4652,7 @@ const nn = /* @__PURE__ */ v({
       const c = await e.res.text();
       o = JSON.parse(c);
     } catch {
-      s("response body is not valid JSON — passing through");
+      s("response body is not valid JSON - passing through");
       return;
     }
     let i;
@@ -4673,13 +4678,13 @@ const nn = /* @__PURE__ */ v({
   evaluate: {
     onResponse: async (e, { config: t, debug: r }) => {
       if (t.fields.length === 0)
-        return r("no fields configured — passing through"), { action: "continue" };
+        return r("no fields configured - passing through"), { action: "continue" };
       const s = e.headers.get("content-type") ?? "";
       if (!t.contentTypes.some(
         (i) => s.includes(i)
       ))
         return r(
-          "skipping — response content type %s not in %o",
+          "skipping - response content type %s not in %o",
           s,
           t.contentTypes
         ), { action: "continue" };
@@ -4690,7 +4695,7 @@ const nn = /* @__PURE__ */ v({
         const i = typeof e.body == "string" ? e.body : new TextDecoder().decode(e.body);
         a = JSON.parse(i);
       } catch {
-        return r("response body is not valid JSON — passing through"), { action: "continue" };
+        return r("response body is not valid JSON - passing through"), { action: "continue" };
       }
       let o;
       return Array.isArray(a) ? t.applyToArrayItems ? o = a.map(
@@ -4778,12 +4783,12 @@ const nn = /* @__PURE__ */ v({
     if (!new Set(
       (r.methods ?? []).map((g) => g.toUpperCase())
     ).has(a)) {
-      s("method %s not in shadow methods — skipping", a);
+      s("method %s not in shadow methods - skipping", a);
       return;
     }
     const i = Math.random() * 100;
     if (i >= (r.percentage ?? 100)) {
-      s("rolled %.1f >= %d%% — skipping shadow", i, r.percentage);
+      s("rolled %.1f >= %d%% - skipping shadow", i, r.percentage);
       return;
     }
     const c = new URL(e.req.url), u = `${r.target.replace(/\/$/, "")}${c.pathname}${c.search}`, d = new Headers();
@@ -5193,7 +5198,7 @@ const pn = /* @__PURE__ */ v({
         });
       } else
         s(
-          "request content-type %s not in allowed types — skipping request modification",
+          "request content-type %s not in allowed types - skipping request modification",
           n
         );
     }
@@ -5218,7 +5223,7 @@ const pn = /* @__PURE__ */ v({
         e.res = i;
       } else
         s(
-          "response content-type %s not in allowed types — skipping response modification",
+          "response content-type %s not in allowed types - skipping response modification",
           n
         );
     }
@@ -5230,7 +5235,7 @@ const pn = /* @__PURE__ */ v({
       const s = e.headers.get("content-type") ?? "";
       if (!Z(s, t.contentTypes))
         return r(
-          "request content-type %s not in allowed types — skipping request modification",
+          "request content-type %s not in allowed types - skipping request modification",
           s
         ), { action: "continue" };
       let n = {};
@@ -5263,7 +5268,7 @@ const pn = /* @__PURE__ */ v({
       const s = e.headers.get("content-type") ?? "";
       if (!Z(s, t.contentTypes))
         return r(
-          "response content-type %s not in allowed types — skipping response modification",
+          "response content-type %s not in allowed types - skipping response modification",
           s
         ), { action: "continue" };
       let n = {};
@@ -5356,7 +5361,7 @@ const fn = /* @__PURE__ */ v({
       (c) => n.includes(c)
     )) {
       s(
-        "skipping — content type %s not in %o",
+        "skipping - content type %s not in %o",
         n,
         r.contentTypes
       ), await t();
@@ -5380,7 +5385,7 @@ const fn = /* @__PURE__ */ v({
       ));
     }
     if (!r.validate) {
-      s("no validator configured — JSON parsed successfully"), await t();
+      s("no validator configured - JSON parsed successfully"), await t();
       return;
     }
     const i = await r.validate(o);
@@ -5401,7 +5406,7 @@ const fn = /* @__PURE__ */ v({
         (i) => s.includes(i)
       ))
         return r(
-          "skipping — content type %s not in %o",
+          "skipping - content type %s not in %o",
           s,
           t.contentTypes
         ), { action: "continue" };
@@ -5425,7 +5430,7 @@ const fn = /* @__PURE__ */ v({
         };
       }
       if (!t.validate)
-        return r("no validator configured — JSON parsed successfully"), { action: "continue" };
+        return r("no validator configured - JSON parsed successfully"), { action: "continue" };
       const o = await t.validate(a);
       if (!o.valid) {
         const i = t.errorDetail && o.errors && o.errors.length > 0 ? `Validation failed: ${o.errors.join("; ")}` : "Validation failed";
@@ -5494,7 +5499,7 @@ const wn = /* @__PURE__ */ v({
       (u) => n.includes(u)
     )) {
       s(
-        "skipping — content type %s not in %o",
+        "skipping - content type %s not in %o",
         n,
         r.contentTypes
       ), await t();
@@ -5513,7 +5518,7 @@ const wn = /* @__PURE__ */ v({
     }
     const i = r.validateAsync ?? r.validate;
     if (!i) {
-      s("no validator configured — passing through"), await t();
+      s("no validator configured - passing through"), await t();
       return;
     }
     const c = await i(o), l = Qe(c);
@@ -5530,7 +5535,7 @@ const wn = /* @__PURE__ */ v({
         (l) => s.includes(l)
       ))
         return r(
-          "skipping — content type %s not in %o",
+          "skipping - content type %s not in %o",
           s,
           t.contentTypes
         ), { action: "continue" };
@@ -5555,7 +5560,7 @@ const wn = /* @__PURE__ */ v({
       }
       const o = t.validateAsync ?? t.validate;
       if (!o)
-        return r("no validator configured — passing through"), { action: "continue" };
+        return r("no validator configured - passing through"), { action: "continue" };
       const i = await o(a), c = Qe(i);
       if (!c.valid) {
         const l = c.errors && c.errors.length > 0 ? `${t.errorMessage}: ${c.errors.join("; ")}` : t.errorMessage;
@@ -5925,7 +5930,7 @@ const Rn = /* @__PURE__ */ v({
         break;
     }
     if (!a) {
-      s("skipping — visibility check failed");
+      s("skipping - visibility check failed");
       return;
     }
     const o = Date.now() - n, i = r.precision, c = e.get("_policyTimings"), l = c ? bt(c) : void 0;

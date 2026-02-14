@@ -7,7 +7,7 @@ title: "timeout"
 
 > `const` **timeout**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/resilience/timeout.ts:35](https://github.com/HomeGrower-club/stoma/blob/64d47b2a9c6564c1291a5dd9d515f24b13c13c53/src/policies/resilience/timeout.ts#L35)
+Defined in: [src/policies/resilience/timeout.ts:35](https://github.com/HomeGrower-club/stoma/blob/162619492d6688db22e8617fe051bccc1c9cffc5/src/policies/resilience/timeout.ts#L35)
 
 Enforce a time budget for downstream execution.
 

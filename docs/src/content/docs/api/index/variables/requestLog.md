@@ -7,7 +7,7 @@ title: "requestLog"
 
 > `const` **requestLog**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/observability/request-log.ts:105](https://github.com/HomeGrower-club/stoma/blob/64d47b2a9c6564c1291a5dd9d515f24b13c13c53/src/policies/observability/request-log.ts#L105)
+Defined in: [src/policies/observability/request-log.ts:105](https://github.com/HomeGrower-club/stoma/blob/162619492d6688db22e8617fe051bccc1c9cffc5/src/policies/observability/request-log.ts#L105)
 
 Emit structured JSON logs for every request/response pair.
 

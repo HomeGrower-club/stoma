@@ -7,7 +7,7 @@ title: "PolicySchema"
 
 > `const` **PolicySchema**: `ZodObject`\<\{ `handler`: `ZodFunction`\<`$ZodFunctionArgs`, `$ZodFunctionOut`\>; `name`: `ZodString`; `priority`: `ZodOptional`\<`ZodNumber`\>; \}, `$strip`\>
 
-Defined in: [src/config/schema.ts:33](https://github.com/HomeGrower-club/stoma/blob/64d47b2a9c6564c1291a5dd9d515f24b13c13c53/src/config/schema.ts#L33)
+Defined in: [src/config/schema.ts:33](https://github.com/HomeGrower-club/stoma/blob/162619492d6688db22e8617fe051bccc1c9cffc5/src/config/schema.ts#L33)
 
 Validates the Policy shape (name + handler + priority).
 

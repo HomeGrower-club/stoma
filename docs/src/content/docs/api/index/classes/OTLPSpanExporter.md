@@ -5,7 +5,7 @@ prev: false
 title: "OTLPSpanExporter"
 ---
 
-Defined in: [src/observability/tracing.ts:284](https://github.com/HomeGrower-club/stoma/blob/64d47b2a9c6564c1291a5dd9d515f24b13c13c53/src/observability/tracing.ts#L284)
+Defined in: [src/observability/tracing.ts:284](https://github.com/HomeGrower-club/stoma/blob/162619492d6688db22e8617fe051bccc1c9cffc5/src/observability/tracing.ts#L284)
 
 OTLP/HTTP JSON span exporter.
 
@@ -26,7 +26,7 @@ block the response path.
 
 > **new OTLPSpanExporter**(`config`): `OTLPSpanExporter`
 
-Defined in: [src/observability/tracing.ts:291](https://github.com/HomeGrower-club/stoma/blob/64d47b2a9c6564c1291a5dd9d515f24b13c13c53/src/observability/tracing.ts#L291)
+Defined in: [src/observability/tracing.ts:291](https://github.com/HomeGrower-club/stoma/blob/162619492d6688db22e8617fe051bccc1c9cffc5/src/observability/tracing.ts#L291)
 
 #### Parameters
 
@@ -62,7 +62,7 @@ Defined in: [src/observability/tracing.ts:291](https://github.com/HomeGrower-clu
 
 > **export**(`spans`): `Promise`\<`void`\>
 
-Defined in: [src/observability/tracing.ts:305](https://github.com/HomeGrower-club/stoma/blob/64d47b2a9c6564c1291a5dd9d515f24b13c13c53/src/observability/tracing.ts#L305)
+Defined in: [src/observability/tracing.ts:305](https://github.com/HomeGrower-club/stoma/blob/162619492d6688db22e8617fe051bccc1c9cffc5/src/observability/tracing.ts#L305)
 
 #### Parameters
 
