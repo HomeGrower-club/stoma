@@ -20,9 +20,10 @@
  *
  * @module deno-adapter
  */
+import { memoryAdapter } from "./memory";
 import type { GatewayAdapter } from "./types";
 
-/** Create a GatewayAdapter for Deno. Provides in-memory defaults. */
+/** Create a GatewayAdapter for Deno. Delegates to memoryAdapter() for in-memory stores. */
 export function denoAdapter(): GatewayAdapter {
-  return {};
+  return memoryAdapter();
 }

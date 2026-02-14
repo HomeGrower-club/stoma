@@ -21,9 +21,10 @@
  *
  * @module node-adapter
  */
+import { memoryAdapter } from "./memory";
 import type { GatewayAdapter } from "./types";
 
-/** Create a GatewayAdapter for Node.js. Provides in-memory defaults. */
+/** Create a GatewayAdapter for Node.js. Delegates to memoryAdapter() for in-memory stores. */
 export function nodeAdapter(): GatewayAdapter {
-  return {};
+  return memoryAdapter();
 }

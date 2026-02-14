@@ -20,9 +20,10 @@
  *
  * @module bun-adapter
  */
+import { memoryAdapter } from "./memory";
 import type { GatewayAdapter } from "./types";
 
-/** Create a GatewayAdapter for Bun. Provides in-memory defaults. */
+/** Create a GatewayAdapter for Bun. Delegates to memoryAdapter() for in-memory stores. */
 export function bunAdapter(): GatewayAdapter {
-  return {};
+  return memoryAdapter();
 }
