@@ -8,6 +8,7 @@
     "url": "git+https://github.com/HomeGrower-club/stoma.git"
   },
   "homepage": "https://stoma.opensource.homegrower.club",
+  "sideEffects": false,
   "license": "MIT",
   "author": {
     "name": "Jonathan Bennett"

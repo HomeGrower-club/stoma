@@ -93,7 +93,7 @@ function getCompiledPatterns(
  * });
  * ```
  */
-export const regexThreatProtection = definePolicy<RegexThreatProtectionConfig>({
+export const regexThreatProtection = /*#__PURE__*/ definePolicy<RegexThreatProtectionConfig>({
   name: "regex-threat-protection",
   priority: Priority.EARLY,
   defaults: {

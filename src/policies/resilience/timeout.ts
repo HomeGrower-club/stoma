@@ -32,7 +32,7 @@ export interface TimeoutConfig extends PolicyConfig {
  * timeout({ timeoutMs: 5000, message: "Upstream did not respond in time" });
  * ```
  */
-export const timeout = definePolicy<TimeoutConfig>({
+export const timeout = /*#__PURE__*/ definePolicy<TimeoutConfig>({
   name: "timeout",
   priority: Priority.TIMEOUT,
   httpOnly: true,

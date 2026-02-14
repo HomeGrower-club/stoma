@@ -40,7 +40,7 @@ export interface BasicAuthConfig extends PolicyConfig {
  * });
  * ```
  */
-export const basicAuth = definePolicy<BasicAuthConfig>({
+export const basicAuth = /*#__PURE__*/ definePolicy<BasicAuthConfig>({
   name: "basic-auth",
   priority: Priority.AUTH,
   defaults: { realm: "Restricted" },

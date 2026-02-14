@@ -69,7 +69,7 @@ export { clearJwksCache as clearJwsJwksCache } from "./crypto";
  * jws({ secret: env.JWS_SECRET, payloadSource: "body" });
  * ```
  */
-export const jws = definePolicy<JwsConfig>({
+export const jws = /*#__PURE__*/ definePolicy<JwsConfig>({
   name: "jws",
   priority: Priority.AUTH,
   defaults: {

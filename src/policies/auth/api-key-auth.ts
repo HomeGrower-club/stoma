@@ -69,7 +69,7 @@ export interface ApiKeyAuthConfig extends PolicyConfig {
  * });
  * ```
  */
-export const apiKeyAuth = definePolicy<ApiKeyAuthConfig>({
+export const apiKeyAuth = /*#__PURE__*/ definePolicy<ApiKeyAuthConfig>({
   name: "api-key-auth",
   priority: Priority.AUTH,
   defaults: { headerName: "x-api-key" },

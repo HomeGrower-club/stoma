@@ -76,7 +76,7 @@ function contentTypeMatches(
  * });
  * ```
  */
-export const assignContent = definePolicy<AssignContentConfig>({
+export const assignContent = /*#__PURE__*/ definePolicy<AssignContentConfig>({
   name: "assign-content",
   priority: Priority.REQUEST_TRANSFORM,
   defaults: {

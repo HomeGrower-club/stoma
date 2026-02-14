@@ -102,7 +102,7 @@ const DEFAULT_MAX_BODY_LENGTH = 8192;
  * });
  * ```
  */
-export const requestLog = definePolicy<RequestLogConfig>({
+export const requestLog = /*#__PURE__*/ definePolicy<RequestLogConfig>({
   name: "request-log",
   priority: Priority.OBSERVABILITY,
   httpOnly: true,

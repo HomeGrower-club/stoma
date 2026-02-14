@@ -58,7 +58,7 @@ export interface JsonValidationConfig extends PolicyConfig {
  * jsonValidation();
  * ```
  */
-export const jsonValidation = definePolicy<JsonValidationConfig>({
+export const jsonValidation = /*#__PURE__*/ definePolicy<JsonValidationConfig>({
   name: "json-validation",
   priority: Priority.AUTH,
   phases: ["request-body"],

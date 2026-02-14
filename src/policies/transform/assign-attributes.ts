@@ -40,7 +40,7 @@ export interface AssignAttributesConfig extends PolicyConfig {
  * });
  * ```
  */
-export const assignAttributes = definePolicy<AssignAttributesConfig>({
+export const assignAttributes = /*#__PURE__*/ definePolicy<AssignAttributesConfig>({
   name: "assign-attributes",
   priority: Priority.REQUEST_TRANSFORM,
   phases: ["request-headers"],

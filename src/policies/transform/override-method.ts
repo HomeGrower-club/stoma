@@ -38,7 +38,7 @@ export interface OverrideMethodConfig extends PolicyConfig {
  * overrideMethod({ header: "X-Method", allowedMethods: ["PUT", "PATCH"] });
  * ```
  */
-export const overrideMethod = definePolicy<OverrideMethodConfig>({
+export const overrideMethod = /*#__PURE__*/ definePolicy<OverrideMethodConfig>({
   name: "override-method",
   priority: Priority.EARLY,
   phases: ["request-headers"],

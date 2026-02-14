@@ -46,7 +46,7 @@ export interface InterruptConfig extends PolicyConfig {
  * });
  * ```
  */
-export const interrupt = definePolicy<InterruptConfig>({
+export const interrupt = /*#__PURE__*/ definePolicy<InterruptConfig>({
   name: "interrupt",
   priority: Priority.DEFAULT,
   httpOnly: true,

@@ -28,7 +28,7 @@ export interface MetricsReporterConfig extends PolicyConfig {
  * @param config - Must include a {@link MetricsCollector} instance.
  * @returns A {@link Policy} at priority 1.
  */
-export const metricsReporter = definePolicy<MetricsReporterConfig>({
+export const metricsReporter = /*#__PURE__*/ definePolicy<MetricsReporterConfig>({
   name: "metrics-reporter",
   priority: Priority.METRICS,
   httpOnly: true,

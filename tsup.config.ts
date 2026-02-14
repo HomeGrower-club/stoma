@@ -1,23 +1,10 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: {
-    index: "src/index.ts",
-    "policies/index": "src/policies/index.ts",
-    "config/index": "src/config/index.ts",
-    "sdk/index": "src/policies/sdk/index.ts",
-    "adapters/index": "src/adapters/index.ts",
-    "adapters/cloudflare": "src/adapters/cloudflare.ts",
-    "adapters/deno": "src/adapters/deno.ts",
-    "adapters/bun": "src/adapters/bun.ts",
-    "adapters/node": "src/adapters/node.ts",
-    "adapters/memory": "src/adapters/memory.ts",
-    "adapters/redis": "src/adapters/redis.ts",
-    "adapters/postgres": "src/adapters/postgres.ts",
-  },
+  entry: ["src/**/*.ts", "!src/**/__tests__/**"],
   format: ["esm"],
+  bundle: false,
   dts: true,
-  splitting: true,
   sourcemap: true,
   clean: true,
   external: ["hono", "zod"],

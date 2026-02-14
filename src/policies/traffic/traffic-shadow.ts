@@ -55,7 +55,7 @@ export interface TrafficShadowConfig extends PolicyConfig {
  * });
  * ```
  */
-export const trafficShadow = definePolicy<TrafficShadowConfig>({
+export const trafficShadow = /*#__PURE__*/ definePolicy<TrafficShadowConfig>({
   name: "traffic-shadow",
   priority: Priority.RESPONSE_TRANSFORM,
   httpOnly: true,

@@ -60,7 +60,7 @@ export interface MockConfig extends PolicyConfig {
  * });
  * ```
  */
-export const mock = definePolicy<MockConfig>({
+export const mock = /*#__PURE__*/ definePolicy<MockConfig>({
   name: "mock",
   priority: Priority.MOCK,
   httpOnly: true,

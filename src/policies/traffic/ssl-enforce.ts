@@ -28,7 +28,7 @@ export interface SslEnforceConfig extends PolicyConfig {
  * @param config - Redirect behavior and HSTS settings.
  * @returns A {@link Policy} at priority 5 (EARLY).
  */
-export const sslEnforce = definePolicy<SslEnforceConfig>({
+export const sslEnforce = /*#__PURE__*/ definePolicy<SslEnforceConfig>({
   name: "ssl-enforce",
   priority: Priority.EARLY,
   httpOnly: true,

@@ -40,7 +40,7 @@ export interface AssignMetricsConfig extends PolicyConfig {
  * });
  * ```
  */
-export const assignMetrics = definePolicy<AssignMetricsConfig>({
+export const assignMetrics = /*#__PURE__*/ definePolicy<AssignMetricsConfig>({
   name: "assign-metrics",
   priority: Priority.OBSERVABILITY,
   httpOnly: true,

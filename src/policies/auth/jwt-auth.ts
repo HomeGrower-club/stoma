@@ -86,7 +86,7 @@ interface JwtPayload {
  * });
  * ```
  */
-export const jwtAuth = definePolicy<JwtAuthConfig>({
+export const jwtAuth = /*#__PURE__*/ definePolicy<JwtAuthConfig>({
   name: "jwt-auth",
   priority: Priority.AUTH,
   phases: ["request-headers"],

@@ -42,7 +42,7 @@ export interface VerifyHttpSignatureConfig extends PolicyConfig {
   label?: string;
 }
 
-export const verifyHttpSignature = definePolicy<VerifyHttpSignatureConfig>({
+export const verifyHttpSignature = /*#__PURE__*/ definePolicy<VerifyHttpSignatureConfig>({
   name: "verify-http-signature",
   priority: Priority.AUTH,
   defaults: {

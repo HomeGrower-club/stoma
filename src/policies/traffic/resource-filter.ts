@@ -107,7 +107,7 @@ function filterObject(
  * });
  * ```
  */
-export const resourceFilter = definePolicy<ResourceFilterConfig>({
+export const resourceFilter = /*#__PURE__*/ definePolicy<ResourceFilterConfig>({
   name: "resource-filter",
   priority: Priority.RESPONSE_TRANSFORM,
   phases: ["response-body"],

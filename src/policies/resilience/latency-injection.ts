@@ -35,7 +35,7 @@ export interface LatencyInjectionConfig extends PolicyConfig {
  * latencyInjection({ delayMs: 200, jitter: 0.5, probability: 0.3 });
  * ```
  */
-export const latencyInjection = definePolicy<LatencyInjectionConfig>({
+export const latencyInjection = /*#__PURE__*/ definePolicy<LatencyInjectionConfig>({
   name: "latency-injection",
   priority: Priority.EARLY,
   httpOnly: true,

@@ -74,7 +74,7 @@ export function clearOAuth2Cache(): void {
   introspectionCache.clear();
 }
 
-export const oauth2 = definePolicy<OAuth2Config>({
+export const oauth2 = /*#__PURE__*/ definePolicy<OAuth2Config>({
   name: "oauth2",
   priority: Priority.AUTH,
   phases: ["request-headers"],

@@ -42,7 +42,7 @@ export interface GenerateHttpSignatureConfig extends PolicyConfig {
   nonce?: boolean;
 }
 
-export const generateHttpSignature = definePolicy<GenerateHttpSignatureConfig>({
+export const generateHttpSignature = /*#__PURE__*/ definePolicy<GenerateHttpSignatureConfig>({
   name: "generate-http-signature",
   priority: Priority.PROXY,
   defaults: {

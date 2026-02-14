@@ -72,7 +72,7 @@ function isHmac(alg: string): boolean {
  * });
  * ```
  */
-export const generateJwt = definePolicy<GenerateJwtConfig>({
+export const generateJwt = /*#__PURE__*/ definePolicy<GenerateJwtConfig>({
   name: "generate-jwt",
   priority: Priority.REQUEST_TRANSFORM,
   defaults: {

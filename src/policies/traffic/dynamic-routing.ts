@@ -60,7 +60,7 @@ export interface DynamicRoutingConfig extends PolicyConfig {
  * });
  * ```
  */
-export const dynamicRouting = definePolicy<DynamicRoutingConfig>({
+export const dynamicRouting = /*#__PURE__*/ definePolicy<DynamicRoutingConfig>({
   name: "dynamic-routing",
   priority: Priority.REQUEST_TRANSFORM,
   httpOnly: true,

@@ -35,7 +35,7 @@ export interface RbacConfig extends PolicyConfig {
   stripHeaders?: boolean;
 }
 
-export const rbac = definePolicy<RbacConfig>({
+export const rbac = /*#__PURE__*/ definePolicy<RbacConfig>({
   name: "rbac",
   priority: Priority.AUTH,
   defaults: {

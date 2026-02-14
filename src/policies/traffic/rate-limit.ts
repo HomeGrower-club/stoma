@@ -191,7 +191,7 @@ function getStore(config: RateLimitConfig): RateLimitStore {
  * });
  * ```
  */
-export const rateLimit = definePolicy<RateLimitConfig>({
+export const rateLimit = /*#__PURE__*/ definePolicy<RateLimitConfig>({
   name: "rate-limit",
   priority: Priority.RATE_LIMIT,
   defaults: {

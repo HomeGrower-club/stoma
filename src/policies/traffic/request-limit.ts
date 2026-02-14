@@ -28,7 +28,7 @@ export interface RequestLimitConfig extends PolicyConfig {
  * @param config - Maximum byte limit and optional custom message.
  * @returns A {@link Policy} at priority 5 (EARLY).
  */
-export const requestLimit = definePolicy<RequestLimitConfig>({
+export const requestLimit = /*#__PURE__*/ definePolicy<RequestLimitConfig>({
   name: "request-limit",
   priority: Priority.EARLY,
   phases: ["request-headers"],

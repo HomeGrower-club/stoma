@@ -53,7 +53,7 @@ export interface ResponseTransformConfig extends PolicyConfig {
  * });
  * ```
  */
-export const requestTransform = definePolicy<RequestTransformConfig>({
+export const requestTransform = /*#__PURE__*/ definePolicy<RequestTransformConfig>({
   name: "request-transform",
   priority: Priority.REQUEST_TRANSFORM,
   phases: ["request-headers"],
@@ -147,7 +147,7 @@ export const requestTransform = definePolicy<RequestTransformConfig>({
  * });
  * ```
  */
-export const responseTransform = definePolicy<ResponseTransformConfig>({
+export const responseTransform = /*#__PURE__*/ definePolicy<ResponseTransformConfig>({
   name: "response-transform",
   priority: Priority.RESPONSE_TRANSFORM,
   phases: ["response-headers"],

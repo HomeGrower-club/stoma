@@ -63,7 +63,7 @@ export interface HttpCalloutConfig extends PolicyConfig {
  * });
  * ```
  */
-export const httpCallout = definePolicy<HttpCalloutConfig>({
+export const httpCallout = /*#__PURE__*/ definePolicy<HttpCalloutConfig>({
   name: "http-callout",
   priority: Priority.REQUEST_TRANSFORM,
   httpOnly: true,

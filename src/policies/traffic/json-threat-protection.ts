@@ -116,7 +116,7 @@ function validateJsonStructure(
  * });
  * ```
  */
-export const jsonThreatProtection = definePolicy<JsonThreatProtectionConfig>({
+export const jsonThreatProtection = /*#__PURE__*/ definePolicy<JsonThreatProtectionConfig>({
   name: "json-threat-protection",
   priority: Priority.EARLY,
   phases: ["request-body"],

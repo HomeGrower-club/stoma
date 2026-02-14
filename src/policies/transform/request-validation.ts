@@ -75,7 +75,7 @@ function normalizeResult(result: boolean | ValidationResult): ValidationResult {
  * });
  * ```
  */
-export const requestValidation = definePolicy<RequestValidationConfig>({
+export const requestValidation = /*#__PURE__*/ definePolicy<RequestValidationConfig>({
   name: "request-validation",
   priority: Priority.AUTH,
   phases: ["request-body"],

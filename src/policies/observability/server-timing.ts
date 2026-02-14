@@ -73,7 +73,7 @@ function formatEntry(
  * @param config - Optional configuration for headers, precision, and visibility.
  * @returns A {@link Policy} at priority 1 (METRICS).
  */
-export const serverTiming = definePolicy<ServerTimingConfig>({
+export const serverTiming = /*#__PURE__*/ definePolicy<ServerTimingConfig>({
   name: "server-timing",
   priority: Priority.METRICS,
   httpOnly: true,
