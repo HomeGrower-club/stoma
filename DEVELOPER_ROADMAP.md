@@ -234,6 +234,87 @@ The generic `TBindings` flows from `createGateway<TBindings>` through `GatewayCo
 - More service-binding examples (in progress)
 - Documentation improvements (in progress)
 
+### 34. Auth Context & Policy Composition
+
+**Problem:** Auth policies (jwt-auth, api-key-auth, oauth2, rbac) communicate through request headers — `jwtAuth.forwardClaims` sets headers, `rbac` reads them via `roleHeader`/`permissionHeader`. This works but requires manual coordination:
+
+- Users must manually match header names between policies (e.g., `forwardClaims: { role: "x-user-role" }` must align with `rbac({ roleHeader: "x-user-role" })`)
+- Auth identity (who the user is) and authorization (what they can do) are conflated in the header-passing mechanism
+- Composing auth policies requires understanding the header contract between each pair
+- In the `evaluate` path, header mutations from one policy are not visible to subsequent policies in the same phase — they're applied *after* all evaluators run
+
+**Solution:** Two phases — a shared auth context type (non-breaking), then an optional higher-order composition API.
+
+**Phase A — Shared `AuthContext` type** (non-breaking, additive):
+
+Define a stable identity contract that auth policies produce and consume:
+
+```typescript
+interface AuthContext {
+  /** Authenticated subject identifier (user ID, service name, etc.) */
+  subject?: string;
+  /** Verified claims from the auth token */
+  claims?: Record<string, unknown>;
+  /** Roles extracted or assigned during auth */
+  roles?: string[];
+  /** Permissions extracted or assigned during auth */
+  permissions?: string[];
+  /** Auth method that established identity (e.g., "jwt", "api-key", "basic", "oauth2") */
+  method?: string;
+}
+```
+
+- Auth policies (jwt-auth, api-key-auth, oauth2, basic-auth) set `c.set("auth", authContext)` alongside existing header forwarding
+- `rbac` reads from `c.get("auth")` first, falls back to headers for backwards compatibility
+- In `evaluate` path, auth policies emit an `AttributeMutation` with key `"auth"` so downstream evaluators see identity via `input.attributes.get("auth")`
+- Existing header-based forwarding remains supported — `AuthContext` is additive, not a replacement
+
+**Phase B — Higher-order `authenticate()` wrapper** (new API):
+
+```typescript
+import { authenticate } from "@homegrower-club/stoma";
+
+// Compose verification + authorization as a single policy
+const authChain = authenticate({
+  verify: jwtAuth({ jwksUrl: "...", forwardClaims: { sub: "x-user-id" } }),
+  authorize: rbac({ roles: ["admin"] }),
+});
+
+// authChain is a single Policy at Priority.AUTH
+// Internally: runs verify → populates AuthContext → runs authorize (reads from context, not headers)
+```
+
+`authenticate()` wraps multiple auth policies into a single policy that:
+1. Runs the `verify` policy to establish identity
+2. Populates `AuthContext` from the verification result (no header round-trip)
+3. Passes `AuthContext` directly to the `authorize` policy
+4. Short-circuits with the first rejection
+
+**Key design decisions:**
+- `AuthContext` is additive — each auth policy in the chain can enrich it
+- Header forwarding remains supported for backwards compatibility and upstream consumption
+- `authenticate()` is optional — individual auth policies continue to work standalone
+- In `evaluate` path, `AuthContext` flows via `PolicyInput.attributes` using the `"auth"` key
+- Phase A is fully backwards-compatible; Phase B is a new opt-in API
+
+**Files:**
+
+| File | Action |
+|------|--------|
+| `src/policies/auth/types.ts` | Create — `AuthContext` interface |
+| `src/policies/auth/jwt-auth.ts` | Modify — set `AuthContext` on Hono context + emit attribute mutation |
+| `src/policies/auth/api-key-auth.ts` | Modify — same |
+| `src/policies/auth/basic-auth.ts` | Modify — same |
+| `src/policies/auth/oauth2.ts` | Modify — same |
+| `src/policies/auth/rbac.ts` | Modify — read `AuthContext` first, fall back to headers |
+| `src/policies/auth/authenticate.ts` | Create — higher-order composition wrapper (Phase B) |
+| `src/policies/auth/__tests__/authenticate.test.ts` | Create |
+| `docs/src/content/docs/guides/auth-composition.mdx` | Create |
+
+**Estimated effort:** Phase A ~4-6 hours, Phase B ~8-12 hours
+
+---
+
 ## Developer Experience (DX)
 
 ### 25. CLI Scaffolding

@@ -4,6 +4,7 @@
  * @module jwt-auth
  */
 import { GatewayError } from "../../core/errors";
+import type { DebugLogger } from "../../utils/debug";
 import { sanitizeHeaderValue, withModifiedHeaders } from "../../utils/headers";
 import { definePolicy, Priority } from "../sdk";
 import type { PolicyConfig } from "../types";
@@ -54,6 +55,169 @@ interface JwtPayload {
   iat?: number;
   sub?: string;
 }
+
+// ─── Shared JWT Validation ────────────────────────────────────────────
+
+/** Result of JWT token extraction, decoding, verification, and claim validation. */
+type JwtValidationResult =
+  | { ok: true; payload: JwtPayload }
+  | { ok: false; status: number; code: string; message: string };
+
+/**
+ * Core JWT validation shared between the HTTP handler and protocol-agnostic
+ * evaluator.
+ *
+ * Extracts the token, decodes the JWT, verifies the signature (HMAC or
+ * JWKS), and validates standard claims (exp, iss, aud). Returns a
+ * discriminated result so callers can map to their runtime's error model.
+ *
+ * Signature verification errors from {@link verifyHmac}/{@link verifyJwks}
+ * propagate as thrown `GatewayError` — both runtimes handle these at a
+ * higher level.
+ */
+async function validateJwt(
+  authHeader: string | null | undefined,
+  config: JwtAuthConfig,
+  debug: DebugLogger,
+): Promise<JwtValidationResult> {
+  if (!authHeader) {
+    return {
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+      message: "Missing authentication token",
+    };
+  }
+
+  // Extract token
+  let token: string;
+  if (config.tokenPrefix) {
+    if (!authHeader.startsWith(`${config.tokenPrefix} `)) {
+      return {
+        ok: false,
+        status: 401,
+        code: "unauthorized",
+        message: `Expected ${config.tokenPrefix} token`,
+      };
+    }
+    token = authHeader.slice(config.tokenPrefix.length + 1);
+  } else {
+    token = authHeader;
+  }
+
+  if (!token || !token.trim()) {
+    return {
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+      message: "Empty authentication token",
+    };
+  }
+
+  // Decode (without verifying yet)
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    return {
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+      message: "Malformed JWT: expected 3 parts",
+    };
+  }
+
+  let header: JwtHeader;
+  let payload: JwtPayload;
+  try {
+    header = JSON.parse(base64UrlDecode(parts[0]));
+    payload = JSON.parse(base64UrlDecode(parts[1]));
+  } catch {
+    return {
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+      message: "Malformed JWT: invalid base64 encoding",
+    };
+  }
+
+  // Block "none" algorithm (case-insensitive to prevent bypass)
+  if (header.alg.toLowerCase() === "none") {
+    return {
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+      message: "JWT algorithm 'none' is not allowed",
+    };
+  }
+
+  // Verify signature
+  if (config.secret) {
+    debug(`HMAC verification (alg=${header.alg})`);
+    await verifyHmac(config.secret, parts[0], parts[1], parts[2], header.alg);
+  } else if (config.jwksUrl) {
+    debug(
+      `JWKS verification (alg=${header.alg}, kid=${header.kid ?? "none"})`
+    );
+    await verifyJwks(
+      config.jwksUrl,
+      parts[0],
+      parts[1],
+      parts[2],
+      header,
+      config.jwksCacheTtlMs,
+      config.jwksTimeoutMs
+    );
+  }
+
+  // Validate claims
+  const now = Math.floor(Date.now() / 1000);
+
+  if (config.requireExp && payload.exp === undefined) {
+    return {
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+      message: "JWT must contain an 'exp' claim",
+    };
+  }
+
+  if (
+    payload.exp !== undefined &&
+    payload.exp < now - config.clockSkewSeconds!
+  ) {
+    return {
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+      message: "JWT has expired",
+    };
+  }
+
+  if (config.issuer && payload.iss !== config.issuer) {
+    return {
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+      message: "JWT issuer mismatch",
+    };
+  }
+
+  if (config.audience) {
+    const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+    if (!aud.includes(config.audience)) {
+      return {
+        ok: false,
+        status: 401,
+        code: "unauthorized",
+        message: "JWT audience mismatch",
+      };
+    }
+  }
+
+  debug(`verified (sub=${payload.sub ?? "none"})`);
+  return { ok: true, payload };
+}
+
+// ─── Policy Definition ────────────────────────────────────────────────
 
 /**
  * Validate JWT tokens and optionally forward claims as upstream headers.
@@ -106,119 +270,19 @@ export const jwtAuth = /*#__PURE__*/ definePolicy<JwtAuthConfig>({
     }
   },
   handler: async (c, next, { config, debug }) => {
-    const authHeader = c.req.header(config.headerName!);
+    const result = await validateJwt(
+      c.req.header(config.headerName!),
+      config,
+      debug,
+    );
 
-    if (!authHeader) {
-      throw new GatewayError(
-        401,
-        "unauthorized",
-        "Missing authentication token"
-      );
-    }
-
-    // Extract token
-    let token: string;
-    if (config.tokenPrefix) {
-      if (!authHeader.startsWith(`${config.tokenPrefix} `)) {
-        throw new GatewayError(
-          401,
-          "unauthorized",
-          `Expected ${config.tokenPrefix} token`
-        );
-      }
-      token = authHeader.slice(config.tokenPrefix.length + 1);
-    } else {
-      token = authHeader;
-    }
-
-    if (!token || !token.trim()) {
-      throw new GatewayError(401, "unauthorized", "Empty authentication token");
-    }
-
-    // Decode (without verifying yet)
-    const parts = token.split(".");
-    if (parts.length !== 3) {
-      throw new GatewayError(
-        401,
-        "unauthorized",
-        "Malformed JWT: expected 3 parts"
-      );
-    }
-
-    let header: JwtHeader;
-    let payload: JwtPayload;
-    try {
-      header = JSON.parse(base64UrlDecode(parts[0]));
-      payload = JSON.parse(base64UrlDecode(parts[1]));
-    } catch {
-      throw new GatewayError(
-        401,
-        "unauthorized",
-        "Malformed JWT: invalid base64 encoding"
-      );
-    }
-
-    // Block "none" algorithm (case-insensitive to prevent bypass)
-    if (header.alg.toLowerCase() === "none") {
-      throw new GatewayError(
-        401,
-        "unauthorized",
-        "JWT algorithm 'none' is not allowed"
-      );
-    }
-
-    // Verify signature
-    if (config.secret) {
-      debug(`HMAC verification (alg=${header.alg})`);
-      await verifyHmac(config.secret, parts[0], parts[1], parts[2], header.alg);
-    } else if (config.jwksUrl) {
-      debug(
-        `JWKS verification (alg=${header.alg}, kid=${header.kid ?? "none"})`
-      );
-      await verifyJwks(
-        config.jwksUrl,
-        parts[0],
-        parts[1],
-        parts[2],
-        header,
-        config.jwksCacheTtlMs,
-        config.jwksTimeoutMs
-      );
-    }
-
-    // Validate claims
-    const now = Math.floor(Date.now() / 1000);
-
-    if (config.requireExp && payload.exp === undefined) {
-      throw new GatewayError(
-        401,
-        "unauthorized",
-        "JWT must contain an 'exp' claim"
-      );
-    }
-
-    if (
-      payload.exp !== undefined &&
-      payload.exp < now - config.clockSkewSeconds!
-    ) {
-      throw new GatewayError(401, "unauthorized", "JWT has expired");
-    }
-
-    if (config.issuer && payload.iss !== config.issuer) {
-      throw new GatewayError(401, "unauthorized", "JWT issuer mismatch");
-    }
-
-    if (config.audience) {
-      const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-      if (!aud.includes(config.audience)) {
-        throw new GatewayError(401, "unauthorized", "JWT audience mismatch");
-      }
+    if (!result.ok) {
+      throw new GatewayError(result.status, result.code, result.message);
     }
 
     // Forward claims as headers (sanitize to prevent header injection)
-    debug(`verified (sub=${payload.sub ?? "none"})`);
-
     if (config.forwardClaims) {
+      const { payload } = result;
       const forwardClaims = config.forwardClaims;
       withModifiedHeaders(c, (headers) => {
         for (const [claim, headerKey] of Object.entries(forwardClaims)) {
@@ -233,146 +297,25 @@ export const jwtAuth = /*#__PURE__*/ definePolicy<JwtAuthConfig>({
     await next();
   },
   evaluate: {
-    onRequest: async (input, { config }) => {
-      const authHeader = input.headers.get(config.headerName!);
+    onRequest: async (input, { config, debug }) => {
+      const result = await validateJwt(
+        input.headers.get(config.headerName!),
+        config,
+        debug,
+      );
 
-      if (!authHeader) {
+      if (!result.ok) {
         return {
           action: "reject",
-          status: 401,
-          code: "unauthorized",
-          message: "Missing authentication token",
+          status: result.status,
+          code: result.code,
+          message: result.message,
         };
       }
 
-      // Extract token
-      let token: string;
-      if (config.tokenPrefix) {
-        if (!authHeader.startsWith(`${config.tokenPrefix} `)) {
-          return {
-            action: "reject",
-            status: 401,
-            code: "unauthorized",
-            message: `Expected ${config.tokenPrefix} token`,
-          };
-        }
-        token = authHeader.slice(config.tokenPrefix.length + 1);
-      } else {
-        token = authHeader;
-      }
-
-      if (!token || !token.trim()) {
-        return {
-          action: "reject",
-          status: 401,
-          code: "unauthorized",
-          message: "Empty authentication token",
-        };
-      }
-
-      // Decode (without verifying yet)
-      const parts = token.split(".");
-      if (parts.length !== 3) {
-        return {
-          action: "reject",
-          status: 401,
-          code: "unauthorized",
-          message: "Malformed JWT: expected 3 parts",
-        };
-      }
-
-      let header: JwtHeader;
-      let payload: JwtPayload;
-      try {
-        header = JSON.parse(base64UrlDecode(parts[0]));
-        payload = JSON.parse(base64UrlDecode(parts[1]));
-      } catch {
-        return {
-          action: "reject",
-          status: 401,
-          code: "unauthorized",
-          message: "Malformed JWT: invalid base64 encoding",
-        };
-      }
-
-      // Block "none" algorithm
-      if (header.alg.toLowerCase() === "none") {
-        return {
-          action: "reject",
-          status: 401,
-          code: "unauthorized",
-          message: "JWT algorithm 'none' is not allowed",
-        };
-      }
-
-      // Verify signature
-      if (config.secret) {
-        await verifyHmac(
-          config.secret,
-          parts[0],
-          parts[1],
-          parts[2],
-          header.alg
-        );
-      } else if (config.jwksUrl) {
-        await verifyJwks(
-          config.jwksUrl,
-          parts[0],
-          parts[1],
-          parts[2],
-          header,
-          config.jwksCacheTtlMs,
-          config.jwksTimeoutMs
-        );
-      }
-
-      // Validate claims
-      const now = Math.floor(Date.now() / 1000);
-
-      if (config.requireExp && payload.exp === undefined) {
-        return {
-          action: "reject",
-          status: 401,
-          code: "unauthorized",
-          message: "JWT must contain an 'exp' claim",
-        };
-      }
-
-      if (
-        payload.exp !== undefined &&
-        payload.exp < now - config.clockSkewSeconds!
-      ) {
-        return {
-          action: "reject",
-          status: 401,
-          code: "unauthorized",
-          message: "JWT has expired",
-        };
-      }
-
-      if (config.issuer && payload.iss !== config.issuer) {
-        return {
-          action: "reject",
-          status: 401,
-          code: "unauthorized",
-          message: "JWT issuer mismatch",
-        };
-      }
-
-      if (config.audience) {
-        const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-        if (!aud.includes(config.audience)) {
-          return {
-            action: "reject",
-            status: 401,
-            code: "unauthorized",
-            message: "JWT audience mismatch",
-          };
-        }
-      }
-
-      // Forward claims as headers via mutations
+      // Forward claims as header mutations
       if (config.forwardClaims) {
+        const { payload } = result;
         const forwardClaims = config.forwardClaims;
         const mutations = [];
         for (const [claim, headerKey] of Object.entries(forwardClaims)) {
