@@ -20,27 +20,40 @@ Stoma runs natively on Node.js. Deploy to traditional servers, containers, or se
 
 2. **Create your gateway**
 
-   ```typescript title="src/index.ts"
-   import { createGateway, cors, requestLog } from "@homegrower-club/stoma";
+   For a minimal example, see the [Basic Gateway](/partials/basic-gateway/) partial.
+   Here's a typical production setup with the Node.js adapter:
 
-   const gateway = createGateway({
-     name: "my-gateway",
-     basePath: "/api",
-     policies: [requestLog(), cors()],
-     routes: [
-       {
-         path: "/users/*",
-         pipeline: {
-           policies: [],
-           upstream: {
-             type: "url",
-             target: "https://api.example.com",
-             rewritePath: (path) => path.replace("/api", ""),
+   ```typescript title="src/index.ts"
+   import {
+     createGateway,
+     cors,
+     requestLog,
+     rateLimit,
+   } from "@homegrower-club/stoma";
+   import { nodeAdapter } from "@homegrower-club/stoma/adapters/node";
+
+   const gateway = createGateway(
+     {
+       name: "my-gateway",
+       basePath: "/api",
+       policies: [requestLog(), cors()],
+       routes: [
+         {
+           path: "/users/*",
+           pipeline: {
+             policies: [rateLimit({ max: 100, window: 60 })],
+             upstream: {
+               type: "url",
+               target: "https://api.example.com",
+               rewritePath: (path) => path.replace("/api", ""),
+             },
            },
          },
-       },
-     ],
-   });
+       ],
+     },
+     // Production adapter with rate limiting and caching support
+     nodeAdapter()
+   );
 
    export default gateway.app;
    ```

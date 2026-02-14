@@ -15,35 +15,89 @@ In this guide, we'll build a production-grade gateway with authentication, rate 
     Create a new file (e.g., `src/index.ts`) and use `createGateway` to define your infrastructure.
 
     ```typescript
+    // Import the core function and policies you need
+    // - createGateway: Compiles your config into a gateway application
+    // - jwtAuth: Validates JWT tokens on incoming requests
+    // - rateLimit: Limits requests per IP/user
+    // - requestLog: Logs each request (timing, status, etc.)
+    // - health: Adds a /health endpoint that probes your upstreams
     import { createGateway, jwtAuth, rateLimit, requestLog, health } from "@homegrower-club/stoma";
 
+    // createGateway() validates your config at construction time
+    // If anything is misconfigured, you get a clear error immediately
     const gateway = createGateway({
+      // name: A friendly identifier for logs, admin UI, and metrics
+      // Shows up as "my-gateway" in your logs - helps identify which gateway
       name: "my-gateway",
+
+      // basePath: Prefix added to all route paths
+      // Request to /v1/users/123 will match route path /users/123
       basePath: "/v1",
+
+      // policies: Global policies that run on EVERY request
+      // These execute before route-specific policies
+      // - requestLog(): Logs request/response details for observability
       policies: [requestLog()],
+
+      // routes: Array of route definitions, processed top-to-bottom
+      // First matching route wins - use this for specific overrides
       routes: [
+        // health() is special - returns a RouteConfig, not a Policy
+        // Adds GET /health that returns 200 if all upstreams are healthy
         health(),
+
+        // Define a route with a path pattern
         {
+          // path: URL pattern with wildcard support
+          // * matches one segment: /users/* matches /users/123 but not /users/123/posts
+          // ** matches multiple: /api/** matches /api/a/b/c
           path: "/users/*",
+
+          // pipeline: The middleware chain + upstream for this route
           pipeline: {
+            // policies: Route-specific middleware
+            // These run after global policies, in the order specified
             policies: [
+              // jwtAuth: Validates Bearer token from Authorization header
+              // Throws 401 if missing/invalid, otherwise adds user info to context
+              // "env:JWT_SECRET" reads from environment variable at runtime
               jwtAuth({ secret: "env:JWT_SECRET" }),
+
+              // rateLimit: Limits requests per window
+              // max: 100 requests per windowSeconds (here: 60 seconds)
+              // Uses in-memory store by default - swap for Redis/KV in production
               rateLimit({ max: 100, windowSeconds: 60 }),
             ],
+
+            // upstream: Where to send the request after policies pass
+            // Three types available:
+            // - url: Proxy to any HTTP endpoint (most common)
+            // - service-binding: Call another Cloudflare Worker directly
+            // - handler: Return a response inline (for mocks/static responses)
             upstream: {
+              // type: Which upstream configuration to use
               type: "url",
+
+              // target: The destination URL to proxy to
+              // The request path (minus basePath) is appended here
               target: "https://users-api.internal.example.com",
+
+              // Optional: rewritePath transforms the path before sending
+              // If omitted, the matched route path is used as-is
+              // Example: With basePath "/v1", request /v1/users/123 -> /users/123
             },
           },
         },
       ],
     });
 
+    // Export the gateway app - this is a standard fetch handler
+    // Your runtime (Cloudflare, Node, Bun) will call gateway.app.fetch
     export default gateway.app;
     ```
 
 2.  **Understand the Core Concepts**
-    - **`createGateway`**: The main entry point. It compiles your config into a Hono app.
+    - **`createGateway`**: The main entry point. It compiles your config into a gateway application.
     - **`basePath`**: Prefixes all routes (e.g., `/v1/users/*`).
     - **Global Policies**: `policies: [requestLog()]` runs on every single request.
     - **Pipeline**: A chain of policies leading to an `upstream` (where the request ends up).
@@ -56,7 +110,7 @@ In this guide, we'll build a production-grade gateway with authentication, rate 
     - **`handler`**: Inline response logic (Universal).
 
 4.  **Run and Deploy**
-    Since `gateway.app` is a standard Hono instance, you can run it anywhere.
+    The `gateway.app` export is a standard Hono application with a `fetch` handler, so it runs on any JavaScript runtime.
 
     <Tabs>
       <TabItem label="Cloudflare Workers">

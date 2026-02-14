@@ -14,6 +14,10 @@ traffic shadowing, metrics collection, config validation, and the admin
 introspection API. It shows how Stoma's built-in policies compose together to
 protect a multi-service architecture.
 
+:::note
+This example deploys on Cloudflare Workers to leverage Service Bindings and KV stores, but the same policy composition works on any runtime with URL upstreams and in-memory stores.
+:::
+
 ## The full gateway
 
 ```typescript

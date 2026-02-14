@@ -2,7 +2,7 @@
 title: Deploy with Bun
 description: Deploy your Stoma gateway to Bun's fast runtime.
 sidebar:
-  order: 4
+  order: 1
 ---
 
 import { Steps, Aside } from "@astrojs/starlight/components";
@@ -20,27 +20,40 @@ Bun provides ultra-fast startup and execution. Deploy your Stoma gateway with Bu
 
 2. **Create your gateway**
 
-   ```typescript title="src/index.ts"
-   import { createGateway, cors, requestLog } from "@homegrower-club/stoma";
+   For a minimal example, see the [Basic Gateway](/partials/basic-gateway/) partial.
+   Here's a typical production setup with the Bun adapter:
 
-   const gateway = createGateway({
-     name: "my-gateway",
-     basePath: "/api",
-     policies: [requestLog(), cors()],
-     routes: [
-       {
-         path: "/users/*",
-         pipeline: {
-           policies: [],
-           upstream: {
-             type: "url",
-             target: "https://api.example.com",
-             rewritePath: (path) => path.replace("/api", ""),
+   ```typescript title="src/index.ts"
+   import {
+     createGateway,
+     cors,
+     requestLog,
+     rateLimit,
+   } from "@homegrower-club/stoma";
+   import { bunAdapter } from "@homegrower-club/stoma/adapters/bun";
+
+   const gateway = createGateway(
+     {
+       name: "my-gateway",
+       basePath: "/api",
+       policies: [requestLog(), cors()],
+       routes: [
+         {
+           path: "/users/*",
+           pipeline: {
+             policies: [rateLimit({ max: 100, window: 60 })],
+             upstream: {
+               type: "url",
+               target: "https://api.example.com",
+               rewritePath: (path) => path.replace("/api", ""),
+             },
            },
          },
-       },
-     ],
-   });
+       ],
+     },
+     // Production adapter with rate limiting and caching support
+     bunAdapter()
+   );
 
    export default gateway.app;
    ```

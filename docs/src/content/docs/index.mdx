@@ -1,9 +1,9 @@
 ---
 title: Stoma
-description: Declarative API gateway as a TypeScript library, built on Hono. Runs on Cloudflare Workers, Deno, Bun, Node.js, and any runtime Hono supports (even the browser).
+description: Declarative API gateway as a TypeScript library. Runs on Cloudflare Workers, Node.js, Deno, Bun, and any JavaScript runtime.
 template: splash
 hero:
-  tagline: Strongly typed, ultra-light, blazing fast - run anywhere Hono runs!
+  tagline: Strongly typed, ultra-light, blazing fast -- runs on any JavaScript runtime.
   image:
     html: <img src="/leaf-bg-trees.jpg" alt="A lush canopy of green leaves" />
   actions:
@@ -24,15 +24,32 @@ hero:
 import { Card, CardGrid, Tabs, TabItem, Steps, Aside } from "@astrojs/starlight/components";
 import Playground from "../../components/Playground.tsx";
 
-**Declarative API gateway as a TypeScript library, built on Hono. Runs on Cloudflare Workers, Deno, Bun, Node.js, and any runtime Hono supports.**
+## What is Stoma?
+
+Stoma is a **declarative API gateway you define in TypeScript** and deploy
+with your standard workflow. Instead of maintaining a separate proxy service
+with YAML files or admin dashboards, you define routes, policies, and upstreams
+as typed objects in your codebase -- version-controlled, PR-reviewed, and
+deployed through your existing pipeline.
+
+- **Gateway as code.** Your entire gateway configuration is TypeScript. Version
+  it in Git, review changes in PRs, roll back with a standard deploy.
+- **Type-safe from config to runtime.** Routes, policies, and upstreams are all
+  typed. Misconfigure a JWT policy? Your editor catches it before your users do.
+- **Deploy anywhere.** Cloudflare Workers, Node.js, Deno, Bun, Lambda@Edge --
+  as part of your application or as a standalone service.
+- **Batteries included.** Built-in policies across auth, traffic control,
+  resilience, and transformation -- composable, priority-ordered, and
+  individually tree-shakeable.
+
+Named after the tiny pores in plant leaves that regulate what passes through,
+Stoma gives you the same fine-grained control over your API traffic.
 
 ## Even in the browser...
 
 <Playground client:load />
 
-
 ---
-
 
 ## Why Stoma?
 
@@ -41,23 +58,23 @@ API gateways in the JavaScript ecosystem are often stuck between two suboptimal 
 1.  **Heavy Infrastructure:** Kong, KrakenD, or AWS API Gateway. Powerful, but separate services configured with YAML, operating independently from your code. You lose type safety and pay for extra infrastructure.
 2.  **Legacy Libraries:** Older libraries like Express Gateway are often unmaintained, locked to legacy frameworks, and not built for modern edge runtimes.
 
-**Stoma is the third option: an embeddable gateway library that lives inside your application.**
+**Stoma is the third option: a declarative gateway library that lives in your codebase and deploys with your standard workflow.**
 
 <CardGrid>
   <Card title="Gateway as Code" icon="seti:typescript">
     Configured with **code, not YAML**. Version your gateway in Git, review changes in PRs, and rollback instantly with your standard deployment pipeline.
-    [Read More](/getting-started/configuration/)
+    [Read More](/concepts/configuration/)
   </Card>
   <Card title="Type-Safe Ergonomics" icon="pencil">
     Full type safety from configuration to runtime. Your editor provides autocomplete for policies and upstreams, catching mistakes before your users do.
     [Read More](/guides/type-safe-bindings/)
   </Card>
-  <Card title="Zero Infrastructure" icon="rocket">
-    Leverages Hono's lightweight router (zero dependencies). No extra servers to manage, no extra latency.
+  <Card title="No Extra Infrastructure" icon="rocket">
+    No sidecars, no control planes, no admin UIs. Define your gateway in code and deploy it with your existing pipeline.
     [Read More](/getting-started/installation/)
   </Card>
   <Card title="Multi-runtime" icon="external">
-    Runs on **any runtime** Hono supports: Cloudflare Workers, Node.js, Deno, Bun, Fastly, Lambda@Edge, Vercel, and more.
+    Runs on Cloudflare Workers, Node.js, Deno, Bun, Fastly, Lambda@Edge, and more -- using standard Web APIs.
     [Read More](/getting-started/installation/)
   </Card>
 </CardGrid>
@@ -78,7 +95,7 @@ Stoma is built by developers, for developers. We believe your gateway should be 
     [Read More](/guides/config-splitting/)
   </Card>
   <Card title="Local Development" icon="laptop">
-    Run your entire gateway locally with `wrangler dev` or `node`. No need for complex Docker setups just to test a rate limit.
+    Run your entire gateway locally with `node`, `bun`, `wrangler dev`, or any runtime. No need for complex Docker setups just to test a rate limit.
     [Read More](/getting-started/local-development/)
   </Card>
   <Card title="Type-Aware Pipelines" icon="check-selection">
@@ -130,9 +147,28 @@ Stoma is built by developers, for developers. We believe your gateway should be 
     ```
 
 3.  **Deploy anywhere**
-    Stoma compiles your config into a standard Hono app. Export it as a module for Cloudflare Workers, or serve it with Deno, Bun, or Node.js.
+    Export as a module for Cloudflare Workers, or serve with Node.js, Deno, or Bun. The output is a standard Hono app.
 
 </Steps>
+
+---
+
+## What do you need?
+
+<CardGrid>
+  <Card title="I need to add auth/rate-limiting">
+    Start with the [Quick Start](/getting-started/quick-start/) to see how policies like JWT auth and rate limiting work together.
+  </Card>
+  <Card title="I need a production-ready pattern">
+    Browse [Recipes](/recipes/) for copy-paste solutions like webhook protection, caching, and shadow traffic.
+  </Card>
+  <Card title="I need a specific policy">
+    Explore [Policies](/policies/) by category: Auth, Traffic, Resilience, Transform.
+  </Card>
+  <Card title="I need to write a custom policy">
+    Learn [Policy Authoring](/policy-authoring/your-first-policy/) to extend Stoma with your own middleware.
+  </Card>
+</CardGrid>
 
 ---
 
@@ -141,7 +177,7 @@ Stoma is built by developers, for developers. We believe your gateway should be 
 | Feature | Stoma | Kong | KrakenD | Express Gateway |
 |---------|-------|------|---------|-----------------|
 | **Configuration** | **TypeScript (Type-safe)** | YAML / Admin API | JSON | YAML / JSON |
-| **Execution** | **Embedded Library** | Separate Service | Separate Binary | Middleware |
+| **Execution** | **TypeScript Library** | Separate Service | Separate Binary | Middleware |
 | **Language** | TypeScript | Lua / Go | Go | JavaScript |
 | **Multi-runtime** | **Yes (Edge & Server)** | No (Container) | No (Binary) | No (Node only) |
 | **Bundle size** | **Lightweight (Core)** | 100MB+ Image | 80MB+ Binary | 50MB+ Modules |
@@ -227,6 +263,6 @@ While Stoma is runtime-agnostic, it can leverage platform-specific features like
 </CardGrid>
 
 <Aside type="tip">
-  Stoma is used in production to power high-performance, multi-tenant API gateways on Cloudflare Workers.
+  Stoma is used in production to power high-performance, multi-tenant API gateways.
 </Aside>
 

@@ -15,13 +15,13 @@ import { Aside } from "@astrojs/starlight/components";
 | Language | TypeScript | Lua / Go | Go | JavaScript |
 | Configuration | TypeScript (type-safe) | YAML / Admin API | JSON | YAML / JSON |
 | Type safety | Full (compile-time) | None | None | None |
-| Bundle size | Lightweight (Hono core) | 100MB+ image | 80MB+ binary | 50MB+ node_modules |
+| Bundle size | Lightweight (tree-shakeable) | 100MB+ image | 80MB+ binary | 50MB+ node_modules |
 | Service Bindings | Yes (Cloudflare Workers) | N/A | N/A | N/A |
-| Custom policies | Hono middleware (factory function) | Lua plugins | Go plugins | Express middleware |
+| Custom policies | TypeScript middleware (factory function) | Lua plugins | Go plugins | Express middleware |
 | Status | Active | Active | Active | Unmaintained |
 | Cold start | Sub-millisecond (Workers), fast (Bun/Deno) | N/A (always-on) | N/A (always-on) | Seconds |
 | Admin UI | Programmatic (admin routes) | Dashboard + Admin API | Dashboard | Admin UI |
-| Plugin ecosystem | npm (any Hono middleware) | Kong Hub (large ecosystem) | Community plugins | npm |
+| Plugin ecosystem | npm (compatible with Hono middleware) | Kong Hub (large ecosystem) | Community plugins | npm |
 | gRPC support | No | Yes | Yes (transcoding) | No |
 | GraphQL federation | No | Via plugin | Built-in | No |
 
@@ -32,23 +32,22 @@ Typos, missing fields, and type mismatches are caught at compile time, not at
 deployment time. Policies are TypeScript functions that your editor can
 autocomplete and your CI can type-check.
 
-**Zero infrastructure.** Stoma is a library, not a service. There is no
+**No extra infrastructure.** Stoma is a library, not a service. There is no
 container to manage, no proxy to deploy, no admin API to secure. The gateway
-lives in your codebase and deploys as part of your application -- whether
-that is a Cloudflare Worker, a Deno server, a Bun process, or a Node.js
-service.
+lives in your codebase and deploys through your existing pipeline -- whether
+as a standalone Cloudflare Worker, a Node.js server, a Bun process, or
+embedded in your application.
 
-**Multi-runtime.** Built on Hono, Stoma runs wherever Hono runs. The core
-library uses standard Web APIs (`fetch`, `Request`, `Response`,
+**Multi-runtime.** Stoma uses standard Web APIs (`fetch`, `Request`, `Response`,
 `crypto.subtle`) with no runtime-specific dependencies. Cloudflare Workers
 users get additional features like Service Bindings and KV-backed stores,
 but the full policy engine, URL proxying, and handler upstreams work on
 every runtime.
 
-**Minimal surface area.** The entire library is a single peer dependency on
-Hono. Policies are plain middleware functions. Custom policies require no
-framework-specific abstractions -- if you can write Hono middleware, you can
-write a Stoma policy.
+**Minimal surface area.** One peer dependency (Hono), zero runtime-specific
+code. Policies are plain middleware functions. Custom policies require no
+framework-specific abstractions -- if you can write middleware that takes
+(context, next), you can write a Stoma policy.
 
 **Composable policies.** Policies are merged, deduplicated by name, and sorted
 by priority. Global policies apply everywhere. Route-level policies override
@@ -68,11 +67,12 @@ transcoding and GraphQL composition. Apollo Router is purpose-built for
 GraphQL federation. Stoma operates at the HTTP layer and does not parse or
 transform protocol-specific payloads.
 
-**You want a standalone reverse proxy.** If you need a dedicated infrastructure
-component that sits in front of your services -- with its own deployment,
-scaling, and monitoring -- a reverse proxy like Caddy, Nginx, or Envoy is
-designed for that role. Stoma is a library embedded in your application code,
-not a separate infrastructure layer.
+**You want a standalone reverse proxy.** Stoma is a library, not a standalone
+reverse proxy. While you can deploy a Stoma gateway as its own service (e.g.,
+a standalone Cloudflare Worker), it does not provide infrastructure-level
+features like Envoy (connection pooling, TCP proxying, TLS termination). If
+you need those capabilities, a dedicated proxy like Caddy, Nginx, or Envoy is
+designed for that role.
 
 **You need runtime configuration changes without redeployment.** Kong and
 KrakenD support dynamic configuration via admin APIs. Stoma's configuration is
@@ -86,7 +86,8 @@ underlying runtime, not by Stoma. If you need fine-grained control over these
 protocols, a dedicated proxy like Envoy is more appropriate.
 
 <Aside>
-Stoma is designed for teams that want gateway logic in their codebase, not
-in a separate infrastructure layer. If your gateway is TypeScript code, not
-config files, Stoma is a good fit -- regardless of which runtime you deploy to.
+Stoma is designed for teams that want gateway logic in their codebase --
+version-controlled, type-checked, and deployed through their existing pipeline.
+If your gateway is TypeScript code, not config files, Stoma is a good fit --
+regardless of which runtime you deploy to.
 </Aside>

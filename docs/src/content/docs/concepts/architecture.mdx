@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-`@homegrower-club/stoma` compiles a declarative TypeScript configuration object into a Hono app with priority-ordered policy middleware chains and upstream dispatching. This page describes the core abstractions, the request lifecycle, and the module boundaries that keep the system extensible.
+`@homegrower-club/stoma` compiles a declarative TypeScript configuration object into an HTTP application with priority-ordered policy middleware chains and upstream dispatching. This page describes the core abstractions, the request lifecycle, and the module boundaries that keep the system extensible.
 
 ## Core Concepts
 
@@ -44,7 +44,7 @@ graph TD
 
 ### Step-by-step Execution Flow
 
-1. **Request ingress.** A client HTTP request arrives at the Cloudflare Worker. Hono's router matches it against registered routes (including the gateway's `basePath` prefix).
+1. **Request ingress.** A client HTTP request arrives at the gateway. Hono's router matches it against registered routes (including the gateway's `basePath` prefix).
 
 2. **Request ID generation.** The context injector middleware runs first on every matched route. It generates a unique request ID via `crypto.randomUUID()` and records the start timestamp.
 

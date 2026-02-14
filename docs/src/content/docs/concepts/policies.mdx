@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-Policies are the building blocks of Stoma pipelines. Every policy is a named Hono middleware with a numeric priority that determines its execution order within the pipeline. Stoma ships dozens of built-in policies across multiple categories, plus a Policy SDK for authoring custom policies.
+Policies are the building blocks of Stoma pipelines. Every policy is a named middleware handler with a numeric priority that determines its execution order within the pipeline. Stoma ships dozens of built-in policies across multiple categories, plus a Policy SDK for authoring custom policies.
 
 ## Policy Interface
 
@@ -15,12 +15,18 @@ Policies are the building blocks of Stoma pipelines. Every policy is a named Hon
 interface Policy {
   /** Unique policy name (e.g. "jwt-auth", "rate-limit") */
   name: string;
-  /** The Hono middleware handler */
+  /** HTTP runtime middleware handler */
   handler: MiddlewareHandler;
   /** Execution priority -- lower numbers run first. Default: 100. */
   priority?: number;
+  /** Protocol-agnostic evaluator for non-HTTP runtimes (ext_proc, WebSocket). Optional. */
+  evaluate?: PolicyEvaluator;
+  /** Processing phases this policy participates in. Default: ["request-headers"]. */
+  phases?: ProcessingPhase[];
 }
 ```
+
+The `handler` field is used by the HTTP runtime (`createGateway`). The optional `evaluate` field provides a protocol-agnostic entry point for non-HTTP runtimes like Envoy ext_proc and WebSocket gateways. Policies that implement both work across all runtimes. Most users only need `handler` -- the `evaluate` interface is for advanced multi-protocol scenarios.
 
 A policy factory function accepts a configuration object and returns a `Policy`. The factory validates config at construction time (before any requests arrive) and closes over the config in the returned middleware handler.
 
@@ -208,7 +214,7 @@ The gateway's global error handler catches `GatewayError` instances and converts
 
 ## Per-Policy Timing
 
-The pipeline wrapper automatically records execution duration for each policy. Timing data is accumulated on the Hono context under the `_policyTimings` key as an array of `{ name: string; durationMs: number }` entries. The `metricsReporter` policy can consume this data for observability.
+The pipeline wrapper automatically records execution duration for each policy. Timing data is accumulated on the request context under the `_policyTimings` key as an array of `{ name: string; durationMs: number }` entries. The `metricsReporter` policy can consume this data for observability.
 
 ## Policy SDK
 
@@ -245,7 +251,7 @@ export const tenantFilter = definePolicy<TenantFilterConfig>({
 // Usage: tenantFilter({ allowedTenants: ["acme", "globex"] })
 ```
 
-The handler receives three arguments: the Hono context `c`, the `next` function, and a `PolicyHandlerContext` containing:
+The handler receives three arguments: the request context `c`, the `next` function, and a `PolicyHandlerContext` containing:
 
 - `config` -- the fully merged config (defaults + user overrides)
 - `debug` -- a pre-namespaced `DebugLogger` (always callable, zero-overhead when disabled)

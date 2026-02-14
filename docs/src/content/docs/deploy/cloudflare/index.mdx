@@ -2,12 +2,12 @@
 title: Deploy to Cloudflare Workers
 description: Deploy your Stoma gateway to Cloudflare Workers with wrangler, secrets, and CI/CD.
 sidebar:
-  order: 1
+  order: 4
 ---
 
 import { Aside, Steps, Tabs, TabItem, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
-Stoma is designed for Cloudflare Workers. Deploy your gateway to the edge with full access to Service Bindings, KV, Durable Objects, and the Cache API.
+Stoma has first-class Cloudflare Workers support. Deploy your gateway to the edge with full access to Service Bindings, KV, Durable Objects, and the Cache API.
 
 ## Prerequisites
 
@@ -27,27 +27,40 @@ wrangler login
 
 2. **Create your gateway**
 
-   ```typescript title="src/index.ts"
-   import { createGateway, cors, requestLog } from "@homegrower-club/stoma";
+   For a minimal example, see the [Basic Gateway](/partials/basic-gateway/) partial.
+   Here's a typical production setup with the Cloudflare adapter:
 
-   const gateway = createGateway({
-     name: "my-gateway",
-     basePath: "/api",
-     policies: [requestLog(), cors()],
-     routes: [
-       {
-         path: "/users/*",
-         pipeline: {
-           policies: [],
-           upstream: {
-             type: "url",
-             target: "https://api.example.com",
-             rewritePath: (path) => path.replace("/api", ""),
+   ```typescript title="src/index.ts"
+   import {
+     createGateway,
+     cors,
+     requestLog,
+     rateLimit,
+   } from "@homegrower-club/stoma";
+   import { cloudflareAdapter } from "@homegrower-club/stoma/adapters/cloudflare";
+
+   const gateway = createGateway(
+     {
+       name: "my-gateway",
+       basePath: "/api",
+       policies: [requestLog(), cors()],
+       routes: [
+         {
+           path: "/users/*",
+           pipeline: {
+             policies: [rateLimit({ max: 100, window: 60 })],
+             upstream: {
+               type: "url",
+               target: "https://api.example.com",
+               rewritePath: (path) => path.replace("/api", ""),
+             },
            },
          },
-       },
-     ],
-   });
+       ],
+     },
+     // Production adapter with KV rate limiting and Cache API support
+     cloudflareAdapter({ env })
+   );
 
    export default gateway.app;
    ```

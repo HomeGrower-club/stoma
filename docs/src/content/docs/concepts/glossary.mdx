@@ -1,0 +1,124 @@
+---
+title: Glossary
+description: Key terms and concepts explained in plain language.
+draft: false
+sidebar:
+  order: 100
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+New to API gateways? These are the terms you'll encounter in Stoma's documentation.
+
+## Core Concepts
+
+<CardGrid>
+  <Card title="Gateway">
+    The top-level container that holds your entire API configuration. You create it with `createGateway()`. Think of it as the front door to your API — every request passes through it.
+  </Card>
+
+  <Card title="Route">
+    A definition that matches incoming requests to pipelines. A route specifies a path pattern (like `/users/:id`) and a pipeline to handle matching requests.
+  </Card>
+
+  <Card title="Pipeline">
+    The chain of policies that process a request before it reaches your upstream. It includes an ordered list of policies and an upstream destination.
+  </Card>
+
+  <Card title="Policy">
+    A small piece of middleware that inspects, transforms, or rejects requests. Policies have names, priorities, and handlers. Examples: `jwtAuth`, `rateLimit`, `cors`.
+  </Card>
+
+  <Card title="Upstream">
+    The final destination where requests are sent after all policies pass. Could be a URL (proxy to another server), a Service Binding (Cloudflare Worker-to-Worker call), or a handler (inline code).
+  </Card>
+
+  <Card title="Context">
+    A small object attached to every request containing `requestId`, `startTime`, `traceId`, `spanId`, and `gatewayName`. Policies can access it to log or make decisions.
+  </Card>
+</CardGrid>
+
+## Policy System
+
+<CardGrid>
+  <Card title="Priority">
+    A number that determines when a policy runs. Lower numbers execute first. Stoma has named constants like `Priority.AUTH` (10) and `Priority.RATE_LIMIT` (20).
+  </Card>
+
+  <Card title="Short-circuit">
+    When a policy stops the request early by returning a response without calling `next()`. Auth failures and rate limit exceeded use this pattern.
+  </Card>
+
+  <Card title="Skip condition">
+    A function that conditionally bypasses a policy. Return `true` to skip, and the policy calls `next()` immediately without doing anything.
+  </Card>
+
+  <Card title="GatewayError">
+    A special error type that produces structured JSON responses. Policies throw this when they reject a request. Contains: `statusCode`, `error` (machine-readable), `message` (human-readable).
+  </Card>
+
+  <Card title="Policy merging">
+    Combining global policies (apply to all routes) with route-specific policies. If both have a policy with the same name, the route-level one wins.
+  </Card>
+</CardGrid>
+
+## Deployment
+
+<CardGrid>
+  <Card title="Adapter">
+    A runtime-specific implementation that provides storage backends. Cloudflare has adapters for KV and Durable Objects; Node.js has an in-memory adapter.
+  </Card>
+
+  <Card title="Service Binding">
+    A Cloudflare Workers feature that lets one Worker call another with zero network latency. No HTTP over the internet — it's an in-process call.
+  </Card>
+
+  <Card title="Hono">
+    The HTTP framework that provides Stoma's router, context system, and middleware runtime. Hono is a required peer dependency.
+  </Card>
+</CardGrid>
+
+## Observability
+
+<CardGrid>
+  <Card title="Request ID">
+    A unique identifier (`crypto.randomUUID()`) generated for every request. Included in `x-request-id` response headers and logs for tracing.
+  </Card>
+
+  <Card title="Trace ID">
+    A W3C Trace Context identifier that connects requests across services. If your upstream also supports tracing, you can correlate gateway requests with backend requests.
+  </Card>
+
+  <Card title="Span ID">
+    A unique identifier for this specific hop in a trace. Useful when debugging distributed systems.
+  </Card>
+</CardGrid>
+
+## Authentication
+
+<CardGrid>
+  <Card title="JWT">
+    JSON Web Token — a compact, URL-safe token format for securely transmitting claims between parties. Signed with HMAC or RSA.
+  </Card>
+
+  <Card title="JWKS">
+    JSON Web Key Set — a JSON document containing public keys used to verify JWT signatures. Exposed at a well-known URL like `https://auth.example.com/.well-known/jwks.json`.
+  </Card>
+
+  <Card title="OAuth2 Introspection">
+    A protocol (RFC 7662) where the gateway validates a token by calling an introspection endpoint on the authorization server.
+  </Card>
+
+  <Card title="RBAC">
+    Role-Based Access Control — checking if a user has the required role or permissions (from headers set by upstream auth policies).
+  </Card>
+</CardGrid>
+
+## Need More Details?
+
+Each concept is covered in depth in its respective section:
+
+- [How It Works](/concepts/how-it-works/) — visual walkthrough of request flow
+- [Policy System](/concepts/policies/) — deep dive into policies
+- [Configuration](/concepts/configuration/) — all config types explained
+- [Architecture](/concepts/architecture/) — technical deep dive

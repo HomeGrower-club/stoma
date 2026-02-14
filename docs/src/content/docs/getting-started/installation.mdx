@@ -68,11 +68,30 @@ Your `tsconfig.json` should use these settings at minimum:
 ```json
 {
   "compilerOptions": {
+    // Target ES2022 or later - Stoma uses modern APIs:
+    // - structuredClone() for cloning request/response objects
+    // - AbortSignal.timeout() for timeout handling
+    // - crypto.subtle for JWT signing/verification
+    // All available in Cloudflare Workers, Deno, Bun, Node 20+
     "target": "ES2022",
+
+    // Use ESNext modules (modern JavaScript module system)
+    // This matches how bundlers like Vite, esbuild, and wrangler work
     "module": "ESNext",
+
+    // Required for subpath exports to resolve correctly
+    // Allows @homegrower-club/stoma/policies, @homegrower-club/stoma/config, etc.
     "moduleResolution": "bundler",
+
+    // Enable all strict type checking
+    // Stoma's types are authored with strict mode - you'll get the best experience
     "strict": true,
+
+    // Interop with CommonJS modules (some dependencies may use CommonJS)
     "esModuleInterop": true,
+
+    // Skip type checking of declaration files (reduces build time)
+    // You can set to false if you need perfect type coverage
     "skipLibCheck": true
   }
 }
@@ -103,18 +122,32 @@ The package exposes five entry points:
 For most use cases, import everything from the main entry point:
 
 ```typescript
+// The main entry point includes everything you need for most use cases:
+// - createGateway: The core function to build your gateway
+// - All built-in policies: jwtAuth, rateLimit, cors, requestLog, etc.
+// - SDK helpers: definePolicy, Priority, withSkip, etc.
+// - All types: GatewayConfig, RouteConfig, PolicyContext, etc.
 import { createGateway, jwtAuth, rateLimit, cors } from "@homegrower-club/stoma";
 ```
 
 For custom policy development, import the SDK directly:
 
 ```typescript
+// The SDK provides building blocks for authoring custom policies:
+/*
+  definePolicy: Creates a policy factory function with defaults, priority, etc.
+  Priority: Named constants for policy execution order (Priority.AUTH, Priority.CACHE, etc.)
+  createPolicyTestHarness: Test your policy in isolation without a full gateway
+  resolveConfig: Deep-merge default config with user overrides
+  policyDebug: Namespaced debug logger with zero overhead when disabled
+  withSkip: Conditionally disable a policy based on request characteristics
+*/
 import { definePolicy, Priority, createPolicyTestHarness } from "@homegrower-club/stoma/sdk";
 ```
 
 ## Runtime-specific setup
 
-Stoma runs on any runtime Hono supports. The core library has no
+Stoma runs on any JavaScript runtime that supports Web Standard APIs. The core library has no
 runtime-specific dependencies. Additional setup depends on where you deploy.
 
 ### Cloudflare Workers

@@ -7,6 +7,6 @@ title: "CircuitState"
 
 > **CircuitState** = `"closed"` \| `"open"` \| `"half-open"`
 
-Defined in: [src/policies/resilience/circuit-breaker.ts:25](https://github.com/HomeGrower-club/stoma/blob/8b84574bca28149f020bbd910337511015437508/src/policies/resilience/circuit-breaker.ts#L25)
+Defined in: [src/policies/resilience/circuit-breaker.ts:25](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/policies/resilience/circuit-breaker.ts#L25)
 
 The three states of the circuit breaker state machine.

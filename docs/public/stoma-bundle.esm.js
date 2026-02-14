@@ -110,7 +110,7 @@ var Rt = (e, r, t) => {
     return V[s] || (t[2] ? V[s] = r && r[0] !== ":" && r[0] !== "*" ? [s, t[1], new RegExp(`^${t[2]}(?=/${r})`)] : [e, t[1], new RegExp(`^${t[2]}$`)] : V[s] = [e, t[1], !0]), V[s];
   }
   return null;
-}, ye = (e, r) => {
+}, ge = (e, r) => {
   try {
     return r(e);
   } catch {
@@ -122,19 +122,19 @@ var Rt = (e, r, t) => {
       }
     });
   }
-}, Ct = (e) => ye(e, decodeURI), De = (e) => {
+}, qt = (e) => ge(e, decodeURI), De = (e) => {
   const r = e.url, t = r.indexOf("/", r.indexOf(":") + 4);
   let s = t;
   for (; s < r.length; s++) {
     const n = r.charCodeAt(s);
     if (n === 37) {
       const a = r.indexOf("?", s), o = r.indexOf("#", s), i = a === -1 ? o === -1 ? void 0 : o : o === -1 ? a : Math.min(a, o), l = r.slice(t, i);
-      return Ct(l.includes("%25") ? l.replace(/%25/g, "%2525") : l);
+      return qt(l.includes("%25") ? l.replace(/%25/g, "%2525") : l);
     } else if (n === 63 || n === 35)
       break;
   }
   return r.slice(t, s);
-}, qt = (e) => {
+}, Ct = (e) => {
   const r = De(e);
   return r.length > 1 && r.at(-1) === "/" ? r.slice(0, -1) : r;
 }, N = (e, r, ...t) => (t.length && (r = N(r, ...t)), `${e?.[0] === "/" ? "" : "/"}${e}${r === "/" ? "" : `${e?.at(-1) === "/" ? "" : "/"}${r?.[0] === "/" ? r.slice(1) : r}`}`), Ue = (e) => {
@@ -153,7 +153,7 @@ var Rt = (e, r, t) => {
       } else
         s += "/" + n;
   }), t.filter((n, a, o) => o.indexOf(n) === a);
-}, se = (e) => /[%+]/.test(e) ? (e.indexOf("+") !== -1 && (e = e.replace(/\+/g, " ")), e.indexOf("%") !== -1 ? ye(e, Be) : e) : e, Le = (e, r, t) => {
+}, ne = (e) => /[%+]/.test(e) ? (e.indexOf("+") !== -1 && (e = e.replace(/\+/g, " ")), e.indexOf("%") !== -1 ? ge(e, Be) : e) : e, Le = (e, r, t) => {
   let s;
   if (!t && r && !/[%+]/.test(r)) {
     let o = e.indexOf("?", 8);
@@ -163,7 +163,7 @@ var Rt = (e, r, t) => {
       const i = e.charCodeAt(o + r.length + 1);
       if (i === 61) {
         const l = o + r.length + 2, c = e.indexOf("&", l);
-        return se(e.slice(l, c === -1 ? void 0 : c));
+        return ne(e.slice(l, c === -1 ? void 0 : c));
       } else if (i == 38 || isNaN(i))
         return "";
       o = e.indexOf(`&${r}`, o + 1);
@@ -182,13 +182,13 @@ var Rt = (e, r, t) => {
       a + 1,
       i === -1 ? o === -1 ? void 0 : o : i
     );
-    if (s && (l = se(l)), a = o, l === "")
+    if (s && (l = ne(l)), a = o, l === "")
       continue;
     let c;
-    i === -1 ? c = "" : (c = e.slice(i + 1, o === -1 ? void 0 : o), s && (c = se(c))), t ? (n[l] && Array.isArray(n[l]) || (n[l] = []), n[l].push(c)) : n[l] ??= c;
+    i === -1 ? c = "" : (c = e.slice(i + 1, o === -1 ? void 0 : o), s && (c = ne(c))), t ? (n[l] && Array.isArray(n[l]) || (n[l] = []), n[l].push(c)) : n[l] ??= c;
   }
   return r ? n[r] : n;
-}, Mt = Le, Ot = (e, r) => Le(e, r, !0), Be = decodeURIComponent, xe = (e) => ye(e, Be), Ke = class {
+}, Mt = Le, It = (e, r) => Le(e, r, !0), Be = decodeURIComponent, xe = (e) => ge(e, Be), Ke = class {
   /**
    * `.raw` can get the raw Request object.
    *
@@ -247,7 +247,7 @@ var Rt = (e, r, t) => {
     return Mt(this.url, e);
   }
   queries(e) {
-    return Ot(this.url, e);
+    return It(this.url, e);
   }
   header(e) {
     if (e)
@@ -433,7 +433,7 @@ var Rt = (e, r, t) => {
   get routePath() {
     return this.#e[0].map(([[, e]]) => e)[this.routeIndex].path;
   }
-}, It = {
+}, Ot = {
   Stringify: 1
 }, Fe = async (e, r, t, s, n) => {
   typeof e == "object" && !(e instanceof String) && (e instanceof Promise || (e = e.toString()), e instanceof Promise && (e = await e));
@@ -443,7 +443,7 @@ var Rt = (e, r, t) => {
       i.filter(Boolean).map((l) => Fe(l, r, !1, s, n))
     ).then(() => n[0])
   )) : Promise.resolve(e);
-}, kt = "text/plain; charset=UTF-8", ne = (e, r) => ({
+}, kt = "text/plain; charset=UTF-8", ae = (e, r) => ({
   "Content-Type": e,
   ...r
 }), Pt = class {
@@ -731,7 +731,7 @@ var Rt = (e, r, t) => {
   text = (e, r, t) => !this.#i && !this.#a && !r && !t && !this.finalized ? new Response(e) : this.#o(
     e,
     r,
-    ne(kt, t)
+    ae(kt, t)
   );
   /**
    * `.json()` can render JSON as `Content-Type:application/json`.
@@ -748,11 +748,11 @@ var Rt = (e, r, t) => {
   json = (e, r, t) => this.#o(
     JSON.stringify(e),
     r,
-    ne("application/json", t)
+    ae("application/json", t)
   );
   html = (e, r, t) => {
-    const s = (n) => this.#o(n, r, ne("text/html; charset=UTF-8", t));
-    return typeof e == "object" ? Fe(e, It.Stringify, !1, {}).then(s) : s(e);
+    const s = (n) => this.#o(n, r, ae("text/html; charset=UTF-8", t));
+    return typeof e == "object" ? Fe(e, Ot.Stringify, !1, {}).then(s) : s(e);
   };
   /**
    * `.redirect()` can Redirect, default status code is 302.
@@ -836,7 +836,7 @@ var Rt = (e, r, t) => {
       this.#a(R, this.#t, i);
     }), this);
     const { strict: s, ...n } = r;
-    Object.assign(this, n), this.getPath = s ?? !0 ? r.getPath ?? De : qt;
+    Object.assign(this, n), this.getPath = s ?? !0 ? r.getPath ?? De : Ct;
   }
   #e() {
     const r = new We({
@@ -1103,7 +1103,7 @@ var G = "[^/]+", J = ".*", z = "(?:|/.*)", D = /* @__PURE__ */ Symbol(), Kt = ne
 function Ft(e, r) {
   return e.length === 1 ? r.length === 1 ? e < r ? -1 : 1 : -1 : r.length === 1 || e === J || e === z ? 1 : r === J || r === z ? -1 : e === G ? 1 : r === G ? -1 : e.length === r.length ? e < r ? -1 : 1 : r.length - e.length;
 }
-var Jt = class ce {
+var Jt = class ue {
   #t;
   #e;
   #r = /* @__PURE__ */ Object.create(null);
@@ -1130,7 +1130,7 @@ var Jt = class ce {
           throw D;
         if (a)
           return;
-        c = this.#r[d] = new ce(), u !== "" && (c.#e = n.varIndex++);
+        c = this.#r[d] = new ue(), u !== "" && (c.#e = n.varIndex++);
       }
       !a && u !== "" && s.push([u, c.#e]);
     } else if (c = this.#r[o], !c) {
@@ -1140,7 +1140,7 @@ var Jt = class ce {
         throw D;
       if (a)
         return;
-      c = this.#r[o] = new ce();
+      c = this.#r[o] = new ue();
     }
     c.insert(i, t, s, n, a);
   }
@@ -1491,86 +1491,13 @@ var Gt = class {
   DEFAULT: 100,
   /** Mock — terminal, replaces upstream */
   MOCK: 999
-}, U = "_stomaTraceRequested", ue = "_stomaTraceEntries", de = "_stomaTraceDetails", Ze = () => {
-};
-function Q(e, r) {
-  return e.get(U) ? (t, s) => {
-    const n = e.get(de) ?? /* @__PURE__ */ new Map();
-    n.set(r, { action: t, data: s }), e.set(de, n);
-  } : Ze;
-}
-function er(e) {
-  return e.get(U) === !0;
-}
-var O = () => {
-};
-function tr(e, r) {
-  return !r || typeof r == "string" && !rr(e, r) ? O : (t, ...s) => {
-    const n = [`[${e}]`, t];
-    for (const a of s)
-      n.push(
-        typeof a == "object" && a !== null ? JSON.stringify(a) : String(a)
-      );
-    console.debug(n.join(" "));
-  };
-}
-function rr(e, r) {
-  return r.split(",").map((s) => s.trim()).some((s) => {
-    if (s === "*") return !0;
-    const n = s.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-    return new RegExp(`^${n}$`).test(e);
-  });
-}
-function sr(e) {
-  if (!e) return () => O;
-  const r = /* @__PURE__ */ new Map();
-  return (t) => {
-    const s = r.get(t);
-    if (s) return s;
-    const n = tr(t, e);
-    return r.set(t, n), n;
-  };
-}
-function et(e) {
-  const r = e.map((t, s) => ({
-    ...t,
-    durationMs: s === 0 ? t.durationMs : Math.max(0, t.durationMs - e[s - 1].durationMs)
-  }));
-  return r.reverse(), r;
-}
-var nr = /^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$/;
-function ar(e) {
-  if (!e) return null;
-  const r = e.trim().match(nr);
-  if (!r) return null;
-  const [, t, s, n, a] = r;
-  return t === "ff" || s === "00000000000000000000000000000000" || n === "0000000000000000" ? null : { version: t, traceId: s, parentId: n, flags: a };
-}
-function or() {
-  return {
-    version: "00",
-    traceId: tt(16),
-    parentId: Z(),
-    flags: "01"
-  };
-}
-function ge(e) {
-  return `${e.version}-${e.traceId}-${e.parentId}-${e.flags}`;
-}
-function Z() {
-  return tt(8);
-}
-function tt(e) {
-  const r = new Uint8Array(e);
-  return crypto.getRandomValues(r), Array.from(r, (t) => t.toString(16).padStart(2, "0")).join("");
-}
-var C = {
+}, q = {
   HTTP_METHOD: "http.request.method",
   HTTP_ROUTE: "http.route",
   HTTP_STATUS_CODE: "http.response.status_code",
   URL_PATH: "url.path",
   SERVER_ADDRESS: "server.address"
-}, ee = class {
+}, Z = class {
   constructor(e, r, t, s, n, a = Date.now()) {
     this.name = e, this.kind = r, this.traceId = t, this.spanId = s, this.parentSpanId = n, this.startTimeMs = a;
   }
@@ -1612,14 +1539,14 @@ var C = {
       events: [...this._events]
     };
   }
-}, ir = {
+}, er = {
   INTERNAL: 1,
   // SPAN_KIND_INTERNAL
   SERVER: 2,
   // SPAN_KIND_SERVER
   CLIENT: 3
   // SPAN_KIND_CLIENT
-}, lr = {
+}, tr = {
   UNSET: 0,
   // STATUS_CODE_UNSET
   OK: 1,
@@ -1627,19 +1554,19 @@ var C = {
   ERROR: 2
   // STATUS_CODE_ERROR
 };
-function cr(e) {
+function rr(e) {
   return typeof e == "string" ? { stringValue: e } : typeof e == "boolean" ? { boolValue: e } : Number.isInteger(e) ? { intValue: e } : { doubleValue: e };
 }
 function Ae(e) {
   return Object.entries(e).map(([r, t]) => ({
     key: r,
-    value: cr(t)
+    value: rr(t)
   }));
 }
-function ae(e) {
+function oe(e) {
   return String(e * 1e6);
 }
-function ur(e, r, t) {
+function sr(e, r, t) {
   const s = [{ key: "service.name", value: { stringValue: r } }];
   t && s.push({
     key: "service.version",
@@ -1650,17 +1577,17 @@ function ur(e, r, t) {
       traceId: a.traceId,
       spanId: a.spanId,
       name: a.name,
-      kind: ir[a.kind],
-      startTimeUnixNano: ae(a.startTimeMs),
-      endTimeUnixNano: ae(a.endTimeMs),
+      kind: er[a.kind],
+      startTimeUnixNano: oe(a.startTimeMs),
+      endTimeUnixNano: oe(a.endTimeMs),
       attributes: Ae(a.attributes),
       status: {
-        code: lr[a.status.code],
+        code: tr[a.status.code],
         ...a.status.message ? { message: a.status.message } : {}
       },
       events: a.events.map((i) => ({
         name: i.name,
-        timeUnixNano: ae(i.timeMs),
+        timeUnixNano: oe(i.timeMs),
         ...i.attributes ? { attributes: Ae(i.attributes) } : {}
       }))
     };
@@ -1691,11 +1618,7 @@ var fs = class {
   }
   async export(e) {
     if (e.length === 0) return;
-    const r = ur(
-      e,
-      this.serviceName,
-      this.serviceVersion
-    );
+    const r = sr(e, this.serviceName, this.serviceVersion);
     await fetch(this.endpoint, {
       method: "POST",
       headers: {
@@ -1714,14 +1637,87 @@ var fs = class {
       );
   }
 };
-function dr(e) {
+function nr(e) {
   return e >= 1 ? !0 : e <= 0 ? !1 : Math.random() < e;
 }
-function te() {
+function ee() {
   const e = new Uint8Array(8);
   return crypto.getRandomValues(e), Array.from(e, (r) => r.toString(16).padStart(2, "0")).join("");
 }
-var hr = () => O, rt = "gateway";
+var U = "_stomaTraceRequested", de = "_stomaTraceEntries", he = "_stomaTraceDetails", Ze = () => {
+};
+function te(e, r) {
+  return e.get(U) ? (t, s) => {
+    const n = e.get(he) ?? /* @__PURE__ */ new Map();
+    n.set(r, { action: t, data: s }), e.set(he, n);
+  } : Ze;
+}
+function ar(e) {
+  return e.get(U) === !0;
+}
+var I = () => {
+};
+function or(e, r) {
+  return !r || typeof r == "string" && !ir(e, r) ? I : (t, ...s) => {
+    const n = [`[${e}]`, t];
+    for (const a of s)
+      n.push(
+        typeof a == "object" && a !== null ? JSON.stringify(a) : String(a)
+      );
+    console.debug(n.join(" "));
+  };
+}
+function ir(e, r) {
+  return r.split(",").map((s) => s.trim()).some((s) => {
+    if (s === "*") return !0;
+    const n = s.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+    return new RegExp(`^${n}$`).test(e);
+  });
+}
+function lr(e) {
+  if (!e) return () => I;
+  const r = /* @__PURE__ */ new Map();
+  return (t) => {
+    const s = r.get(t);
+    if (s) return s;
+    const n = or(t, e);
+    return r.set(t, n), n;
+  };
+}
+function et(e) {
+  const r = e.map((t, s) => ({
+    ...t,
+    durationMs: s === 0 ? t.durationMs : Math.max(0, t.durationMs - e[s - 1].durationMs)
+  }));
+  return r.reverse(), r;
+}
+var cr = /^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$/;
+function ur(e) {
+  if (!e) return null;
+  const r = e.trim().match(cr);
+  if (!r) return null;
+  const [, t, s, n, a] = r;
+  return t === "ff" || s === "00000000000000000000000000000000" || n === "0000000000000000" ? null : { version: t, traceId: s, parentId: n, flags: a };
+}
+function dr() {
+  return {
+    version: "00",
+    traceId: tt(16),
+    parentId: re(),
+    flags: "01"
+  };
+}
+function Se(e) {
+  return `${e.version}-${e.traceId}-${e.parentId}-${e.flags}`;
+}
+function re() {
+  return tt(8);
+}
+function tt(e) {
+  const r = new Uint8Array(e);
+  return crypto.getRandomValues(r), Array.from(r, (t) => t.toString(16).padStart(2, "0")).join("");
+}
+var hr = () => I, rt = "gateway";
 function pr(e, r, t, s = 100) {
   const n = /* @__PURE__ */ new Map();
   for (const o of e)
@@ -1759,22 +1755,22 @@ function fr(e) {
       } finally {
         const u = Date.now() - i, d = a.get("_policyTimings") ?? [];
         if (d.push({ name: r.name, durationMs: u }), a.set("_policyTimings", d), a.get(U) === !0) {
-          const h = a.get(ue) ?? [];
+          const h = a.get(de) ?? [];
           h.push({
             name: r.name,
             priority: s,
             durationMs: u,
             calledNext: l,
             error: c
-          }), a.set(ue, h);
+          }), a.set(de, h);
         }
         const f = a.get("_otelSpans");
         if (f !== void 0) {
-          const h = a.get("_otelRootSpan"), w = new ee(
+          const h = a.get("_otelRootSpan"), w = new Z(
             `policy:${r.name}`,
             "INTERNAL",
             h.traceId,
-            te(),
+            ee(),
             h.spanId,
             i
           );
@@ -1787,7 +1783,7 @@ function fr(e) {
 function st(e, r, t = hr, s = "x-request-id", n, a, o) {
   const i = a === !0 ? {} : a || void 0, l = i?.requestHeader ?? "x-stoma-debug", c = i?.allow;
   return async (u, d) => {
-    const f = u.req.header("traceparent") ?? null, h = ar(f), w = h?.traceId ?? or().traceId, m = Z(), y = {
+    const f = u.req.header("traceparent") ?? null, h = ur(f), w = h?.traceId ?? dr().traceId, m = re(), y = {
       requestId: crypto.randomUUID(),
       startTime: Date.now(),
       gatewayName: e,
@@ -1799,20 +1795,20 @@ function st(e, r, t = hr, s = "x-request-id", n, a, o) {
     };
     u.set(rt, y);
     let g;
-    if (o && dr(o.sampleRate ?? 1)) {
-      const v = te();
-      g = new ee(
+    if (o && nr(o.sampleRate ?? 1)) {
+      const v = ee();
+      g = new Z(
         `${u.req.method} ${r}`,
         "SERVER",
         w,
         v,
         h?.parentId,
         y.startTime
-      ), g.setAttribute(C.HTTP_METHOD, u.req.method).setAttribute(C.HTTP_ROUTE, r).setAttribute(C.URL_PATH, new URL(u.req.url).pathname).setAttribute("gateway.name", e), u.set("_otelRootSpan", g), u.set("_otelSpans", []);
+      ), g.setAttribute(q.HTTP_METHOD, u.req.method).setAttribute(q.HTTP_ROUTE, r).setAttribute(q.URL_PATH, new URL(u.req.url).pathname).setAttribute("gateway.name", e), u.set("_otelRootSpan", g), u.set("_otelSpans", []);
     }
     if (i && nt(u, l, c), await d(), u.res.headers.set(s, y.requestId), u.res.headers.set(
       "traceparent",
-      ge({
+      Se({
         version: "00",
         traceId: y.traceId,
         parentId: y.spanId,
@@ -1825,9 +1821,9 @@ function st(e, r, t = hr, s = "x-request-id", n, a, o) {
           u.res.headers.set(b, x);
     }
     if (u.get(U) === !0) {
-      const v = u.get(ue);
+      const v = u.get(de);
       if (v && v.length > 0) {
-        const b = u.get(de), A = et(v).map(($) => {
+        const b = u.get(he), A = et(v).map(($) => {
           const H = b?.get($.name);
           return H ? { ...$, detail: H } : $;
         }), K = {
@@ -1841,7 +1837,7 @@ function st(e, r, t = hr, s = "x-request-id", n, a, o) {
       }
     }
     if (g) {
-      g.setAttribute(C.HTTP_STATUS_CODE, u.res.status).setStatus(
+      g.setAttribute(q.HTTP_STATUS_CODE, u.res.status).setStatus(
         u.res.status >= 500 ? "ERROR" : u.res.status >= 400 ? "UNSET" : "OK"
       );
       const v = g.end(), b = u.get("_otelSpans") ?? [], x = [v, ...b], A = o.exporter.export(x).catch(() => {
@@ -1856,10 +1852,10 @@ function B(e) {
 function k(e, r) {
   return r ? { ...e, ...r } : { ...e };
 }
-function I(e, r) {
-  return B(e)?.debug(`stoma:policy:${r}`) ?? O;
+function O(e, r) {
+  return B(e)?.debug(`stoma:policy:${r}`) ?? I;
 }
-function q(e, r) {
+function C(e, r) {
   return e ? async (t, s) => {
     if (await e(t)) {
       await s();
@@ -1877,12 +1873,12 @@ async function E(e, r, t, s) {
     ), r;
   }
 }
-var he = "_stomaDebugHeaders", Se = "_stomaDebugRequested";
+var pe = "_stomaDebugHeaders", ve = "_stomaDebugRequested";
 function _(e, r, t) {
-  const s = e.get(Se);
+  const s = e.get(ve);
   if (!s || !(s.has(r) || s.has("*"))) return;
-  const n = e.get(he) ?? /* @__PURE__ */ new Map();
-  n.set(r, String(t)), e.set(he, n);
+  const n = e.get(pe) ?? /* @__PURE__ */ new Map();
+  n.set(r, String(t)), e.set(pe, n);
 }
 function nt(e, r, t) {
   const s = e.req.header(r);
@@ -1897,13 +1893,13 @@ function nt(e, r, t) {
       o.add("*");
   for (const i of n)
     i !== "*" && (!a || a.has(i)) && o.add(i);
-  o.size > 0 && e.set(Se, o), (o.has("trace") || o.has("*")) && e.set(U, !0);
+  o.size > 0 && e.set(ve, o), (o.has("trace") || o.has("*")) && e.set(U, !0);
 }
 function at(e) {
-  return e.get(he);
+  return e.get(pe);
 }
 function ot(e) {
-  const r = e.get(Se);
+  const r = e.get(ve);
   return r !== void 0 && r.size > 0;
 }
 function T(e) {
@@ -1914,9 +1910,9 @@ function T(e) {
     );
     e.validate && e.validate(t);
     const s = async (o, i) => {
-      const l = I(o, e.name), c = Q(o, e.name), u = B(o);
+      const l = O(o, e.name), c = te(o, e.name), u = B(o);
       await e.handler(o, i, { config: t, debug: l, trace: c, gateway: u });
-    }, n = q(t.skip, s);
+    }, n = C(t.skip, s);
     let a;
     if (e.evaluate) {
       const o = e.evaluate;
@@ -2019,7 +2015,7 @@ var it = class {
   get size() {
     return this.entries.size;
   }
-}, oe = "x-stoma-internal-expires-at", yr = /* @__PURE__ */ new Set(["POST", "PUT", "PATCH"]);
+}, ie = "x-stoma-internal-expires-at", yr = /* @__PURE__ */ new Set(["POST", "PUT", "PATCH"]);
 function gr(e) {
   return e ? e.split(",").map((r) => r.trim().split("=")[0].trim().toLowerCase()) : [];
 }
@@ -2062,7 +2058,7 @@ function ws(e) {
     return c;
   }
   const i = async (l, c) => {
-    const u = I(l, "cache"), d = Q(l, "cache");
+    const u = O(l, "cache"), d = te(l, "cache");
     if (!t.includes(l.req.method.toUpperCase())) {
       d("SKIP", { method: l.req.method }), await c(), l.res.headers.set(a, "SKIP");
       return;
@@ -2077,7 +2073,7 @@ function ws(e) {
     );
     if (h) {
       u(`HIT ${f}`), _(l, "x-stoma-cache-status", "HIT"), d("HIT", { key: f });
-      const g = h.headers.get(oe);
+      const g = h.headers.get(ie);
       if (g) {
         const x = Math.max(
           0,
@@ -2089,7 +2085,7 @@ function ws(e) {
         status: h.status,
         headers: h.headers
       });
-      b.headers.delete(oe), b.headers.set(a, "HIT"), l.res = b;
+      b.headers.delete(ie), b.headers.set(a, "HIT"), l.res = b;
       return;
     }
     if (await c(), l.res.status >= 500) {
@@ -2112,7 +2108,7 @@ function ws(e) {
     u(`MISS ${f} (ttl=${r.ttlSeconds}s)`), _(l, "x-stoma-cache-status", "MISS"), d("MISS", { key: f, ttl: r.ttlSeconds });
     const w = l.res.clone(), m = await w.arrayBuffer(), y = new Headers(w.headers);
     y.set(
-      oe,
+      ie,
       String(Date.now() + r.ttlSeconds * 1e3)
     ), await E(
       () => n.put(
@@ -2131,11 +2127,11 @@ function ws(e) {
   return {
     name: "cache",
     priority: S.CACHE,
-    handler: q(e?.skip, i)
+    handler: C(e?.skip, i)
   };
 }
 var Sr = ["cf-connecting-ip", "x-forwarded-for"];
-function ve(e, r = Sr) {
+function X(e, r = Sr) {
   for (const t of r) {
     const s = e.get(t);
     if (s) return s.split(",")[0].trim();
@@ -2191,11 +2187,11 @@ function ys(e) {
   );
   let t;
   const s = async (n, a) => {
-    const o = I(n, "rate-limit"), i = Q(n, "rate-limit");
+    const o = O(n, "rate-limit"), i = te(n, "rate-limit");
     !e.store && !t && (t = new lt());
     const l = e.store ?? t;
     let c;
-    e.keyBy ? c = await e.keyBy(n) : c = ve(n.req.raw.headers, e.ipHeaders);
+    e.keyBy ? c = await e.keyBy(n) : c = X(n.req.raw.headers, e.ipHeaders);
     const u = await E(
       () => l.increment(c, r.windowSeconds),
       null,
@@ -2227,7 +2223,7 @@ function ys(e) {
   return {
     name: "rate-limit",
     priority: S.RATE_LIMIT,
-    handler: q(e.skip, s)
+    handler: C(e.skip, s)
   };
 }
 var vr = (e) => {
@@ -2302,7 +2298,7 @@ function Ss(e) {
   return {
     name: "proxy",
     priority: S.PROXY,
-    handler: q(e?.skip, t)
+    handler: C(e?.skip, t)
   };
 }
 var vs = T({
@@ -2393,9 +2389,9 @@ function ut(e) {
       return null;
   }
 }
-var br = 3e5, xr = 1e4, pe = /* @__PURE__ */ new Map();
+var br = 3e5, xr = 1e4, fe = /* @__PURE__ */ new Map();
 async function dt(e, r, t) {
-  const s = pe.get(e);
+  const s = fe.get(e);
   if (s && s.expiresAt > Date.now())
     return s.keys;
   const n = t ?? xr;
@@ -2420,10 +2416,10 @@ async function dt(e, r, t) {
       `Failed to fetch JWKS from ${e}: ${a.status}`
     );
   const o = r ?? br, i = await a.json();
-  return pe.set(e, { keys: i.keys, expiresAt: Date.now() + o }), i.keys;
+  return fe.set(e, { keys: i.keys, expiresAt: Date.now() + o }), i.keys;
 }
 function bs() {
-  pe.clear();
+  fe.clear();
 }
 function Rr(e, r) {
   const t = new URL(r.url);
@@ -2468,7 +2464,7 @@ function $r(e) {
     a[i[1]] = i[3] ?? i[4], i = o.exec(n);
   return { components: s, params: a };
 }
-function re(e) {
+function se(e) {
   switch (e) {
     case "hmac-sha256":
       return {
@@ -2490,7 +2486,7 @@ function re(e) {
   }
 }
 async function _r(e, r, t) {
-  const { importAlg: s } = re(e);
+  const { importAlg: s } = se(e);
   if (e.startsWith("hmac")) {
     if (!r) throw new Error("HMAC algorithm requires secret");
     const n = new TextEncoder();
@@ -2506,7 +2502,7 @@ async function _r(e, r, t) {
   return crypto.subtle.importKey("jwk", t, s, !1, ["sign"]);
 }
 async function Hr(e, r, t) {
-  const { importAlg: s } = re(e);
+  const { importAlg: s } = se(e);
   if (e.startsWith("hmac")) {
     if (!r) throw new Error("HMAC algorithm requires secret");
     const n = new TextEncoder();
@@ -2523,10 +2519,10 @@ async function Hr(e, r, t) {
     "verify"
   ]);
 }
-function Cr(e) {
+function qr(e) {
   return btoa(String.fromCharCode(...new Uint8Array(e)));
 }
-function qr(e) {
+function Cr(e) {
   const r = atob(e), t = new Uint8Array(r.length);
   for (let s = 0; s < r.length; s++)
     t[s] = r.charCodeAt(s);
@@ -2567,11 +2563,11 @@ var xs = T({
       t.algorithm,
       t.secret,
       t.privateKey
-    ), { signAlg: d } = re(t.algorithm), f = new TextEncoder(), h = await crypto.subtle.sign(
+    ), { signAlg: d } = se(t.algorithm), f = new TextEncoder(), h = await crypto.subtle.sign(
       d,
       u,
       f.encode(c)
-    ), w = Cr(h), m = new Headers(e.req.raw.headers);
+    ), w = qr(h), m = new Headers(e.req.raw.headers);
     m.set(
       t.signatureInputHeaderName,
       `${a}=${l}`
@@ -2587,7 +2583,7 @@ function Mr(e) {
 function Ee(e) {
   return btoa(e).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-function Or(e) {
+function Ir(e) {
   switch (e) {
     case "HS256":
     case "RS256":
@@ -2632,7 +2628,7 @@ var Rs = T({
     t.issuer && (i.iss = t.issuer), t.audience && (i.aud = t.audience);
     let l = {};
     t.claims && (l = typeof t.claims == "function" ? await t.claims(e) : t.claims);
-    const c = { ...i, ...l }, u = Ee(JSON.stringify(c)), d = `${a}.${u}`, f = new TextEncoder(), h = f.encode(d), w = Or(t.algorithm);
+    const c = { ...i, ...l }, u = Ee(JSON.stringify(c)), d = `${a}.${u}`, f = new TextEncoder(), h = f.encode(d), w = Ir(t.algorithm);
     let m;
     if ($e(t.algorithm)) {
       const x = await crypto.subtle.importKey(
@@ -2800,7 +2796,7 @@ function Es(e) {
       "jwtAuth requires either 'secret' or 'jwksUrl'"
     );
   const r = e.headerName ?? "authorization", t = e.tokenPrefix ?? "Bearer", s = async (n, a) => {
-    const o = I(n, "jwt-auth"), i = n.req.header(r);
+    const o = O(n, "jwt-auth"), i = n.req.header(r);
     if (!i)
       throw new p(
         401,
@@ -2843,7 +2839,7 @@ function Es(e) {
         "unauthorized",
         "JWT algorithm 'none' is not allowed"
       );
-    e.secret ? (o(`HMAC verification (alg=${u.alg})`), await Ir(e.secret, c[0], c[1], c[2], u.alg)) : e.jwksUrl && (o(
+    e.secret ? (o(`HMAC verification (alg=${u.alg})`), await Or(e.secret, c[0], c[1], c[2], u.alg)) : e.jwksUrl && (o(
       `JWKS verification (alg=${u.alg}, kid=${u.kid ?? "none"})`
     ), await kr(
       e.jwksUrl,
@@ -2884,10 +2880,10 @@ function Es(e) {
   return {
     name: "jwt-auth",
     priority: S.AUTH,
-    handler: q(e.skip, s)
+    handler: C(e.skip, s)
   };
 }
-async function Ir(e, r, t, s, n) {
+async function Or(e, r, t, s, n) {
   const a = ct(n);
   if (!a)
     throw new p(
@@ -3167,7 +3163,7 @@ var _s = T({
       m.algorithm,
       m.secret,
       m.publicKey
-    ), { signAlg: b } = re(m.algorithm), x = new TextEncoder(), A = qr(f);
+    ), { signAlg: b } = se(m.algorithm), x = new TextEncoder(), A = Cr(f);
     if (!await crypto.subtle.verify(
       b,
       v,
@@ -3181,7 +3177,7 @@ var _s = T({
       );
     s("signature verified successfully"), await r();
   }
-}), Cs = T({
+}), qs = T({
   name: "dynamic-routing",
   priority: S.REQUEST_TRANSFORM,
   defaults: { fallthrough: !0 },
@@ -3198,7 +3194,7 @@ var _s = T({
     s("no rule matched, falling through"), await r();
   }
 });
-function qs(e) {
+function Cs(e) {
   const r = k(
     { mode: "deny", countryHeader: "cf-ipcountry" },
     e
@@ -3207,7 +3203,7 @@ function qs(e) {
   ), s = new Set(
     (r.deny ?? []).map((a) => a.toUpperCase())
   ), n = async (a, o) => {
-    const i = I(a, "geo-ip-filter"), l = a.req.header(r.countryHeader)?.toUpperCase(), c = r.mode;
+    const i = O(a, "geo-ip-filter"), l = a.req.header(r.countryHeader)?.toUpperCase(), c = r.mode;
     if (i(`country=${l ?? "unknown"} mode=${c}`), c === "allow") {
       if (!l || !t.has(l))
         throw new p(
@@ -3226,7 +3222,7 @@ function qs(e) {
   return {
     name: "geo-ip-filter",
     priority: S.IP_FILTER,
-    handler: q(e?.skip, n)
+    handler: C(e?.skip, n)
   };
 }
 var Ms = T({
@@ -3279,7 +3275,7 @@ var Ms = T({
     }
     await t.onResponse(i, e), await r();
   }
-}), Os = T({
+}), Is = T({
   name: "interrupt",
   priority: S.DEFAULT,
   defaults: { statusCode: 200, headers: {} },
@@ -3297,7 +3293,7 @@ var Ms = T({
     });
   }
 });
-function fe(e) {
+function me(e) {
   const r = e.split(".");
   if (r.length !== 4) return -1;
   let t = 0;
@@ -3311,38 +3307,62 @@ function fe(e) {
 function He(e) {
   const r = e.indexOf("/");
   if (r === -1) {
-    const a = fe(e);
+    const a = me(e);
     return a === -1 ? null : { network: a, mask: 4294967295 };
   }
-  const t = fe(e.slice(0, r)), s = Number(e.slice(r + 1));
+  const t = me(e.slice(0, r)), s = Number(e.slice(r + 1));
   if (t === -1 || Number.isNaN(s) || s < 0 || s > 32) return null;
   const n = s === 0 ? 0 : -1 << 32 - s >>> 0;
   return { network: (t & n) >>> 0, mask: n };
 }
-function Ce(e, r) {
-  const t = fe(e);
+function qe(e, r) {
+  const t = me(e);
   if (t === -1) return !1;
   for (const s of r)
     if ((t & s.mask) >>> 0 === s.network) return !0;
   return !1;
 }
-function Is(e) {
-  const r = e.mode ?? "deny", t = e.ipHeaders, s = (e.allow ?? []).map(He).filter((o) => o !== null), n = (e.deny ?? []).map(He).filter((o) => o !== null), a = async (o, i) => {
-    const l = ve(o.req.raw.headers, t);
+function Os(e) {
+  const r = e.mode ?? "deny", t = e.ipHeaders, s = (e.allow ?? []).map(He).filter((i) => i !== null), n = (e.deny ?? []).map(He).filter((i) => i !== null);
+  function a(i) {
     if (r === "allow") {
-      if (!Ce(l, s))
-        throw new p(403, "ip_denied", "Access denied");
-    } else if (Ce(l, n))
-      throw new p(403, "ip_denied", "Access denied");
-    await i();
+      if (!qe(i, s))
+        return {
+          action: "reject",
+          status: 403,
+          code: "ip_denied",
+          message: "Access denied"
+        };
+    } else if (qe(i, n))
+      return {
+        action: "reject",
+        status: 403,
+        code: "ip_denied",
+        message: "Access denied"
+      };
+    return { action: "continue" };
+  }
+  const o = async (i, l) => {
+    const c = X(i.req.raw.headers, t), u = a(c);
+    if (u.action === "reject")
+      throw new p(u.status, u.code, u.message);
+    await l();
   };
   return {
     name: "ip-filter",
     priority: S.IP_FILTER,
-    handler: q(e.skip, a)
+    handler: C(e.skip, o),
+    phases: ["request-headers"],
+    // ── Protocol-agnostic evaluator ────────────────────────────────
+    evaluate: {
+      onRequest: async (i) => {
+        const l = i.clientIp ?? X(i.headers, t);
+        return a(l);
+      }
+    }
   };
 }
-function me(e, r, t = 0) {
+function we(e, r, t = 0) {
   if (t > r.maxDepth)
     throw new p(400, "json_threat", "JSON exceeds maximum depth");
   if (typeof e == "string" && e.length > r.maxStringLength)
@@ -3355,7 +3375,7 @@ function me(e, r, t = 0) {
     if (e.length > r.maxArraySize)
       throw new p(400, "json_threat", "Array exceeds maximum size");
     for (const s of e)
-      me(s, r, t + 1);
+      we(s, r, t + 1);
   } else if (e !== null && typeof e == "object") {
     const s = Object.keys(e);
     if (s.length > r.maxKeys)
@@ -3371,7 +3391,7 @@ function me(e, r, t = 0) {
           "json_threat",
           "String value exceeds maximum length"
         );
-      me(
+      we(
         e[n],
         r,
         t + 1
@@ -3423,16 +3443,16 @@ var ks = T({
         "Invalid JSON in request body"
       );
     }
-    me(c, {
+    we(c, {
       maxDepth: t.maxDepth,
       maxKeys: t.maxKeys,
       maxStringLength: t.maxStringLength,
       maxArraySize: t.maxArraySize
     }), s("JSON structure validated"), await r();
   }
-}), qe = /* @__PURE__ */ new WeakMap();
+}), Ce = /* @__PURE__ */ new WeakMap();
 function Nr(e, r) {
-  let t = qe.get(e);
+  let t = Ce.get(e);
   if (!t) {
     const s = r.replace(/g/g, "");
     s !== r && console.warn(
@@ -3441,7 +3461,7 @@ function Nr(e, r) {
       regex: new RegExp(n.regex, s),
       targets: n.targets,
       message: n.message ?? "Request blocked by threat protection"
-    })), qe.set(e, t);
+    })), Ce.set(e, t);
   }
   return t;
 }
@@ -3711,7 +3731,7 @@ function Bs(e) {
     },
     e
   ), t = async (s, n) => {
-    const a = I(s, "retry"), o = s.req.method.toUpperCase();
+    const a = O(s, "retry"), o = s.req.method.toUpperCase();
     if (!r.retryMethods.includes(o)) {
       await n();
       return;
@@ -3743,7 +3763,7 @@ function Bs(e) {
   return {
     name: "retry",
     priority: S.RETRY,
-    handler: q(e?.skip, t)
+    handler: C(e?.skip, t)
   };
 }
 var Ks = T({
@@ -3792,13 +3812,13 @@ var Ks = T({
     await r();
   }
 });
-async function Oe(e, r) {
+async function Ie(e, r) {
   const t = {};
   for (const [s, n] of Object.entries(r))
     typeof n == "function" ? t[s] = await n(e) : t[s] = n;
   return t;
 }
-function Ie(e, r) {
+function Oe(e, r) {
   return e ? r.some((t) => e.includes(t)) : !1;
 }
 var Js = T({
@@ -3810,14 +3830,14 @@ var Js = T({
   handler: async (e, r, { config: t, debug: s }) => {
     if (t.request) {
       const n = e.req.header("content-type");
-      if (Ie(n, t.contentTypes)) {
+      if (Oe(n, t.contentTypes)) {
         let a = {};
         try {
           const c = await e.req.raw.clone().text();
           c && (a = JSON.parse(c));
         } catch {
         }
-        const o = await Oe(e, t.request);
+        const o = await Ie(e, t.request);
         Object.assign(a, o), s(
           "assigned %d fields to request body",
           Object.keys(o).length
@@ -3841,14 +3861,14 @@ var Js = T({
     }
     if (await r(), t.response) {
       const n = e.res.headers.get("content-type");
-      if (Ie(n ?? void 0, t.contentTypes)) {
+      if (Oe(n ?? void 0, t.contentTypes)) {
         let a = {};
         try {
           const l = await e.res.text();
           l && (a = JSON.parse(l));
         } catch {
         }
-        const o = await Oe(e, t.response);
+        const o = await Ie(e, t.response);
         Object.assign(a, o), s(
           "assigned %d fields to response body",
           Object.keys(o).length
@@ -3878,7 +3898,7 @@ function zs(e) {
   return {
     name: "cors",
     priority: S.EARLY,
-    handler: q(e?.skip, t)
+    handler: C(e?.skip, t)
   };
 }
 var Ws = T({
@@ -4208,7 +4228,7 @@ var zr = 8192, tn = T({
       path: c.pathname,
       statusCode: e.res.status,
       durationMs: Date.now() - i,
-      clientIp: ve(e.req.raw.headers, t.ipHeaders),
+      clientIp: X(e.req.raw.headers, t.ipHeaders),
       userAgent: e.req.header("user-agent") ?? "unknown",
       gatewayName: n?.gatewayName ?? "unknown",
       routePath: n?.routePath ?? c.pathname,
@@ -4410,7 +4430,7 @@ function sn(e) {
   let t = e?.store;
   t || (t = new wt());
   const s = t, n = e?.onStateChange, a = /* @__PURE__ */ new Map(), o = async (i, l) => {
-    const c = I(i, "circuit-breaker"), u = e?.key ? e.key(i) : new URL(i.req.url).pathname, d = await E(
+    const c = O(i, "circuit-breaker"), u = e?.key ? e.key(i) : new URL(i.req.url).pathname, d = await E(
       () => s.getState(u),
       mt(),
       c,
@@ -4543,55 +4563,32 @@ function sn(e) {
   return {
     name: "circuit-breaker",
     priority: S.CIRCUIT_BREAKER,
-    handler: q(e?.skip, o)
+    handler: C(e?.skip, o)
   };
 }
-function Xr(e) {
-  let r = e;
-  return r.startsWith("/") || (r = `/${r}`), r.length > 1 && r.endsWith("/") && (r = r.slice(0, -1)), r;
-}
-function Qr(e, r) {
-  const t = r.startsWith("/") ? r : `/${r}`;
-  return e.endsWith("/") && t.startsWith("/") ? `${e}${t.slice(1)}` : `${e}${t}`;
-}
-function nn(e) {
-  const r = Xr(e.prefix), t = e.policies ?? [], s = e.metadata ?? {};
-  return e.routes.map((n) => {
-    const a = Qr(r, n.path), o = n.pipeline.policies ?? [], i = t.length > 0 || o.length > 0 ? [...t, ...o] : void 0, l = Object.keys(s).length > 0 || n.metadata ? { ...s, ...n.metadata } : void 0;
-    return {
-      ...n,
-      path: a,
-      pipeline: {
-        ...n.pipeline,
-        ...i !== void 0 ? { policies: i } : {}
-      },
-      ...l !== void 0 ? { metadata: l } : {}
-    };
-  });
-}
-function ie(e) {
+function le(e) {
   return !e || Object.keys(e).length === 0 ? "" : Object.entries(e).sort(([r], [t]) => r.localeCompare(t)).map(([r, t]) => `${r}=${t}`).join(",");
 }
-var an = class {
+var nn = class {
   counters = /* @__PURE__ */ new Map();
   histograms = /* @__PURE__ */ new Map();
   gauges = /* @__PURE__ */ new Map();
   increment(e, r = 1, t) {
-    const s = ie(t);
+    const s = le(t);
     let n = this.counters.get(e);
     n || (n = /* @__PURE__ */ new Map(), this.counters.set(e, n));
     const a = n.get(s);
     a ? a.value += r : n.set(s, { value: r, tags: t });
   }
   histogram(e, r, t) {
-    const s = ie(t);
+    const s = le(t);
     let n = this.histograms.get(e);
     n || (n = /* @__PURE__ */ new Map(), this.histograms.set(e, n));
     const a = n.get(s);
     a ? a.values.push(r) : n.set(s, { values: [r], tags: t });
   }
   gauge(e, r, t) {
-    const s = ie(t);
+    const s = le(t);
     let n = this.gauges.get(e);
     n || (n = /* @__PURE__ */ new Map(), this.gauges.set(e, n)), n.set(s, { value: r, tags: t });
   }
@@ -4613,36 +4610,36 @@ var an = class {
     this.counters.clear(), this.histograms.clear(), this.gauges.clear();
   }
 };
-function Zr(e) {
+function Xr(e) {
   const r = [];
   for (const [t, s] of Object.entries(e.counters)) {
     r.push(`# TYPE ${t} counter`);
     for (const n of s)
-      r.push(`${t}${le(n.tags)} ${n.value}`);
+      r.push(`${t}${ce(n.tags)} ${n.value}`);
   }
   for (const [t, s] of Object.entries(e.histograms)) {
     r.push(`# TYPE ${t} histogram`);
     for (const n of s) {
-      const a = le(n.tags), o = n.values.reduce((l, c) => l + c, 0), i = n.values.length;
+      const a = ce(n.tags), o = n.values.reduce((l, c) => l + c, 0), i = n.values.length;
       r.push(`${t}_sum${a} ${o}`), r.push(`${t}_count${a} ${i}`);
     }
   }
   for (const [t, s] of Object.entries(e.gauges)) {
     r.push(`# TYPE ${t} gauge`);
     for (const n of s)
-      r.push(`${t}${le(n.tags)} ${n.value}`);
+      r.push(`${t}${ce(n.tags)} ${n.value}`);
   }
   return r.join(`
 `);
 }
-function es(e) {
+function Qr(e) {
   return e.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
 }
-function le(e) {
-  return !e || Object.keys(e).length === 0 ? "" : `{${Object.entries(e).sort(([t], [s]) => t.localeCompare(s)).map(([t, s]) => `${t}="${es(s)}"`).join(",")}}`;
+function ce(e) {
+  return !e || Object.keys(e).length === 0 ? "" : `{${Object.entries(e).sort(([t], [s]) => t.localeCompare(s)).map(([t, s]) => `${t}="${Qr(s)}"`).join(",")}}`;
 }
-var ts = ["secret", "key", "token", "password", "credential"];
-function rs(e, r, t) {
+var Zr = ["secret", "key", "token", "password", "credential"];
+function es(e, r, t) {
   const s = `/${r.prefix ?? "___gateway"}`, n = async (a, o) => {
     if (r.auth && !await r.auth(a))
       return a.json(
@@ -4658,7 +4655,7 @@ function rs(e, r, t) {
     gateway: t.gatewayName,
     policies: t.policies
   })), e.get(`${s}/config`, n, (a) => a.json(
-    we({
+    ye({
       gateway: t.gatewayName,
       routes: t.routes,
       policies: t.policies
@@ -4672,7 +4669,7 @@ function rs(e, r, t) {
         },
         404
       );
-    const o = r.metrics.snapshot(), i = Zr(o);
+    const o = r.metrics.snapshot(), i = Xr(o);
     return a.text(i, 200, {
       "content-type": "text/plain; version=0.0.4; charset=utf-8"
     });
@@ -4684,22 +4681,22 @@ function rs(e, r, t) {
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   }));
 }
-function we(e) {
+function ye(e) {
   if (typeof e != "object" || e === null) return e;
-  if (Array.isArray(e)) return e.map(we);
+  if (Array.isArray(e)) return e.map(ye);
   const r = {};
   for (const [t, s] of Object.entries(e))
-    ts.some((n) => t.toLowerCase().includes(n)) ? r[t] = "[REDACTED]" : typeof s == "function" ? r[t] = "[Function]" : typeof s == "object" && s !== null ? r[t] = we(s) : r[t] = s;
+    Zr.some((n) => t.toLowerCase().includes(n)) ? r[t] = "[REDACTED]" : typeof s == "function" ? r[t] = "[Function]" : typeof s == "object" && s !== null ? r[t] = ye(s) : r[t] = s;
   return r;
 }
-function on(e) {
+function an(e) {
   if (!e.routes || e.routes.length === 0)
     throw new p(
       500,
       "config_error",
       "Gateway requires at least one route"
     );
-  const r = e.name ?? "edge-gateway", t = sr(e.debug), s = t("stoma:gateway"), n = t("stoma:pipeline"), a = t("stoma:upstream"), o = new Qe();
+  const r = e.name ?? "edge-gateway", t = lr(e.debug), s = t("stoma:gateway"), n = t("stoma:pipeline"), a = t("stoma:upstream"), o = new Qe();
   o.onError((d, f) => {
     if (e.onError)
       return e.onError(d, f);
@@ -4720,7 +4717,7 @@ function on(e) {
   let i = 0;
   const l = [], c = /* @__PURE__ */ new Map();
   for (const d of e.routes) {
-    const f = ss(e.basePath, d.path), h = st(
+    const f = ts(e.basePath, d.path), h = st(
       r,
       d.path,
       t,
@@ -4733,7 +4730,7 @@ function on(e) {
       d.pipeline.policies ?? [],
       n,
       e.defaultPolicyPriority
-    ), m = fr(w), y = ns(
+    ), m = fr(w), y = rs(
       d,
       a,
       e.adapter
@@ -4766,26 +4763,26 @@ function on(e) {
     const d = typeof e.admin == "boolean" ? { enabled: !0 } : e.admin;
     d.enabled && (d.auth || console.warn(
       `[stoma:${r}] admin routes enabled without authentication`
-    ), rs(o, d, u), s(
+    ), es(o, d, u), s(
       `admin routes registered at /${d.prefix ?? "___gateway"}/*`
     ));
   }
   return s(`"${r}" started with ${i} route handlers`), { app: o, routeCount: i, name: r, _registry: u };
 }
-function ss(e, r) {
+function ts(e, r) {
   if (!e) return r;
   const t = e.endsWith("/") ? e.slice(0, -1) : e, s = r.startsWith("/") ? r : `/${r}`;
   return `${t}${s}`;
 }
-function ns(e, r = O, t) {
+function rs(e, r = I, t) {
   const s = e.pipeline.upstream;
   switch (s.type) {
     case "handler":
-      return as(s);
+      return ss(s);
     case "url":
-      return is(s, r);
+      return as(s, r);
     case "service-binding":
-      return os(s, r, t);
+      return ns(s, r, t);
     default:
       throw new p(
         500,
@@ -4794,10 +4791,10 @@ function ns(e, r = O, t) {
       );
   }
 }
-function as(e) {
+function ss(e) {
   return async (r) => e.handler(r);
 }
-var X = [
+var Q = [
   "connection",
   "keep-alive",
   "proxy-authenticate",
@@ -4808,7 +4805,7 @@ var X = [
   "transfer-encoding",
   "upgrade"
 ];
-function os(e, r = O, t) {
+function ns(e, r = I, t) {
   return async (s) => {
     if (!t?.dispatchBinding)
       throw new p(
@@ -4827,14 +4824,14 @@ function os(e, r = O, t) {
       `service-binding "${e.service}": ${s.req.method} ${o.pathname}${o.search}`
     );
     const i = new Headers(s.req.raw.headers);
-    for (const m of X)
+    for (const m of Q)
       i.delete(m);
     const l = B(s);
     if (l) {
-      const m = Z();
+      const m = re();
       i.set(
         "traceparent",
-        ge({
+        Se({
           version: "00",
           traceId: l.traceId,
           parentId: m,
@@ -4852,13 +4849,13 @@ function os(e, r = O, t) {
     let d;
     if (u !== void 0) {
       const m = s.get("_otelRootSpan");
-      d = new ee(
+      d = new Z(
         `upstream:service-binding:${e.service}`,
         "CLIENT",
         m.traceId,
-        te(),
+        ee(),
         m.spanId
-      ), d.setAttribute(C.HTTP_METHOD, s.req.method).setAttribute(C.URL_PATH, o.pathname).setAttribute("rpc.service", e.service);
+      ), d.setAttribute(q.HTTP_METHOD, s.req.method).setAttribute(q.URL_PATH, o.pathname).setAttribute("rpc.service", e.service);
     }
     const f = Date.now(), h = await t.dispatchBinding(
       e.service,
@@ -4866,9 +4863,9 @@ function os(e, r = O, t) {
     );
     r(
       `service-binding responded: ${h.status} (${Date.now() - f}ms)`
-    ), d && (d.setAttribute(C.HTTP_STATUS_CODE, h.status).setStatus(h.status >= 500 ? "ERROR" : "OK"), u.push(d.end()));
+    ), d && (d.setAttribute(q.HTTP_STATUS_CODE, h.status).setStatus(h.status >= 500 ? "ERROR" : "OK"), u.push(d.end()));
     const w = new Headers(h.headers);
-    for (const m of X)
+    for (const m of Q)
       w.delete(m);
     return new Response(h.body, {
       status: h.status,
@@ -4877,7 +4874,7 @@ function os(e, r = O, t) {
     });
   };
 }
-function is(e, r = O) {
+function as(e, r = I) {
   const t = new URL(e.target);
   return async (s) => {
     const n = new URL(s.req.url);
@@ -4897,17 +4894,17 @@ function is(e, r = O) {
       );
     r(`proxying ${s.req.method} ${s.req.path} -> ${o.toString()}`);
     const i = new Headers(s.req.raw.headers);
-    for (const g of X)
+    for (const g of Q)
       i.delete(g);
     if (s.get("_preserveHost") === !0 || i.set("host", o.host), e.headers)
       for (const [g, v] of Object.entries(e.headers))
         i.set(g, v);
     const c = B(s);
     if (c) {
-      const g = Z();
+      const g = re();
       i.set(
         "traceparent",
-        ge({
+        Se({
           version: "00",
           traceId: c.traceId,
           parentId: g,
@@ -4929,13 +4926,13 @@ function is(e, r = O) {
     let h;
     if (f !== void 0) {
       const g = s.get("_otelRootSpan");
-      h = new ee(
+      h = new Z(
         `upstream:url:${o.host}`,
         "CLIENT",
         g.traceId,
-        te(),
+        ee(),
         g.spanId
-      ), h.setAttribute(C.HTTP_METHOD, s.req.method).setAttribute(C.URL_PATH, o.pathname).setAttribute(C.SERVER_ADDRESS, o.host);
+      ), h.setAttribute(q.HTTP_METHOD, s.req.method).setAttribute(q.URL_PATH, o.pathname).setAttribute(q.SERVER_ADDRESS, o.host);
     }
     const w = Date.now(), m = await fetch(
       u,
@@ -4943,9 +4940,9 @@ function is(e, r = O) {
     );
     r(
       `upstream responded: ${m.status} (${Date.now() - w}ms)`
-    ), h && (h.setAttribute(C.HTTP_STATUS_CODE, m.status).setStatus(m.status >= 500 ? "ERROR" : "OK"), f.push(h.end()));
+    ), h && (h.setAttribute(q.HTTP_STATUS_CODE, m.status).setStatus(m.status >= 500 ? "ERROR" : "OK"), f.push(h.end()));
     const y = new Headers(m.headers);
-    for (const g of X)
+    for (const g of Q)
       y.delete(g);
     return new Response(m.body, {
       status: m.status,
@@ -4953,6 +4950,29 @@ function is(e, r = O) {
       headers: y
     });
   };
+}
+function os(e) {
+  let r = e;
+  return r.startsWith("/") || (r = `/${r}`), r.length > 1 && r.endsWith("/") && (r = r.slice(0, -1)), r;
+}
+function is(e, r) {
+  const t = r.startsWith("/") ? r : `/${r}`;
+  return e.endsWith("/") && t.startsWith("/") ? `${e}${t.slice(1)}` : `${e}${t}`;
+}
+function on(e) {
+  const r = os(e.prefix), t = e.policies ?? [], s = e.metadata ?? {};
+  return e.routes.map((n) => {
+    const a = is(r, n.path), o = n.pipeline.policies ?? [], i = t.length > 0 || o.length > 0 ? [...t, ...o] : void 0, l = Object.keys(s).length > 0 || n.metadata ? { ...s, ...n.metadata } : void 0;
+    return {
+      ...n,
+      path: a,
+      pipeline: {
+        ...n.pipeline,
+        ...i !== void 0 ? { policies: i } : {}
+      },
+      ...l !== void 0 ? { metadata: l } : {}
+    };
+  });
 }
 function ln(e, r) {
   const t = new TextEncoder(), s = t.encode(e), n = t.encode(r), a = Math.max(s.length, n.length);
@@ -5005,15 +5025,15 @@ const dn = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   definePolicy: T,
   getCollectedDebugHeaders: at,
   isDebugRequested: ot,
-  isTraceRequested: er,
+  isTraceRequested: ar,
   noopTraceReporter: Ze,
   parseDebugRequest: nt,
-  policyDebug: I,
-  policyTrace: Q,
+  policyDebug: O,
+  policyTrace: te,
   resolveConfig: k,
   safeCall: E,
   setDebugHeader: _,
-  withSkip: q
+  withSkip: C
 }, Symbol.toStringTag, { value: "Module" })), cs = "stoma-playground", L = "rate-limits", us = 1;
 function ds() {
   return new Promise((e, r) => {
@@ -5067,11 +5087,11 @@ export {
   hn as IDBRateLimitStore,
   it as InMemoryCacheStore,
   wt as InMemoryCircuitBreakerStore,
-  an as InMemoryMetricsCollector,
+  nn as InMemoryMetricsCollector,
   fs as OTLPSpanExporter,
   S as Priority,
-  C as SemConv,
-  ee as SpanBuilder,
+  q as SemConv,
+  Z as SpanBuilder,
   vs as apiKeyAuth,
   Fs as assignAttributes,
   Js as assignContent,
@@ -5081,19 +5101,19 @@ export {
   sn as circuitBreaker,
   bs as clearJwksCache,
   zs as cors,
-  on as createGateway,
+  an as createGateway,
   wr as createPolicyTestHarness,
   T as definePolicy,
-  Cs as dynamicRouting,
-  ve as extractClientIp,
+  qs as dynamicRouting,
+  X as extractClientIp,
   xs as generateHttpSignature,
   Rs as generateJwt,
-  qs as geoIpFilter,
+  Cs as geoIpFilter,
   B as getGatewayContext,
   Qs as health,
   Ms as httpCallout,
-  Os as interrupt,
-  Is as ipFilter,
+  Is as interrupt,
+  Os as ipFilter,
   ks as jsonThreatProtection,
   Ws as jsonValidation,
   As as jws,
@@ -5104,8 +5124,8 @@ export {
   gs as mock,
   $s as oauth2,
   Vs as overrideMethod,
-  I as policyDebug,
-  Q as policyTrace,
+  O as policyDebug,
+  te as policyTrace,
   Ss as proxy,
   ys as rateLimit,
   _s as rbac,
@@ -5118,15 +5138,15 @@ export {
   Ns as resourceFilter,
   Xs as responseTransform,
   Bs as retry,
-  nn as scope,
+  on as scope,
   dn as sdk,
   rn as serverTiming,
   _ as setDebugHeader,
   Ds as sslEnforce,
   Ks as timeout,
   ln as timingSafeEqual,
-  Zr as toPrometheusText,
+  Xr as toPrometheusText,
   Us as trafficShadow,
   Hs as verifyHttpSignature,
-  q as withSkip
+  C as withSkip
 };

@@ -1,0 +1,303 @@
+---
+title: "Tutorial: Response Caching"
+description: Add caching to your gateway to reduce upstream load and improve response times.
+sidebar:
+  order: 4
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Caching is one of the most impactful things you can add to an API gateway. This tutorial shows you how to add response caching with Stoma — from simple in-memory caching to production-grade Cloudflare caching.
+
+## What We'll Cover
+
+1. Basic in-memory caching (works everywhere)
+2. Cloudflare Cache API caching (production-ready)
+3. Cache invalidation strategies
+4. Advanced: Vary headers and cache keys
+
+## Step 1: Basic In-Memory Caching
+
+The simplest way to add caching uses `InMemoryCacheStore`:
+
+```typescript
+import { createGateway, cache, cors } from "@homegrower-club/stoma";
+import { InMemoryCacheStore } from "@homegrower-club/stoma";
+
+// Create a cache store
+const cacheStore = new InMemoryCacheStore({
+  maxSize: 100,      // Max number of cached responses
+  ttlSeconds: 300,   // Default TTL (5 minutes)
+});
+
+const gateway = createGateway({
+  name: "cached-api",
+  basePath: "/api",
+  policies: [cors()],
+  routes: [
+    {
+      path: "/products/*",
+      pipeline: {
+        policies: [
+          cache({
+            store: cacheStore,
+            ttlSeconds: 120,        // Cache for 2 minutes
+            methods: ["GET"],       // Only GET requests are cached
+            cacheStatusHeader: "x-cache",  // Shows HIT/MISS
+          }),
+        ],
+        upstream: {
+          type: "url",
+          target: "https://api.example.com",
+        },
+      },
+    },
+  ],
+});
+
+export default gateway.app;
+```
+
+### Testing It
+
+```bash
+# First request - MISS (upstream is called)
+curl -v https://your-gateway.com/api/products/123
+# x-cache: MISS
+
+# Second request - HIT (cache serves the response)
+curl -v https://your-gateway.com/api/products/123
+# x-cache: HIT
+```
+
+<Aside type="tip">
+In-memory caching works great for development and testing. For production on Cloudflare Workers, use the Cache API (shown below) for durability across requests.
+</Aside>
+
+## Step 2: Cloudflare Cache API
+
+For production deployments, use Cloudflare's built-in cache:
+
+```typescript
+import { createGateway, cache, cors } from "@homegrower-club/stoma";
+import { cloudflareAdapter } from "@homegrower-club/stoma/adapters";
+
+const adapter = cloudflareAdapter({
+  cache: caches.default,  // Cloudflare's Cache API
+});
+
+const gateway = createGateway({
+  name: "cached-api",
+  basePath: "/api",
+  policies: [cors()],
+  routes: [
+    {
+      path: "/products/*",
+      pipeline: {
+        policies: [
+          cache({
+            store: adapter.cacheStore,
+            ttlSeconds: 300,        // Cache for 5 minutes
+            methods: ["GET"],
+            varyHeaders: ["accept-language", "accept-encoding"],
+            respectCacheControl: true,
+          }),
+        ],
+        upstream: {
+          type: "url",
+          target: "https://api.example.com",
+        },
+      },
+    },
+  ],
+});
+```
+
+### Key Options Explained
+
+| Option | Purpose |
+|--------|---------|
+| `ttlSeconds` | How long to cache the response |
+| `methods` | Which HTTP methods to cache (GET by default) |
+| `varyHeaders` | Different cached versions based on these headers |
+| `respectCacheControl` | Honor upstream's `Cache-Control` headers |
+| `cacheKeyFn` | Custom function to build cache keys |
+
+## Step 3: Custom Cache Keys
+
+Sometimes you need more control over what's used as the cache key:
+
+```typescript
+cache({
+  store: adapter.cacheStore,
+  cacheKeyFn: (c) => {
+    // Include path, user region, and accept language in cache key
+    const path = c.req.path;
+    const region = c.req.header("cf-ipcountry");
+    const lang = c.req.header("accept-language");
+    return `${path}:${region}:${lang}`;
+  },
+})
+```
+
+## Step 4: Cache Invalidation
+
+Stoma's cache policy respects upstream `Cache-Control` headers, but sometimes you need manual invalidation:
+
+```typescript
+import { createGateway, cache, cors } from "@homegrower-club/stoma";
+import { cloudflareAdapter } from "@homegrower-club/stoma/adapters";
+
+const adapter = cloudflareAdapter({ cache: caches.default });
+
+// Create a route to manually invalidate cache
+const gateway = createGateway({
+  name: "api",
+  basePath: "/api",
+  routes: [
+    {
+      path: "/products/*",
+      pipeline: {
+        policies: [
+          cache({ store: adapter.cacheStore, ttlSeconds: 300 }),
+        ],
+        upstream: { type: "url", target: "https://api.example.com" },
+      },
+    },
+    // Invalidation endpoint
+    {
+      path: "/admin/invalidate-cache",
+      methods: ["POST"],
+      pipeline: {
+        policies: [
+          // You'd add admin auth here in production
+        ],
+        upstream: {
+          type: "handler",
+          handler: async (c) => {
+            const url = new URL(c.req.url);
+            const pathToInvalidate = url.searchParams.get("path");
+            
+            if (!pathToInvalidate) {
+              return c.json({ error: "Missing path parameter" }, 400);
+            }
+
+            // Build the cache key the same way the cache policy does
+            const cacheKey = `https://api.example.com${pathToInvalidate}`;
+            
+            // Delete from cache
+            await adapter.cacheStore.delete(cacheKey);
+            
+            return c.json({ success: true, invalidated: cacheKey });
+          },
+        },
+      },
+    },
+  ],
+});
+```
+
+### Alternative: Time-Based Invalidation with Tags
+
+If your upstream supports cache tags (Cloudflare Workers KV + custom header), you can implement tag-based invalidation:
+
+```typescript
+cache({
+  store: adapter.cacheStore,
+  ttlSeconds: 300,
+  // Cache policy adds x-cache-tags header on responses
+  // You can read it and use it for invalidation
+})
+```
+
+## Step 5: Handling Edge Cases
+
+### Don't Cache Errors
+
+```typescript
+cache({
+  store: adapter.cacheStore,
+  ttlSeconds: 300,
+  // Don't cache 5xx errors
+  bypassDirectives: ["no-store", "no-cache", "private"],
+})
+```
+
+### Only Cache Successful Responses
+
+The cache policy only caches responses with status 200-299 by default. Error responses (400, 401, 500, etc.) always bypass the cache.
+
+### Streaming Responses
+
+Streaming responses (`Transfer-Encoding: chunked`) cannot be cached. The cache policy automatically bypasses streaming responses.
+
+## Complete Example: E-commerce API
+
+Here's a real-world configuration for a product catalog:
+
+```typescript
+import { createGateway, cache, rateLimit, cors } from "@homegrower-club/stoma";
+import { cloudflareAdapter } from "@homegrower-club/stoma/adapters";
+
+const adapter = cloudflareAdapter({ cache: caches.default });
+
+const gateway = createGateway({
+  name: "catalog-api",
+  basePath: "/api",
+  policies: [
+    cors({ origins: ["https://shop.example.com"] }),
+  ],
+  routes: [
+    // Product listings - heavily cached, rate limited
+    {
+      path: "/products",
+      methods: ["GET"],
+      pipeline: {
+        policies: [
+          rateLimit({ max: 100, windowSeconds: 60 }),
+          cache({
+            store: adapter.cacheStore,
+            ttlSeconds: 60,        // Short TTL for listings
+            varyHeaders: ["accept-language"],
+          }),
+        ],
+        upstream: { type: "url", target: "https://api.example.com" },
+      },
+    },
+    // Product details - cached longer
+    {
+      path: "/products/:id",
+      methods: ["GET"],
+      pipeline: {
+        policies: [
+          rateLimit({ max: 200, windowSeconds: 60 }),
+          cache({
+            store: adapter.cacheStore,
+            ttlSeconds: 3600,      // 1 hour for product details
+            varyHeaders: ["accept-language"],
+          }),
+        ],
+        upstream: { type: "url", target: "https://api.example.com" },
+      },
+    },
+    // Admin mutations - never cached
+    {
+      path: "/products/*",
+      methods: ["POST", "PUT", "PATCH", "DELETE"],
+      pipeline: {
+        policies: [
+          rateLimit({ max: 20, windowSeconds: 60 }),
+          // No cache policy here!
+        ],
+        upstream: { type: "url", target: "https://api.example.com" },
+      },
+    },
+  ],
+});
+```
+
+## What's Next?
+
+- [Traffic Policies](/policies/traffic/) — all caching options
+- [Public Read API Recipe](/recipes/public-read-cache-resilience/) — complete example
+- [Real-World Example](/guides/real-world-example/) — production gateway with caching

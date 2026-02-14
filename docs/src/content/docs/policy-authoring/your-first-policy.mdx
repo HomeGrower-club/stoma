@@ -205,7 +205,7 @@ export async function createPlaygroundGateway() {
     A `Policy` is just an object with three fields:
 
     - **`name`** -- a unique string used for deduplication when merging global and route policies.
-    - **`handler`** -- a standard Hono `MiddlewareHandler`.
+    - **`handler`** -- a middleware function matching Hono's `MiddlewareHandler` type.
     - **`priority`** -- a number that controls execution order (lower runs first).
 
     That is the entire interface. Here is a policy written from scratch, with no SDK:

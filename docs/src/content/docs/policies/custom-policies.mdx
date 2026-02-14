@@ -22,7 +22,7 @@ debug logging, and gateway context injection automatically.
 ## Writing a policy with definePolicy
 
 The `definePolicy()` function takes a declarative definition and returns a
-factory function `(config?) => Policy`. Your handler receives the Hono context,
+factory function `(config?) => Policy`. Your handler receives the request context,
 `next`, and a `PolicyHandlerContext` with the merged config, a pre-namespaced
 debug logger, and the gateway context.
 

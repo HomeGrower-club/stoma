@@ -5,7 +5,7 @@ prev: false
 title: "KVRateLimitStore"
 ---
 
-Defined in: [src/adapters/cloudflare.ts:12](https://github.com/HomeGrower-club/stoma/blob/8b84574bca28149f020bbd910337511015437508/src/adapters/cloudflare.ts#L12)
+Defined in: [src/adapters/cloudflare.ts:12](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/adapters/cloudflare.ts#L12)
 
 Rate limit store backed by Cloudflare Workers KV.
 
@@ -19,7 +19,7 @@ Rate limit store backed by Cloudflare Workers KV.
 
 > **new KVRateLimitStore**(`kv`): `KVRateLimitStore`
 
-Defined in: [src/adapters/cloudflare.ts:13](https://github.com/HomeGrower-club/stoma/blob/8b84574bca28149f020bbd910337511015437508/src/adapters/cloudflare.ts#L13)
+Defined in: [src/adapters/cloudflare.ts:13](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/adapters/cloudflare.ts#L13)
 
 #### Parameters
 
@@ -37,7 +37,7 @@ Defined in: [src/adapters/cloudflare.ts:13](https://github.com/HomeGrower-club/s
 
 > **increment**(`key`, `windowSeconds`): `Promise`\<\{ `count`: `number`; `resetAt`: `number`; \}\>
 
-Defined in: [src/adapters/cloudflare.ts:15](https://github.com/HomeGrower-club/stoma/blob/8b84574bca28149f020bbd910337511015437508/src/adapters/cloudflare.ts#L15)
+Defined in: [src/adapters/cloudflare.ts:15](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/adapters/cloudflare.ts#L15)
 
 Increment the counter for a key, returning the new count and TTL
 

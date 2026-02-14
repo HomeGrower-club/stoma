@@ -7,17 +7,17 @@ sidebar:
 import { Aside } from "@astrojs/starlight/components";
 import EditorLink from "../../../components/EditorLink.astro";
 
-Policies in Stoma run as Hono middleware in priority order. They share data
-through Hono's built-in context -- `c.set(key, value)` to write and
+Policies in Stoma run as middleware in priority order. They share data
+through the per-request context -- `c.set(key, value)` to write and
 `c.get(key)` to read. Because the pipeline is sequential, earlier policies
 (lower priority numbers) can set values that later policies depend on.
 
 This page covers the patterns and APIs for cross-policy communication:
 context sharing, debug headers, and policy tracing.
 
-## Hono context as shared state
+## Request context as shared state
 
-Every policy handler receives the Hono `Context` object as its first argument.
+Every policy handler receives a `Context` object as its first argument.
 The context acts as a per-request key-value store:
 
 ```typescript
@@ -35,7 +35,7 @@ including the upstream handler itself. The upstream can read context values
 with `c.get()` just like any policy.
 
 <Aside type="caution">
-Hono context values are untyped by default. Always use `as Type | undefined`
+Context values are untyped by default. Always use `as Type | undefined`
 when reading values and handle the `undefined` case -- the policy that sets
 the value might be disabled, skipped, or not present on every route.
 </Aside>

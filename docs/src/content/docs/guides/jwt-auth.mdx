@@ -1,0 +1,231 @@
+---
+title: "Tutorial: JWT Authentication"
+description: Add JWT validation to your gateway with HMAC secrets or JWKS for RSA keys.
+sidebar:
+  order: 5
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+JSON Web Tokens (JWTs) are the standard for API authentication. This tutorial shows you how to validate JWTs in Stoma — using a simple shared secret (HMAC) or public keys (RSA via JWKS).
+
+## Two Approaches
+
+| Approach | Use when |
+|----------|----------|
+| **HMAC (shared secret)** | You control both token signing and validation (e.g., internal services) |
+| **JWKS (RSA keys)** | Tokens are signed by an external identity provider (Auth0, Supabase, Firebase, etc.) |
+
+We'll cover both.
+
+## Part 1: HMAC Authentication (Shared Secret)
+
+This is the simplest approach. You have a secret that both signs and validates tokens.
+
+### Step 1: Create the Gateway
+
+```typescript
+import { createGateway, jwtAuth, cors, requestLog } from "@homegrower-club/stoma";
+
+const gateway = createGateway({
+  name: "secure-api",
+  basePath: "/api",
+  policies: [requestLog(), cors()],
+  routes: [
+    {
+      path: "/users/*",
+      pipeline: {
+        policies: [
+          jwtAuth({
+            secret: process.env.JWT_SECRET,  // HMAC shared secret
+            headerName: "Authorization",
+            tokenPrefix: "Bearer",
+          }),
+        ],
+        upstream: {
+          type: "url",
+          target: "https://users.internal",
+        },
+      },
+    },
+  ],
+});
+
+export default gateway.app;
+```
+
+### Step 2: How It Works
+
+When a request comes in:
+
+1. Extracts the token from the `Authorization: Bearer <token>` header
+2. Verifies the signature using the HMAC secret
+3. Checks token expiration (`exp` claim)
+4. If valid, passes the request to upstream
+
+### Step 3: Forward Claims to Upstream
+
+Usually your upstream needs to know who's making the request:
+
+```typescript
+jwtAuth({
+  secret: process.env.JWT_SECRET,
+  forwardClaims: {
+    sub: "x-user-id",      // JWT "sub" → upstream header "x-user-id"
+    email: "x-user-email",
+    role: "x-user-role",
+  },
+})
+```
+
+Now your upstream receives:
+```
+x-user-id: user_123abc
+x-user-email: alice@example.com
+x-user-role: admin
+```
+
+## Part 2: JWKS Authentication (RSA Keys)
+
+When your tokens come from an external provider (Auth0, Supabase, Firebase, Okta), you can't share a secret — instead, you fetch their public keys from a JWKS endpoint.
+
+### Step 1: Find Your JWKS URL
+
+Your identity provider exposes keys at a well-known URL:
+
+| Provider | JWKS URL |
+|----------|----------|
+| Auth0 | `https://YOUR_DOMAIN/.well-known/jwks.json` |
+| Supabase | `https://YOUR_PROJECT.supabase.co/auth/v1/.well-known/jwks.json` |
+| Firebase | `https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com` |
+| Okta | `https://YOUR_OKTA_DOMAIN/oauth2/default/v1/keys` |
+
+### Step 2: Configure the Gateway
+
+```typescript
+import { createGateway, jwtAuth, cors, requestLog } from "@homegrower-club/stoma";
+
+const gateway = createGateway({
+  name: "secure-api",
+  basePath: "/api",
+  policies: [requestLog(), cors()],
+  routes: [
+    {
+      path: "/users/*",
+      pipeline: {
+        policies: [
+          jwtAuth({
+            jwksUrl: "https://your-auth0-domain.auth0.com/.well-known/jwks.json",
+            issuer: "https://your-auth0-domain.auth0.com/",
+            audience: "https://api.yourapp.com",
+            forwardClaims: {
+              sub: "x-user-id",
+              email: "x-user-email",
+            },
+            // Cache JWKS for 5 minutes (default)
+            jwksCacheTtlMs: 300000,
+          }),
+        ],
+        upstream: {
+          type: "url",
+          target: "https://users.internal",
+        },
+      },
+    },
+  ],
+});
+```
+
+### Step 3: Understanding the Options
+
+| Option | Purpose |
+|--------|---------|
+| `jwksUrl` | Where to fetch public keys |
+| `issuer` | Expected `iss` claim — prevents tokens from other issuers |
+| `audience` | Expected `aud` claim — prevents tokens for other audiences |
+| `forwardClaims` | Extract claims and set as upstream headers |
+| `jwksCacheTtlMs` | How long to cache the JWKS (reduces network calls) |
+
+<Aside type="tip">
+Always specify `issuer` and `audience` when using JWKS. Without them, your gateway accepts any valid JWT — even ones meant for completely different services.
+</Aside>
+
+## Testing JWT Auth
+
+### Generate a Test Token
+
+For HMAC (Node.js):
+
+```javascript
+const jwt = require('jsonwebtoken');
+const token = jwt.sign(
+  { sub: 'user_123', email: 'test@example.com', role: 'admin' },
+  process.env.JWT_SECRET,
+  { expiresIn: '1h' }
+);
+console.log(token);
+```
+
+### Test with cURL
+
+```bash
+# Without token - should fail
+curl https://your-gateway.com/api/users
+# {"error":"unauthorized","message":"Missing bearer token","statusCode":401}
+
+# With valid token
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  https://your-gateway.com/api/users
+# Success! Request proxied to upstream with x-user-id header
+```
+
+### Common Errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Missing bearer token` | No Authorization header | Add header with `Bearer <token>` |
+| `Invalid signature` | Wrong secret/key | Check JWT_SECRET or JWKS URL |
+| `Token expired` | `exp` claim in past | Get a fresh token |
+| `Invalid issuer` | `iss` claim doesn't match | Check `issuer` config |
+| `Invalid audience` | `aud` claim doesn't match | Check `audience` config |
+
+## Advanced: Multiple JWT Sources
+
+Need to accept tokens from multiple providers? Create a custom policy:
+
+```typescript
+import { definePolicy, GatewayError, jwtAuth } from "@homegrower-club/stoma";
+
+const multiAuth = definePolicy({
+  name: "multi-jwt",
+  priority: 10,  // AUTH priority
+  handler: async (c, next) => {
+    const auth0Policy = jwtAuth({
+      jwksUrl: "https://auth0.auth0.com/.well-known/jwks.json",
+      issuer: "https://auth0.auth0.com/",
+      audience: "https://api.example.com",
+    });
+    
+    const supabasePolicy = jwtAuth({
+      jwksUrl: "https://xyz.supabase.co/auth/v1/.well-known/jwks.json",
+      issuer: "https://xyz.supabase.co",
+      audience: "authenticated",
+    });
+
+    try {
+      // Try Auth0 first
+      await auth0Policy.handler(c, next);
+    } catch (e) {
+      // If Auth0 fails, try Supabase
+      await supabasePolicy.handler(c, next);
+    }
+  },
+});
+```
+
+## What's Next?
+
+- [Auth Policies](/policies/auth/) — all authentication options
+- [OAuth2 Tutorial](/guides/oauth-supabase/) — token introspection approach
+- [RBAC Tutorial](/policies/auth/#rbac) — role-based access control
+- [Generate JWTs](/policies/auth/#generatejwt) — mint JWTs for upstream services

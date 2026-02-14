@@ -370,8 +370,7 @@ const correlationId = definePolicy({
 **How it works:** Everything before `await next()` runs during the request
 phase -- downstream policies and the upstream handler can read the injected
 header. Everything after `await next()` runs during the response phase, after
-the upstream has produced a response. This pre/post split is the fundamental
-Hono middleware pattern and works identically in Stoma policies.
+the upstream has produced a response. This pre/post split is the standard middleware pattern and works identically in Stoma policies.
 
 <Aside type="note">
 `Priority.EARLY` (5) ensures this policy runs before authentication and rate
@@ -544,8 +543,7 @@ database lookup, JWT verification, or an external identity provider call.
 ## Wrapping Hono Middleware
 
 Any existing Hono middleware can become a Stoma policy by wrapping it in an
-object with `name` and `priority`. This lets you reuse the entire Hono
-middleware ecosystem without rewriting anything.
+object with `name` and `priority`. This lets you reuse Hono's middleware ecosystem without rewriting anything.
 
 ```typescript
 import type { Policy } from "@homegrower-club/stoma";

@@ -13,7 +13,7 @@ export default defineConfig({
     starlight({
       title: "Stoma",
       description:
-        "Declarative API gateway as a TypeScript library, built on Hono. Runs on Cloudflare Workers, Deno, Bun, Node.js, and any runtime Hono supports.",
+        "Declarative API gateway as a TypeScript library. Runs on Cloudflare Workers, Node.js, Deno, Bun, and any JavaScript runtime.",
       favicon: "/favicon.ico",
       head: [
         {

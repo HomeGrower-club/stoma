@@ -1,0 +1,168 @@
+---
+title: How Stoma Works
+description: A story about what happens when a request hits your gateway.
+draft: false
+sidebar:
+  order: 0
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Imagine you've deployed a Stoma gateway. Now a user clicks a button in your app. Here's what happens next — and why Stoma is built the way it is.
+
+## The Journey of a Request
+
+Your frontend makes a simple request:
+
+```
+GET /api/users/123 HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+Behind the scenes, your Stoma gateway springs to life.
+
+### 1. The Gateway Receives the Call
+
+Your gateway is just a Hono app. When the request arrives, Hono's router immediately gets to work — matching the path `/api/users/123` against the routes you've defined in your `GatewayConfig`.
+
+Let's say your config looks like this:
+
+```typescript
+const gateway = createGateway({
+  name: "my-api",
+  basePath: "/api",
+  routes: [
+    {
+      path: "/users/:id",
+      pipeline: {
+        policies: [jwtAuth(), rateLimit({ max: 100 })],
+        upstream: { type: "url", target: "https://users.internal" },
+      },
+    },
+  ],
+});
+```
+
+The router sees `/api/users/123` matches `/users/:id` with the basePath prefix. We've got a match.
+
+### 2. The Context Injector: Meeting the Request
+
+Before any of your policies run, Stoma creates a **gateway context**. Think of this as a small backpack that travels with the request through every policy. It contains:
+
+- A unique `requestId` (so you can trace this request in logs)
+- A `startTime` (to measure how long processing takes)
+- A `traceId` (for distributed tracing — connects this request to the larger system)
+- A `spanId` (identifies this specific hop in the trace)
+- A reference to your gateway name and the matched route path
+
+This happens automatically. You don't need to write any code — every policy can access this context if it needs to.
+
+<Aside type="tip">
+The context is always available via `getGatewayContext(c)` inside any policy handler.
+</Aside>
+
+### 3. Policies Spring into Action
+
+Here's where Stoma shines. Your gateway has two policies: `jwtAuth` (priority 10) and `rateLimit` (priority 20). Lower priority numbers run first, so authentication happens before rate limiting.
+
+#### First: JWT Authentication
+
+The `jwtAuth` policy runs. It:
+
+1. Looks for the `Authorization` header
+2. Extracts the JWT token
+3. Verifies the signature (using either a secret for HMAC or a JWKS endpoint for RSA keys)
+4. Checks the `exp` (expiration), `iss` (issuer), and `aud` (audience) claims if configured
+5. Forwards user info to the upstream — you configured `forwardClaims` to extract the `sub` claim and set it as an `x-user-id` header
+
+If any of this fails? The policy throws a `GatewayError`. The gateway catches it and returns a clean JSON response:
+
+```json
+{
+  "error": "unauthorized",
+  "message": "Invalid JWT token",
+  "statusCode": 401
+}
+```
+
+No mess, no default error pages. Just structured error responses your frontend can handle.
+
+#### Then: Rate Limiting
+
+Next up: `rateLimit`. This policy:
+
+1. Extracts the client IP (from `x-forwarded-for` or `cf-connecting-ip` if you're on Cloudflare)
+2. Increments a counter in your rate limit store
+3. Checks if the client has exceeded the limit (100 requests per 60 seconds)
+
+If they're over the limit:
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Rate limit exceeded",
+  "statusCode": 429,
+  "retryAfter": 45
+}
+```
+
+The request never reaches your upstream. This is called **short-circuiting** — a policy can stop the request early by returning a response without calling `next()`.
+
+### 4. Onward to the Upstream
+
+If all policies pass, the request is forwarded to your upstream. In this case, a URL upstream that proxies to `https://users.internal/users/123`.
+
+Stoma handles all the messy details:
+
+- **SSRF protection** — ensures the path rewrite doesn't accidentally redirect to a different domain
+- **Hop-by-hop headers** — strips `Connection`, `Keep-Alive`, and other headers that shouldn't be forwarded
+- **Trace context** — adds W3C `traceparent` headers so your upstream knows this request came through the gateway
+- **Timeout wrapping** — if your upstream is slow, the gateway won't hang forever
+
+### 5. The Return Journey
+
+The upstream responds. Now the response travels back through the policies in **reverse order** (this is how Hono middleware works). Policies that ran before can now modify the response.
+
+For example, `rateLimit` sets `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers on the response. Your client knows their current quota.
+
+### 6. Final Touches
+
+Before the response reaches your user, the context injector adds:
+
+- The `x-request-id` header (so they can reference this request in support)
+- The W3C `traceparent` header (for distributed tracing)
+
+And that's it — the response is delivered.
+
+---
+
+## Why This Architecture?
+
+You might be wondering: why build it this way?
+
+### Policies Are Just Middleware
+
+Every policy is a Hono middleware. If you know how to write Hono middleware, you can write a Stoma policy. No special abstractions, no framework to learn.
+
+### Priority Controls Order
+
+By giving policies numeric priorities, Stoma ensures authentication always runs before authorization, rate limiting always happens after auth, and caching happens at the right moment. You don't need to think about ordering — just pick the right priority tier.
+
+### Declarative, Not Imperative
+
+You define *what* you want (a gateway that authenticates with JWTs, rate limits by IP, caches responses for 5 minutes), and Stoma figures out *how* to make it happen. The configuration is type-safe, versionable, and reviewable in PRs.
+
+### Zero Infrastructure
+
+Your gateway is just code. No separate service to deploy, no YAML files floating around, no admin UI to secure. The gateway lives in your repo, deploys with your app, and scales with your runtime.
+
+---
+
+## What's Next?
+
+Now that you understand the flow:
+
+- [Quick Start](/getting-started/quick-start/) — build your first gateway
+- [Policy System](/concepts/policies/) — deep dive into how policies work
+- [Your First Custom Policy](/policy-authoring/your-first-policy/) — build a policy from scratch
