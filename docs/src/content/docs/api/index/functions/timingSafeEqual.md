@@ -7,7 +7,7 @@ title: "timingSafeEqual"
 
 > **timingSafeEqual**(`a`, `b`): `boolean`
 
-Defined in: [src/utils/timing-safe.ts:30](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/utils/timing-safe.ts#L30)
+Defined in: [src/utils/timing-safe.ts:30](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/utils/timing-safe.ts#L30)
 
 Compare two strings in constant time.
 

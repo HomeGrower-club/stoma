@@ -7,7 +7,7 @@ title: "memoryAdapter"
 
 > **memoryAdapter**(): [`GatewayAdapter`](/api/index/interfaces/gatewayadapter/)
 
-Defined in: [src/adapters/memory.ts:7](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/adapters/memory.ts#L7)
+Defined in: [src/adapters/memory.ts:7](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/adapters/memory.ts#L7)
 
 Create a GatewayAdapter using in-memory stores. Suitable for dev/demo/testing.
 

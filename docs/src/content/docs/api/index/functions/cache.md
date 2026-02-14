@@ -7,7 +7,7 @@ title: "cache"
 
 > **cache**(`config?`): [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/traffic/cache.ts:209](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/policies/traffic/cache.ts#L209)
+Defined in: [src/policies/traffic/cache.ts:209](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/policies/traffic/cache.ts#L209)
 
 Cache upstream responses to reduce latency and load.
 

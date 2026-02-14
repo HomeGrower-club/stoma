@@ -7,7 +7,7 @@ title: "nodeAdapter"
 
 > **nodeAdapter**(): [`GatewayAdapter`](/api/index/interfaces/gatewayadapter/)
 
-Defined in: [src/adapters/node.ts:28](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/adapters/node.ts#L28)
+Defined in: [src/adapters/node.ts:28](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/adapters/node.ts#L28)
 
 Create a GatewayAdapter for Node.js. Delegates to memoryAdapter() for in-memory stores.
 

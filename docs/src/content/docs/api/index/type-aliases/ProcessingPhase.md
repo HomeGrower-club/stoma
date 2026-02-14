@@ -7,7 +7,7 @@ title: "ProcessingPhase"
 
 > **ProcessingPhase** = `"request-headers"` \| `"request-body"` \| `"request-trailers"` \| `"response-headers"` \| `"response-body"` \| `"response-trailers"`
 
-Defined in: [src/core/protocol.ts:46](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/core/protocol.ts#L46)
+Defined in: [src/core/protocol.ts:46](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/core/protocol.ts#L46)
 
 Lifecycle phases a policy can participate in.
 

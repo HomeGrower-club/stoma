@@ -7,7 +7,7 @@ title: "basicAuth"
 
 > `const` **basicAuth**: (`config`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/auth/basic-auth.ts:43](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/policies/auth/basic-auth.ts#L43)
+Defined in: [src/policies/auth/basic-auth.ts:43](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/policies/auth/basic-auth.ts#L43)
 
 Basic Authentication policy — validate base64-encoded credentials.
 

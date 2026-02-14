@@ -5,7 +5,7 @@ prev: false
 title: "PolicyImmediateResponse"
 ---
 
-Defined in: [src/core/protocol.ts:186](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/core/protocol.ts#L186)
+Defined in: [src/core/protocol.ts:186](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/core/protocol.ts#L186)
 
 Short-circuit with a complete non-error response.
 
@@ -21,7 +21,7 @@ HTTP middleware, or ext_proc `ImmediateResponse` with a success status.
 
 > **action**: `"immediate-response"`
 
-Defined in: [src/core/protocol.ts:187](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/core/protocol.ts#L187)
+Defined in: [src/core/protocol.ts:187](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/core/protocol.ts#L187)
 
 ***
 
@@ -29,7 +29,7 @@ Defined in: [src/core/protocol.ts:187](https://github.com/HomeGrower-club/stoma/
 
 > `optional` **body**: `string` \| `ArrayBuffer`
 
-Defined in: [src/core/protocol.ts:193](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/core/protocol.ts#L193)
+Defined in: [src/core/protocol.ts:193](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/core/protocol.ts#L193)
 
 Response body.
 
@@ -39,7 +39,7 @@ Response body.
 
 > `optional` **headers**: `Record`\<`string`, `string`\>
 
-Defined in: [src/core/protocol.ts:191](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/core/protocol.ts#L191)
+Defined in: [src/core/protocol.ts:191](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/core/protocol.ts#L191)
 
 Response headers.
 
@@ -49,6 +49,6 @@ Response headers.
 
 > **status**: `number`
 
-Defined in: [src/core/protocol.ts:189](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/core/protocol.ts#L189)
+Defined in: [src/core/protocol.ts:189](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/core/protocol.ts#L189)
 
 HTTP status code for the response.

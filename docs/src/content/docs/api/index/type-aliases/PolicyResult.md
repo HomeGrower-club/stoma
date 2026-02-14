@@ -7,7 +7,7 @@ title: "PolicyResult"
 
 > **PolicyResult** = [`PolicyContinue`](/api/index/interfaces/policycontinue/) \| [`PolicyReject`](/api/index/interfaces/policyreject/) \| [`PolicyImmediateResponse`](/api/index/interfaces/policyimmediateresponse/)
 
-Defined in: [src/core/protocol.ts:142](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/core/protocol.ts#L142)
+Defined in: [src/core/protocol.ts:142](https://github.com/HomeGrower-club/stoma/blob/6880413a743383e902605a267467fc2697cf2b73/src/core/protocol.ts#L142)
 
 The outcome of a policy evaluation. Discriminated on `action`.
 
