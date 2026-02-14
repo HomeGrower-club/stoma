@@ -90,6 +90,16 @@
       "types": "./dist/adapters/memory.d.ts",
       "import": "./dist/adapters/memory.js",
       "default": "./dist/adapters/memory.js"
+    },
+    "./adapters/redis": {
+      "types": "./dist/adapters/redis.d.ts",
+      "import": "./dist/adapters/redis.js",
+      "default": "./dist/adapters/redis.js"
+    },
+    "./adapters/postgres": {
+      "types": "./dist/adapters/postgres.d.ts",
+      "import": "./dist/adapters/postgres.js",
+      "default": "./dist/adapters/postgres.js"
     }
   },
   "scripts": {

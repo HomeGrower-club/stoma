@@ -12,6 +12,8 @@ export default defineConfig({
     "adapters/bun": "src/adapters/bun.ts",
     "adapters/node": "src/adapters/node.ts",
     "adapters/memory": "src/adapters/memory.ts",
+    "adapters/redis": "src/adapters/redis.ts",
+    "adapters/postgres": "src/adapters/postgres.ts",
   },
   format: ["esm"],
   dts: true,
