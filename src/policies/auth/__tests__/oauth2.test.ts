@@ -295,4 +295,64 @@ describe("oauth2", () => {
     });
     expect(res.status).toBe(200);
   });
+
+  // --- Security: Unbounded Cache Vulnerability ---
+
+  it("SECURITY: should limit cache size to prevent memory exhaustion", async () => {
+    /**
+     * This test demonstrates the unbounded cache vulnerability in oauth2.
+     *
+     * The introspectionCache is a Map with no size limit. An attacker can
+     * exhaust server memory by making requests with many unique tokens.
+     *
+     * EXPECTED: The cache should have a maximum size with LRU eviction.
+     * CURRENT BEHAVIOR: Unbounded Map allows memory exhaustion.
+     */
+
+    // Create a fresh instance with a small cache to test the limit behavior
+    // We need to verify that caching is bounded
+    let fetchCount = 0;
+    globalThis.fetch = vi.fn().mockImplementation(() => {
+      fetchCount++;
+      return Promise.resolve(
+        new Response(JSON.stringify({ active: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        })
+      );
+    });
+
+    const { request: request2 } = createPolicyTestHarness(
+      oauth2({
+        introspectionUrl: "https://auth.example.com/introspect",
+        cacheTtlSeconds: 3600, // Long TTL to make the issue worse
+      })
+    );
+
+    // Make many requests with unique tokens (exceeds default max of 100)
+    // A properly bounded cache should eventually evict old entries
+    const numTokens = 150;
+    for (let i = 0; i < numTokens; i++) {
+      await request2("/test", {
+        headers: { authorization: `Bearer token-${i}` },
+      });
+    }
+
+    // Now repeat some of the first tokens - they should be cache misses
+    // if the cache has a size limit and evicted them
+    const initialFetchCount = fetchCount;
+    for (let i = 0; i < 10; i++) {
+      await request2("/test", {
+        headers: { authorization: `Bearer token-${i}` },
+      });
+    }
+
+    // SECURITY ISSUE:
+    // With unbounded cache: fetchCount === initialFetchCount (all repeats are cached)
+    // With bounded cache (max 100): fetchCount > initialFetchCount (evicted)
+    //
+    // This test expects bounded behavior - if cache is unbounded, it will fail
+    // because the initial tokens are still cached
+    expect(fetchCount).toBeGreaterThan(initialFetchCount);
+  });
 });

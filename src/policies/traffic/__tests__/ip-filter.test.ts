@@ -214,6 +214,100 @@ describe("ipFilter", () => {
     expect(res.status).toBe(403);
   });
 
+  // --- IPv6 support ---
+
+  it("should block IPv6 address in deny list", async () => {
+    const app = createApp({
+      deny: ["2001:db8::/32"],
+      mode: "deny",
+    });
+
+    const res = await app.request("/test", {
+      headers: { "cf-connecting-ip": "2001:db8::1" },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("should allow IPv6 address not in deny list", async () => {
+    const app = createApp({
+      deny: ["2001:db8::/32"],
+      mode: "deny",
+    });
+
+    const res = await app.request("/test", {
+      headers: { "cf-connecting-ip": "fe80::1" },
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("should allow IPv6 address in allow list", async () => {
+    const app = createApp({
+      allow: ["2001:db8::/32"],
+      mode: "allow",
+    });
+
+    const res = await app.request("/test", {
+      headers: { "cf-connecting-ip": "2001:db8::1" },
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("should block IPv6 address not in allow list", async () => {
+    const app = createApp({
+      allow: ["2001:db8::/32"],
+      mode: "allow",
+    });
+
+    const res = await app.request("/test", {
+      headers: { "cf-connecting-ip": "fe80::1" },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("should handle mixed IPv4 and IPv6 in deny list", async () => {
+    const app = createApp({
+      deny: ["10.0.0.0/8", "2001:db8::/32"],
+      mode: "deny",
+    });
+
+    const res1 = await app.request("/test", {
+      headers: { "cf-connecting-ip": "10.0.0.1" },
+    });
+    expect(res1.status).toBe(403);
+
+    const res2 = await app.request("/test", {
+      headers: { "cf-connecting-ip": "2001:db8::1" },
+    });
+    expect(res2.status).toBe(403);
+
+    const res3 = await app.request("/test", {
+      headers: { "cf-connecting-ip": "8.8.8.8" },
+    });
+    expect(res3.status).toBe(200);
+  });
+
+  it("should handle mixed IPv4 and IPv6 in allow list", async () => {
+    const app = createApp({
+      allow: ["192.168.1.0/24", "2001:db8::/32"],
+      mode: "allow",
+    });
+
+    const res1 = await app.request("/test", {
+      headers: { "cf-connecting-ip": "192.168.1.100" },
+    });
+    expect(res1.status).toBe(200);
+
+    const res2 = await app.request("/test", {
+      headers: { "cf-connecting-ip": "2001:db8::1" },
+    });
+    expect(res2.status).toBe(200);
+
+    const res3 = await app.request("/test", {
+      headers: { "cf-connecting-ip": "fe80::1" },
+    });
+    expect(res3.status).toBe(403);
+  });
+
   // --- Policy metadata ---
 
   it("should declare request-headers phase", () => {
@@ -337,6 +431,51 @@ describe("ipFilter.evaluate", () => {
     const policy = ipFilter({ deny: ["10.0.0.0/8"], mode: "deny" });
     const result = await policy.evaluate!.onRequest!(makeInput({}), noopCtx);
     expect(result.action).toBe("continue");
+  });
+
+  // --- IPv6 via evaluate ---
+
+  it("should reject IPv6 in deny list via evaluate", async () => {
+    const policy = ipFilter({ deny: ["2001:db8::/32"], mode: "deny" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "2001:db8::1" }),
+      noopCtx
+    );
+    expect(result.action).toBe("reject");
+  });
+
+  it("should continue for IPv6 not in deny list via evaluate", async () => {
+    const policy = ipFilter({ deny: ["2001:db8::/32"], mode: "deny" });
+    const result = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "fe80::1" }),
+      noopCtx
+    );
+    expect(result.action).toBe("continue");
+  });
+
+  it("should handle mixed ranges via evaluate", async () => {
+    const policy = ipFilter({
+      deny: ["10.0.0.0/8", "2001:db8::/32"],
+      mode: "deny",
+    });
+
+    const r1 = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "10.0.0.1" }),
+      noopCtx
+    );
+    expect(r1.action).toBe("reject");
+
+    const r2 = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "2001:db8::1" }),
+      noopCtx
+    );
+    expect(r2.action).toBe("reject");
+
+    const r3 = await policy.evaluate!.onRequest!(
+      makeInput({ clientIp: "8.8.8.8" }),
+      noopCtx
+    );
+    expect(r3.action).toBe("continue");
   });
 
   // --- Parity with handler ---

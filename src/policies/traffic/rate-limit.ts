@@ -207,7 +207,7 @@ export const rateLimit = definePolicy<RateLimitConfig>({
     if (config.keyBy) {
       key = await config.keyBy(c);
     } else {
-      key = extractClientIp(c.req.raw.headers, config.ipHeaders);
+      key = extractClientIp(c.req.raw.headers, { ipHeaders: config.ipHeaders });
     }
 
     // Resilient to store failures — fail-open (allow the request) if the

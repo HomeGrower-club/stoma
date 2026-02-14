@@ -10,10 +10,12 @@ interface ErrorBody {
 
 describe("rbac", () => {
   // --- Role checks ---
+  // Note: Most tests use stripHeaders: false to test policy logic
+  // The default (stripHeaders: true) is tested in SECURITY tests below
 
   it("should pass when user has a matching role", async () => {
     const { request } = createPolicyTestHarness(
-      rbac({ roles: ["admin", "editor"] })
+      rbac({ roles: ["admin", "editor"], stripHeaders: false })
     );
     const res = await request("/test", {
       headers: { "x-user-role": "admin" },
@@ -23,7 +25,7 @@ describe("rbac", () => {
 
   it("should reject when user has no matching role", async () => {
     const { request } = createPolicyTestHarness(
-      rbac({ roles: ["admin", "editor"] })
+      rbac({ roles: ["admin", "editor"], stripHeaders: false })
     );
     const res = await request("/test", {
       headers: { "x-user-role": "viewer" },
@@ -34,7 +36,9 @@ describe("rbac", () => {
   });
 
   it("should handle multiple roles in header (comma-separated)", async () => {
-    const { request } = createPolicyTestHarness(rbac({ roles: ["editor"] }));
+    const { request } = createPolicyTestHarness(
+      rbac({ roles: ["editor"], stripHeaders: false })
+    );
     const res = await request("/test", {
       headers: { "x-user-role": "viewer,editor,user" },
     });
@@ -45,7 +49,7 @@ describe("rbac", () => {
 
   it("should pass when user has all required permissions", async () => {
     const { request } = createPolicyTestHarness(
-      rbac({ permissions: ["read", "write"] })
+      rbac({ permissions: ["read", "write"], stripHeaders: false })
     );
     const res = await request("/test", {
       headers: { "x-user-permissions": "read,write,delete" },
@@ -55,7 +59,7 @@ describe("rbac", () => {
 
   it("should reject when user is missing a permission", async () => {
     const { request } = createPolicyTestHarness(
-      rbac({ permissions: ["read", "write", "delete"] })
+      rbac({ permissions: ["read", "write", "delete"], stripHeaders: false })
     );
     const res = await request("/test", {
       headers: { "x-user-permissions": "read,write" },
@@ -70,6 +74,7 @@ describe("rbac", () => {
       rbac({
         roles: ["admin"],
         permissions: ["write"],
+        stripHeaders: false,
       })
     );
     const res = await request("/test", {
@@ -86,6 +91,7 @@ describe("rbac", () => {
       rbac({
         roles: ["admin"],
         permissions: ["write", "delete"],
+        stripHeaders: false,
       })
     );
     const res = await request("/test", {
@@ -102,6 +108,7 @@ describe("rbac", () => {
       rbac({
         roles: ["admin"],
         permissions: ["read"],
+        stripHeaders: false,
       })
     );
     const res = await request("/test", {
@@ -122,6 +129,7 @@ describe("rbac", () => {
         permissionHeader: "x-custom-perms",
         roles: ["superuser"],
         permissions: ["manage"],
+        stripHeaders: false,
       })
     );
     const res = await request("/test", {
@@ -140,6 +148,7 @@ describe("rbac", () => {
         roleDelimiter: "|",
         permissions: ["write"],
         permissionDelimiter: ";",
+        stripHeaders: false,
       })
     );
     const res = await request("/test", {
@@ -162,7 +171,9 @@ describe("rbac", () => {
   // --- Missing header ---
 
   it("should return 403 when role header is missing and roles are required", async () => {
-    const { request } = createPolicyTestHarness(rbac({ roles: ["admin"] }));
+    const { request } = createPolicyTestHarness(
+      rbac({ roles: ["admin"], stripHeaders: false })
+    );
     const res = await request("/test");
     expect(res.status).toBe(403);
   });
@@ -174,6 +185,7 @@ describe("rbac", () => {
       rbac({
         roles: ["admin"],
         denyMessage: "You shall not pass!",
+        stripHeaders: false,
       })
     );
     const res = await request("/test", {
@@ -191,10 +203,53 @@ describe("rbac", () => {
       rbac({
         roles: ["admin"],
         skip: () => true,
+        stripHeaders: false,
       })
     );
     // No role header — would normally 403, but skip bypasses
     const res = await request("/test");
     expect(res.status).toBe(200);
+  });
+
+  // --- Security: Header Spoofing Vulnerability ---
+
+  it("SECURITY: should reject spoofed role headers from incoming requests", async () => {
+    /**
+     * This test demonstrates the RBAC header spoofing vulnerability.
+     * An attacker can bypass RBAC by setting x-user-role or x-user-permissions
+     * headers in their incoming request.
+     *
+     * EXPECTED: The policy should strip these headers or only accept them
+     * from a trusted internal source (e.g., set by upstream jwt-auth policy).
+     *
+     * CURRENT BEHAVIOR: Attacker can spoof admin role to gain access.
+     */
+    const { request } = createPolicyTestHarness(rbac({ roles: ["admin"] }));
+
+    // Attacker spoofs the x-user-role header to gain admin access
+    const res = await request("/test", {
+      headers: { "x-user-role": "admin" },
+    });
+
+    // SECURITY ISSUE: This should return 403, not 200!
+    // The x-user-role header should be stripped or rejected from external requests
+    expect(res.status).toBe(403);
+  });
+
+  it("SECURITY: should reject spoofed permission headers from incoming requests", async () => {
+    /**
+     * This test demonstrates the RBAC permission header spoofing vulnerability.
+     */
+    const { request } = createPolicyTestHarness(
+      rbac({ permissions: ["write", "delete"] })
+    );
+
+    // Attacker spoofs the x-user-permissions header
+    const res = await request("/test", {
+      headers: { "x-user-permissions": "write,delete" },
+    });
+
+    // SECURITY ISSUE: This should return 403, not 200!
+    expect(res.status).toBe(403);
   });
 });

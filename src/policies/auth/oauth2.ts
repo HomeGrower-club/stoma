@@ -33,6 +33,8 @@ export interface OAuth2Config extends PolicyConfig {
   forwardTokenInfo?: Record<string, string>;
   /** Cache introspection results for this many seconds. Default: 0 (no cache). */
   cacheTtlSeconds?: number;
+  /** Maximum number of tokens to cache. Default: 100. */
+  cacheMaxEntries?: number;
   /** Required scopes — token must have ALL of these (space-separated scope string). */
   requiredScopes?: string[];
   /** Introspection endpoint fetch timeout in milliseconds. Default: 5000. */
@@ -45,11 +47,26 @@ interface IntrospectionResult {
   [key: string]: unknown;
 }
 
-/** Module-level introspection cache. */
-const introspectionCache = new Map<
-  string,
-  { result: IntrospectionResult; expiresAt: number }
->();
+interface CacheEntry {
+  result: IntrospectionResult;
+  expiresAt: number;
+}
+
+/** Maximum number of entries in the introspection cache. */
+const DEFAULT_MAX_CACHE_ENTRIES = 100;
+
+/** Module-level introspection cache with LRU eviction. */
+const introspectionCache = new Map<string, CacheEntry>();
+
+/** Evict oldest entries when cache exceeds max size. */
+function evictIfNeeded(maxSize: number): void {
+  if (introspectionCache.size >= maxSize) {
+    const oldestKey = introspectionCache.keys().next().value;
+    if (oldestKey) {
+      introspectionCache.delete(oldestKey);
+    }
+  }
+}
 
 /** Clear the introspection cache. Exported for testing. */
 export function clearOAuth2Cache(): void {
@@ -115,7 +132,8 @@ export const oauth2 = definePolicy<OAuth2Config>({
         config.clientId,
         config.clientSecret,
         config.cacheTtlSeconds ?? 0,
-        config.introspectionTimeoutMs
+        config.introspectionTimeoutMs,
+        config.cacheMaxEntries
       );
 
       if (!introspectionResult.active) {
@@ -207,7 +225,8 @@ export const oauth2 = definePolicy<OAuth2Config>({
           config.clientId,
           config.clientSecret,
           config.cacheTtlSeconds ?? 0,
-          config.introspectionTimeoutMs
+          config.introspectionTimeoutMs,
+          config.cacheMaxEntries
         );
 
         if (!introspectionResult.active) {
@@ -275,12 +294,16 @@ async function introspect(
   clientId?: string,
   clientSecret?: string,
   cacheTtlSeconds = 0,
-  timeoutMs?: number
+  timeoutMs?: number,
+  cacheMaxEntries = DEFAULT_MAX_CACHE_ENTRIES
 ): Promise<IntrospectionResult> {
-  // Check cache
+  // Check cache (with LRU: move to end when accessed)
   if (cacheTtlSeconds > 0) {
     const cached = introspectionCache.get(token);
     if (cached && cached.expiresAt > Date.now()) {
+      // LRU: re-insert to move to end
+      introspectionCache.delete(token);
+      introspectionCache.set(token, cached);
       return cached.result;
     }
   }
@@ -329,6 +352,7 @@ async function introspect(
 
   // Cache result
   if (cacheTtlSeconds > 0) {
+    evictIfNeeded(cacheMaxEntries);
     introspectionCache.set(token, {
       result,
       expiresAt: Date.now() + cacheTtlSeconds * 1000,

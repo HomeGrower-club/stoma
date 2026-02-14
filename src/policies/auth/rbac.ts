@@ -26,6 +26,12 @@ export interface RbacConfig extends PolicyConfig {
   roleDelimiter?: string;
   /** Custom deny message. Default: "Access denied: insufficient permissions". */
   denyMessage?: string;
+  /**
+   * Strip role/permission headers from incoming requests for security.
+   * These headers should only be set by trusted upstream auth policies,
+   * not by external clients. Default: true.
+   */
+  stripHeaders?: boolean;
 }
 
 export const rbac = definePolicy<RbacConfig>({
@@ -37,9 +43,30 @@ export const rbac = definePolicy<RbacConfig>({
     permissionDelimiter: ",",
     roleDelimiter: ",",
     denyMessage: "Access denied: insufficient permissions",
+    stripHeaders: true,
   },
   phases: ["request-headers"],
   handler: async (c, next, { config, debug }) => {
+    // Strip security-sensitive headers from incoming requests to prevent spoofing.
+    // These should only be set by trusted upstream auth policies.
+    if (config.stripHeaders) {
+      const headers = new Headers(c.req.raw.headers);
+      let modified = false;
+      if (config.roleHeader && headers.has(config.roleHeader)) {
+        headers.delete(config.roleHeader);
+        modified = true;
+        debug("stripped role header from incoming request");
+      }
+      if (config.permissionHeader && headers.has(config.permissionHeader)) {
+        headers.delete(config.permissionHeader);
+        modified = true;
+        debug("stripped permission header from incoming request");
+      }
+      if (modified) {
+        c.req.raw = new Request(c.req.raw, { headers });
+      }
+    }
+
     const hasRoleCheck = config.roles && config.roles.length > 0;
     const hasPermCheck = config.permissions && config.permissions.length > 0;
 

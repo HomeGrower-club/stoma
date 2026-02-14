@@ -11,7 +11,7 @@
 import { GatewayError } from "../../core/errors";
 import type { PolicyInput, PolicyResult } from "../../core/protocol";
 import { isInRange, type ParsedCIDR, parseCIDR } from "../../utils/cidr";
-import { extractClientIp } from "../../utils/ip";
+import { type ExtractClientIpOptions, extractClientIp } from "../../utils/ip";
 import { Priority, withSkip } from "../sdk";
 import type { Policy, PolicyConfig } from "../types";
 
@@ -47,7 +47,9 @@ export interface IpFilterConfig extends PolicyConfig {
  */
 export function ipFilter(config: IpFilterConfig): Policy {
   const mode = config.mode ?? "deny";
-  const ipHeaders = config.ipHeaders;
+  const ipHeaderOptions: ExtractClientIpOptions = config.ipHeaders
+    ? { ipHeaders: config.ipHeaders }
+    : {};
   const allowRanges: ParsedCIDR[] = (config.allow ?? [])
     .map(parseCIDR)
     .filter((r): r is ParsedCIDR => r !== null);
@@ -81,7 +83,7 @@ export function ipFilter(config: IpFilterConfig): Policy {
 
   // ── HTTP handler (Hono middleware) ──────────────────────────────
   const handler: import("hono").MiddlewareHandler = async (c, next) => {
-    const ip = extractClientIp(c.req.raw.headers, ipHeaders);
+    const ip = extractClientIp(c.req.raw.headers, ipHeaderOptions);
     const result = checkIp(ip);
     if (result.action === "reject") {
       throw new GatewayError(result.status, result.code, result.message);
@@ -97,7 +99,8 @@ export function ipFilter(config: IpFilterConfig): Policy {
     // ── Protocol-agnostic evaluator ────────────────────────────────
     evaluate: {
       onRequest: async (input: PolicyInput) => {
-        const ip = input.clientIp ?? extractClientIp(input.headers, ipHeaders);
+        const ip =
+          input.clientIp ?? extractClientIp(input.headers, ipHeaderOptions);
         return checkIp(ip);
       },
     },
