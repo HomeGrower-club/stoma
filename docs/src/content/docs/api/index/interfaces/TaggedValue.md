@@ -5,7 +5,7 @@ prev: false
 title: "TaggedValue"
 ---
 
-Defined in: [src/observability/metrics.ts:13](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/observability/metrics.ts#L13)
+Defined in: [src/observability/metrics.ts:13](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/observability/metrics.ts#L13)
 
 A single tagged metric data point.
 
@@ -15,7 +15,7 @@ A single tagged metric data point.
 
 > `optional` **tags**: `Record`\<`string`, `string`\>
 
-Defined in: [src/observability/metrics.ts:15](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/observability/metrics.ts#L15)
+Defined in: [src/observability/metrics.ts:15](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/observability/metrics.ts#L15)
 
 ***
 
@@ -23,4 +23,4 @@ Defined in: [src/observability/metrics.ts:15](https://github.com/HomeGrower-club
 
 > **value**: `number`
 
-Defined in: [src/observability/metrics.ts:14](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/observability/metrics.ts#L14)
+Defined in: [src/observability/metrics.ts:14](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/observability/metrics.ts#L14)

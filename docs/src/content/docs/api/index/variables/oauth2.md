@@ -7,7 +7,7 @@ title: "oauth2"
 
 > `const` **oauth2**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/auth/oauth2.ts:58](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/policies/auth/oauth2.ts#L58)
+Defined in: [src/policies/auth/oauth2.ts:59](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/policies/auth/oauth2.ts#L59)
 
 Validate OAuth2 tokens via RFC 7662 introspection or a local validation function (priority 10).
 

@@ -5,7 +5,7 @@ prev: false
 title: "CircuitBreakerStore"
 ---
 
-Defined in: [src/policies/resilience/circuit-breaker.ts:47](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/policies/resilience/circuit-breaker.ts#L47)
+Defined in: [src/policies/resilience/circuit-breaker.ts:47](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/policies/resilience/circuit-breaker.ts#L47)
 
 Pluggable storage backend for circuit breaker state.
 
@@ -18,7 +18,7 @@ KV, or any shared datastore for multi-instance deployments.
 
 > **getState**(`key`): `Promise`\<[`CircuitBreakerSnapshot`](/api/index/interfaces/circuitbreakersnapshot/)\>
 
-Defined in: [src/policies/resilience/circuit-breaker.ts:49](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/policies/resilience/circuit-breaker.ts#L49)
+Defined in: [src/policies/resilience/circuit-breaker.ts:49](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/policies/resilience/circuit-breaker.ts#L49)
 
 Read the current snapshot for a circuit key.
 
@@ -38,7 +38,7 @@ Read the current snapshot for a circuit key.
 
 > **recordFailure**(`key`): `Promise`\<[`CircuitBreakerSnapshot`](/api/index/interfaces/circuitbreakersnapshot/)\>
 
-Defined in: [src/policies/resilience/circuit-breaker.ts:53](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/policies/resilience/circuit-breaker.ts#L53)
+Defined in: [src/policies/resilience/circuit-breaker.ts:53](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/policies/resilience/circuit-breaker.ts#L53)
 
 Record a failed request and return the updated snapshot.
 
@@ -58,7 +58,7 @@ Record a failed request and return the updated snapshot.
 
 > **recordSuccess**(`key`): `Promise`\<[`CircuitBreakerSnapshot`](/api/index/interfaces/circuitbreakersnapshot/)\>
 
-Defined in: [src/policies/resilience/circuit-breaker.ts:51](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/policies/resilience/circuit-breaker.ts#L51)
+Defined in: [src/policies/resilience/circuit-breaker.ts:51](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/policies/resilience/circuit-breaker.ts#L51)
 
 Record a successful request and return the updated snapshot.
 
@@ -78,7 +78,7 @@ Record a successful request and return the updated snapshot.
 
 > **reset**(`key`): `Promise`\<`void`\>
 
-Defined in: [src/policies/resilience/circuit-breaker.ts:57](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/policies/resilience/circuit-breaker.ts#L57)
+Defined in: [src/policies/resilience/circuit-breaker.ts:57](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/policies/resilience/circuit-breaker.ts#L57)
 
 Fully reset a circuit, removing all state.
 
@@ -98,7 +98,7 @@ Fully reset a circuit, removing all state.
 
 > **transition**(`key`, `to`): `Promise`\<[`CircuitBreakerSnapshot`](/api/index/interfaces/circuitbreakersnapshot/)\>
 
-Defined in: [src/policies/resilience/circuit-breaker.ts:55](https://github.com/HomeGrower-club/stoma/blob/b315766c4c3c5178359b7e4390803aad92732f38/src/policies/resilience/circuit-breaker.ts#L55)
+Defined in: [src/policies/resilience/circuit-breaker.ts:55](https://github.com/HomeGrower-club/stoma/blob/93629a961ba47d055ce6e141df342f8fb137ceba/src/policies/resilience/circuit-breaker.ts#L55)
 
 Transition the circuit to a new state and return the updated snapshot.
 
