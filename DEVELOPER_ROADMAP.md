@@ -11,7 +11,42 @@ The `Policy` interface supports two entry points: `handler` (Hono middleware for
 ### 12. Protocol-Agnostic Policy Layer ✅
 **Status:** Type foundations shipped. `PolicyInput`, `PolicyResult`, `PolicyEvaluator`, `ProcessingPhase`, and the mutation system are all in `src/core/protocol.ts`. `definePolicy()` supports both `handler` and `evaluate` in a single definition. The HTTP runtime (`createGateway`) continues to use `handler` only — `evaluate` is for non-HTTP runtimes.
 
-### 13. Envoy ext_proc Runtime
+### 17. Gateway of Gateways (Dynamic Upstream Resolution)
+
+**Problem:** The `dynamic-routing` policy already sets `_dynamicTarget`, `_dynamicRewrite`, and `_dynamicHeaders` on the context, but the upstream handlers are built statically at route registration time and don't read these values. This prevents using stoma as a perimeter gateway that applies policies (auth, rate-limit, metrics) then forwards to protocol-specific inner handlers (MCP, gRPC, ext_proc).
+
+**Solution:** Two phases:
+
+**Phase A — Dynamic upstream resolution** (small change, ~10 lines):
+- Modify `createUrlUpstream()` in `src/core/gateway.ts` to check for `_dynamicTarget` from context
+- If present, override the static upstream target at request time
+- The `dynamic-routing` policy already sets this — upstream just needs to consume it
+
+```typescript
+// In createUrlUpstream:
+return async (c: Context) => {
+  const dynamicTarget = c.get("_dynamicTarget");
+  const targetBase = dynamicTarget 
+    ? new URL(dynamicTarget)  // runtime-selected target
+    : new URL(upstream.target); // static config target
+  // ... rest of proxy logic
+};
+```
+
+**Phase B — Protocol-specific upstream types** (new work):
+- Add `"mcp"` upstream type that transforms HTTP→JSON-RPC and forwards to MCP servers
+- Add `"grpc"` upstream type for HTTP/2 + protobuf forwarding  
+- Both leverage existing policies at the perimeter, then forward to protocol-specific backends
+
+**Use cases enabled:**
+- **Perimeter auth + protocol handlers**: OAuth2 validates tokens at the edge, strips auth headers, forwards to MCP/gRPC servers
+- **Traffic management**: Rate-limit, ip-filter, metrics at the gateway layer before protocol-specific backends
+- **Zero-downtime migrations**: Use `dynamic-routing` to gradually shift traffic from old MCP server to new one
+- **Multi-protocol gateway**: Single stoma instance routes to HTTP APIs, MCP servers, gRPC services based on path/method/headers
+
+**Key insight:** Any perimeter policy (auth, rate-limit, redirect, metrics, transforms) applies before requests hit protocol-specific inner handlers. The inner handlers only need to handle their protocol — not auth or traffic management.
+
+### 18. Envoy ext_proc Runtime
 **Problem:** Envoy-based load balancers (GCP Global LB, AWS ALB via Envoy, Istio service mesh) support an External Processing filter that delegates policy decisions to a gRPC service. Today, users must write ext_proc services in Go/C++ or use proprietary solutions.
 
 **Solution:** A `createExtProcServer()` entry point that takes the same policy array as `createGateway()` but serves them over a gRPC bidirectional stream using the Connect protocol (`@connectrpc/connect`, ~12KB).
@@ -38,12 +73,12 @@ Each policy declares which phases it participates in via `phases`. The ext_proc 
 - `PolicyResult` mutations map directly to ext_proc `HeaderMutation`, `BodyMutation`, and `ImmediateResponse`
 - Same policy instance works in both `createGateway()` (HTTP) and `createExtProcServer()` (gRPC)
 
-### 14. WebSocket Runtime
+### 19. WebSocket Runtime
 **Problem:** WebSocket connections need policy evaluation at connection upgrade time and optionally on individual frames, but the HTTP middleware model doesn't fit.
 
 **Solution:** A `createWebSocketGateway()` that evaluates policies on the upgrade request using `evaluate.onRequest`, then optionally applies frame-level policies using `evaluate.onResponse` for server→client frames.
 
-### 15. HTTP Bridge (evaluate → middleware)
+### 20. HTTP Bridge (evaluate → middleware)
 **Problem:** Policy authors who implement both `handler` and `evaluate` duplicate logic.
 
 **Solution:** An `evaluateToMiddleware()` adapter that wraps a policy's `evaluate` functions into a Hono middleware handler. This allows policy authors to write `evaluate` once and have it work on both the HTTP and non-HTTP runtimes.
@@ -55,14 +90,14 @@ import { evaluateToMiddleware } from "@homegrower-club/stoma/sdk";
 const httpHandler = evaluateToMiddleware(myPolicy.evaluate);
 ```
 
-### 16. Built-in Policy Migration
+### 21. Built-in Policy Migration
 **Problem:** All 43 built-in policies currently only implement `handler`. To be useful with ext_proc/WebSocket runtimes, they need `evaluate` too.
 
 **Solution:** Progressively add `evaluate` implementations to built-in policies, starting with the most universally useful: auth policies (jwt-auth, api-key-auth, oauth2), traffic policies (rate-limit, ip-filter), and transform policies (cors, request/response transforms). Non-HTTP-specific policies like circuit-breaker and retry may not need `evaluate` since those concerns are handled by Envoy itself in the ext_proc model.
 
 ## Core Ergonomics & Composition
 
-### 1. Route Groups & Scopes
+### 22. Route Groups & Scopes
 **Problem:** Applying policies to a subset of routes (e.g., all `/admin/*` routes need RBAC) currently requires repeating the policy in every route's pipeline or using a global policy with a complex `skip` condition.
 **Solution:** Introduce a `Scope` or `Group` concept in the configuration.
 ```typescript
@@ -76,28 +111,28 @@ const adminRoutes = scope({
 });
 ```
 
-### 2. Configuration Splitting
+### 23. Configuration Splitting
 **Problem:** A single `gateway.ts` file can get huge.
 **Solution:** First-class support for loading route definitions from multiple files/modules, potentially with auto-discovery or a simple `mergeConfigs` utility.
 
-### 3. Type-Safe Upstream Bindings
+### 24. Type-Safe Upstream Bindings
 **Problem:** `ServiceBindingUpstream` relies on stringly-typed service names (`service: "AUTH_SERVICE"`).
 **Solution:** Use TypeScript generics to validate service names against the user's `Env` interface.
 
 ## Developer Experience (DX)
 
-### 4. CLI Scaffolding
+### 25. CLI Scaffolding
 **Problem:** Creating a new policy or setting up a fresh gateway requires boilerplate.
 **Solution:** A `stoma` CLI.
 - `npx stoma create my-gateway`
 - `npx stoma add policy my-custom-policy`
 - `npx stoma dev` (wrapper around wrangler/node with hot reload)
 
-### 5. Simulator / Playground
+### 26. Simulator / Playground
 **Problem:** Testing complex policy chains requires running the full stack.
 **Solution:** A web-based (or CLI-based) simulator where you can input a request (path, headers) and see exactly which policies run, why a request was rejected, and what the upstream request looks like. "Trace my request".
 
-### 6. Testing Harness
+### 27. Testing Harness
 **Problem:** Users need to write tests for their gateway configuration to ensure policies are applied correctly.
 **Solution:** Export a `createTestClient(config)` helper that mocks upstreams and allows asserting on:
 - Response status/headers
@@ -106,21 +141,21 @@ const adminRoutes = scope({
 
 ## Observability & Operations
 
-### 7. OpenTelemetry Integration
+### 28. OpenTelemetry Integration
 **Problem:** Current tracing is W3C-compatible but custom.
 **Solution:** Native integration with OpenTelemetry for comprehensive spans, trace propagation, and metrics export to generic OTLP collectors.
 
-### 8. Live Configuration Reload (Runtime)
+### 29. Live Configuration Reload (Runtime)
 **Problem:** Changing config requires a deploy (or restart).
 **Solution:** (Aspirational) Load config from a Durable Object or KV at runtime, allowing updates without redeploying the Worker. *Note: This trades some type safety for flexibility.*
 
 ## Ecosystem
 
-### 9. Policy Marketplace / Presets
+### 30. Policy Marketplace / Presets
 **Problem:** Everyone re-implements "Stripe Webhook Verification" or "Auth0 Validation".
 **Solution:** A community repository of pre-configured policy presets.
 
-### 10. Framework & Runtime Integrations
+### 31. Framework & Runtime Integrations
 **Problem:** Stoma's policy engine is powerful but users need clear integration paths for their specific runtime.
 **Solution:** Drop-in integrations at multiple levels:
 - **Framework middleware**: Next.js, Remix, Nuxt — run `createGateway()` as server middleware
@@ -130,7 +165,7 @@ const adminRoutes = scope({
 
 ## Documentation
 
-### 11. Versioned Documentation via R2
+### 32. Versioned Documentation via R2
 
 **Problem:** Every docs deploy overwrites the previous version. Users on older releases can't reference docs matching their version.
 
