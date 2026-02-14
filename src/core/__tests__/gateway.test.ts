@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { proxy } from "../../policies/proxy";
 import type { Policy } from "../../policies/types";
 import { GatewayError } from "../errors";
@@ -330,6 +330,108 @@ describe("createGateway - error handling", () => {
     const body = (await res.json()) as Record<string, unknown>;
     expect(body.error).toBe("internal_error");
     expect(body.message).toBe("An unexpected error occurred");
+  });
+});
+
+// ── Upstream fetch errors ──
+
+describe("createGateway - upstream fetch errors", () => {
+  let originalFetch: typeof globalThis.fetch;
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("should return 502 with upstream_error when fetch throws a network error", async () => {
+    globalThis.fetch = async () => {
+      throw new TypeError("fetch failed");
+    };
+
+    const gw = createGateway({
+      routes: [
+        {
+          path: "/proxy/*",
+          methods: ["GET"],
+          pipeline: {
+            upstream: {
+              type: "url",
+              target: "https://unreachable.example.com",
+            },
+          },
+        },
+      ],
+    });
+
+    const res = await gw.app.request("/proxy/test");
+    expect(res.status).toBe(502);
+
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.error).toBe("upstream_error");
+    expect(body.message).toContain("unreachable.example.com");
+    expect(body.message).toContain("fetch failed");
+  });
+
+  it("should re-throw AbortError so the timeout policy can handle it", async () => {
+    globalThis.fetch = async () => {
+      throw new DOMException("The operation was aborted", "AbortError");
+    };
+
+    const gw = createGateway({
+      routes: [
+        {
+          path: "/proxy/*",
+          methods: ["GET"],
+          pipeline: {
+            upstream: {
+              type: "url",
+              target: "https://slow.example.com",
+            },
+          },
+        },
+      ],
+    });
+
+    // AbortError is re-thrown and hits the global error handler as an
+    // unexpected error (not a GatewayError), producing a generic 500.
+    const res = await gw.app.request("/proxy/test");
+    expect(res.status).toBe(500);
+
+    const body = (await res.json()) as Record<string, unknown>;
+    // Should NOT be "upstream_error" — the timeout policy would normally
+    // catch this, but without it the global handler produces a generic error.
+    expect(body.error).toBe("internal_error");
+  });
+
+  it("should include the upstream host in the 502 error message", async () => {
+    globalThis.fetch = async () => {
+      throw new Error("getaddrinfo ENOTFOUND api.internal.example.com");
+    };
+
+    const gw = createGateway({
+      routes: [
+        {
+          path: "/api/*",
+          methods: ["GET"],
+          pipeline: {
+            upstream: {
+              type: "url",
+              target: "https://api.internal.example.com",
+            },
+          },
+        },
+      ],
+    });
+
+    const res = await gw.app.request("/api/users");
+    expect(res.status).toBe(502);
+
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.error).toBe("upstream_error");
+    expect(body.message).toContain("api.internal.example.com");
   });
 });
 

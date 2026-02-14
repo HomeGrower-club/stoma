@@ -41,6 +41,7 @@ import {
   SpanBuilder,
 } from "../observability/tracing";
 import { createDebugFactory, noopDebugLogger } from "../utils/debug";
+import { cloneRequestHeaders } from "../utils/headers";
 import { formatTraceparent, generateSpanId } from "../utils/trace-context";
 import { defaultErrorResponse, errorToResponse, GatewayError } from "./errors";
 import {
@@ -348,7 +349,7 @@ function createServiceBindingUpstream(
     );
 
     // Clone headers, strip hop-by-hop
-    const headers = new Headers(c.req.raw.headers);
+    const headers = cloneRequestHeaders(c);
     for (const h of HOP_BY_HOP_HEADERS) {
       headers.delete(h);
     }
@@ -460,7 +461,7 @@ function createUrlUpstream(upstream: UrlUpstream, debug = noopDebugLogger) {
     debug(`proxying ${c.req.method} ${c.req.path} -> ${targetUrl.toString()}`);
 
     // Clone headers, strip hop-by-hop headers
-    const headers = new Headers(c.req.raw.headers);
+    const headers = cloneRequestHeaders(c);
     for (const h of HOP_BY_HOP_HEADERS) {
       headers.delete(h);
     }
@@ -528,10 +529,27 @@ function createUrlUpstream(upstream: UrlUpstream, debug = noopDebugLogger) {
     }
 
     const startTime = Date.now();
-    const response = await fetch(
-      proxyRequest,
-      timeoutSignal ? { signal: timeoutSignal } : undefined
-    );
+    let response: Response;
+    try {
+      response = await fetch(
+        proxyRequest,
+        timeoutSignal ? { signal: timeoutSignal } : undefined
+      );
+    } catch (err) {
+      // AbortError from the timeout policy should stay as-is so the
+      // timeout policy's catch handler can identify it.
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw err;
+      }
+      debug(
+        `upstream fetch failed: ${err instanceof Error ? err.message : err}`
+      );
+      throw new GatewayError(
+        502,
+        "upstream_error",
+        `Upstream request to ${targetUrl.host} failed: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
     debug(
       `upstream responded: ${response.status} (${Date.now() - startTime}ms)`
     );
