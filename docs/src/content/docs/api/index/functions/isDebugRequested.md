@@ -7,7 +7,7 @@ title: "isDebugRequested"
 
 > **isDebugRequested**(`c`): `boolean`
 
-Defined in: [src/policies/sdk/helpers.ts:244](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/policies/sdk/helpers.ts#L244)
+Defined in: [src/policies/sdk/helpers.ts:244](https://github.com/HomeGrower-club/stoma/blob/e2ba4756c0c0c2365bb2339af5afe73b25869018/src/policies/sdk/helpers.ts#L244)
 
 Check whether the client requested debug output via the `x-stoma-debug` header.
 

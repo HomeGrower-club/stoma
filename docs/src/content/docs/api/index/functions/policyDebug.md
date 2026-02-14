@@ -7,7 +7,7 @@ title: "policyDebug"
 
 > **policyDebug**(`c`, `policyName`): [`DebugLogger`](/api/index/type-aliases/debuglogger/)
 
-Defined in: [src/policies/sdk/helpers.ts:48](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/policies/sdk/helpers.ts#L48)
+Defined in: [src/policies/sdk/helpers.ts:48](https://github.com/HomeGrower-club/stoma/blob/e2ba4756c0c0c2365bb2339af5afe73b25869018/src/policies/sdk/helpers.ts#L48)
 
 Get a debug logger pre-namespaced to `stoma:policy:{name}`.
 

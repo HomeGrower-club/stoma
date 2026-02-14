@@ -7,7 +7,7 @@ title: "isTraceRequested"
 
 > **isTraceRequested**(`c`): `boolean`
 
-Defined in: [src/policies/sdk/trace.ts:104](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/policies/sdk/trace.ts#L104)
+Defined in: [src/policies/sdk/trace.ts:104](https://github.com/HomeGrower-club/stoma/blob/e2ba4756c0c0c2365bb2339af5afe73b25869018/src/policies/sdk/trace.ts#L104)
 
 Fast-path check: is tracing requested for this request?
 

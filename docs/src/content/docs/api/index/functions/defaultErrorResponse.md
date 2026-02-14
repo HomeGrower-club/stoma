@@ -7,7 +7,7 @@ title: "defaultErrorResponse"
 
 > **defaultErrorResponse**(`requestId?`, `message?`): `Response`
 
-Defined in: [src/core/errors.ts:98](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/core/errors.ts#L98)
+Defined in: [src/core/errors.ts:98](https://github.com/HomeGrower-club/stoma/blob/e2ba4756c0c0c2365bb2339af5afe73b25869018/src/core/errors.ts#L98)
 
 Produce a generic 500 error response for unexpected (non-[GatewayError](/api/index/classes/gatewayerror/)) errors.
 

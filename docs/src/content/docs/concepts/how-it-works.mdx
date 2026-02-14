@@ -92,7 +92,7 @@ No mess, no default error pages. Just structured error responses your frontend c
 
 Next up: `rateLimit`. This policy:
 
-1. Extracts the client IP (from `x-forwarded-for` or `cf-connecting-ip` if you're on Cloudflare)
+1. Extracts the client IP (from `cf-connecting-ip` if you're on Cloudflare, falling back to `x-forwarded-for`)
 2. Increments a counter in your rate limit store
 3. Checks if the client has exceeded the limit (100 requests per 60 seconds)
 
@@ -100,12 +100,13 @@ If they're over the limit:
 
 ```json
 {
-  "error": "rate_limit_exceeded",
+  "error": "rate_limited",
   "message": "Rate limit exceeded",
-  "statusCode": 429,
-  "retryAfter": 45
+  "statusCode": 429
 }
 ```
+
+Plus a `Retry-After: 45` response header.
 
 The request never reaches your upstream. This is called **short-circuiting** — a policy can stop the request early by returning a response without calling `next()`.
 

@@ -7,7 +7,7 @@ title: "sslEnforce"
 
 > `const` **sslEnforce**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/traffic/ssl-enforce.ts:31](https://github.com/HomeGrower-club/stoma/blob/41d43bd4de6430f6342b8c76661f40e9a2edb625/src/policies/traffic/ssl-enforce.ts#L31)
+Defined in: [src/policies/traffic/ssl-enforce.ts:31](https://github.com/HomeGrower-club/stoma/blob/e2ba4756c0c0c2365bb2339af5afe73b25869018/src/policies/traffic/ssl-enforce.ts#L31)
 
 Enforce HTTPS and append HSTS headers on secure responses.
 

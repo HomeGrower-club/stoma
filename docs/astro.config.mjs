@@ -32,26 +32,40 @@ export default defineConfig({
       favicon: "/favicon.ico",
       head: [
         {
-      tag: "meta",
-      attrs: {
-        property: "og:image",
-        content: "/og_image.jpg",
-      },
-    },
-    {
-      tag: "meta",
-      attrs: {
-        property: "og:image:width",
-        content: "1200",
-      },
-    },
-    {
-      tag: "meta",
-      attrs: {
-        property: "og:image:height",
-        content: "630",
-      },
-    },
+          tag: "meta",
+          attrs: {
+            property: "twitter:image",
+            content: "/og_image.jpg",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "twitter:card",
+            content: "summary_large_image",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image",
+            content: "/og_image.jpg",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image:width",
+            content: "1200",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image:height",
+            content: "630",
+          },
+        },
         {
           tag: "link",
           attrs: {
@@ -168,6 +182,6 @@ export default defineConfig({
       theme: 'forest',
       autoTheme: true
     }),
-    
+
   ],
 });
