@@ -6,6 +6,7 @@
   },
   "changesets": [
     "stoma-rc-010",
-    "stoma-rc-020"
+    "stoma-rc-020",
+    "stoma-rc-030"
   ]
 }
