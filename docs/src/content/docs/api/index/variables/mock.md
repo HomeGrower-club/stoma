@@ -7,7 +7,7 @@ title: "mock"
 
 > `const` **mock**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/mock.ts:63](https://github.com/HomeGrower-club/stoma/blob/c64f3a82788fa0548efb551b1e585d1d132c4df7/src/policies/mock.ts#L63)
+Defined in: [src/policies/mock.ts:63](https://github.com/HomeGrower-club/stoma/blob/75d04472e736fafe9528e258514a9fe3e352e511/src/policies/mock.ts#L63)
 
 Return a static mock response, bypassing the upstream entirely.
 

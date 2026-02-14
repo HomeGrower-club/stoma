@@ -7,7 +7,7 @@ title: "errorToResponse"
 
 > **errorToResponse**(`error`, `requestId?`): `Response`
 
-Defined in: [src/core/errors.ts:69](https://github.com/HomeGrower-club/stoma/blob/c64f3a82788fa0548efb551b1e585d1d132c4df7/src/core/errors.ts#L69)
+Defined in: [src/core/errors.ts:69](https://github.com/HomeGrower-club/stoma/blob/75d04472e736fafe9528e258514a9fe3e352e511/src/core/errors.ts#L69)
 
 Build a JSON Response from a [GatewayError](/api/index/classes/gatewayerror/).
 

@@ -2,8 +2,8 @@
 // documentation editor. Dogfoods the product and keeps everything
 // on the same origin (no CORS issues from the editor).
 
-import { createGateway, cors, rateLimit, requestLog } from "@homegrower-club/stoma";
-import { memoryAdapter } from "@homegrower-club/stoma/adapters/memory";
+import { createGateway, cors, rateLimit, requestLog } from "../../../src/index";
+import { memoryAdapter } from "../../../src/adapters/memory";
 import type { Context } from "hono";
 
 const adapter = memoryAdapter();

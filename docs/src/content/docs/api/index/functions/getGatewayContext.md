@@ -7,7 +7,7 @@ title: "getGatewayContext"
 
 > **getGatewayContext**(`c`): [`PolicyContext`](/api/index/interfaces/policycontext/) \| `undefined`
 
-Defined in: [src/core/pipeline.ts:361](https://github.com/HomeGrower-club/stoma/blob/c64f3a82788fa0548efb551b1e585d1d132c4df7/src/core/pipeline.ts#L361)
+Defined in: [src/core/pipeline.ts:361](https://github.com/HomeGrower-club/stoma/blob/75d04472e736fafe9528e258514a9fe3e352e511/src/core/pipeline.ts#L361)
 
 Retrieve the [PolicyContext](/api/index/interfaces/policycontext/) from a Hono context.
 

@@ -7,7 +7,7 @@ title: "requestTransform"
 
 > `const` **requestTransform**: (`config?`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/transform/transform.ts:56](https://github.com/HomeGrower-club/stoma/blob/c64f3a82788fa0548efb551b1e585d1d132c4df7/src/policies/transform/transform.ts#L56)
+Defined in: [src/policies/transform/transform.ts:56](https://github.com/HomeGrower-club/stoma/blob/75d04472e736fafe9528e258514a9fe3e352e511/src/policies/transform/transform.ts#L56)
 
 Modify request headers before they reach the upstream service.
 
