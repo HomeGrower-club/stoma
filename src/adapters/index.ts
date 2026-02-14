@@ -49,7 +49,7 @@ export {
 } from "./cloudflare";
 /** Create an adapter for Deno Deploy — marker/extension point for Deno-specific capabilities. */
 export { denoAdapter } from "./deno";
-/** Durable Object class for atomic rate limit counters — export from your Worker entry and reference in wrangler.toml. */
+/** Durable Object class for atomic rate limit counters — export from your Worker entry and reference in wrangler.jsonc. */
 export {
   /** Rate limit store backed by Cloudflare Durable Objects (strongly consistent). */
   DurableObjectRateLimitStore,

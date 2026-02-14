@@ -192,14 +192,14 @@ export interface UrlUpstream {
 
 /**
  * Forward to another Cloudflare Worker via a Service Binding.
- * The binding must be configured in the consumer's `wrangler.toml`.
+ * The binding must be configured in the consumer's `wrangler.jsonc`.
  *
  * @typeParam TBindings - Worker bindings type. When provided, `service`
  *   autocompletes to valid binding names from your Env interface.
  */
 export interface ServiceBindingUpstream<TBindings = Record<string, unknown>> {
   type: "service-binding";
-  /** Name of the Service Binding in `wrangler.toml` (e.g. `"AUTH_SERVICE"`). */
+  /** Name of the Service Binding in `wrangler.jsonc` (e.g. `"AUTH_SERVICE"`). */
   service: Extract<keyof TBindings, string>;
   /** Rewrite the path before forwarding to the bound service. */
   rewritePath?: (path: string) => string;

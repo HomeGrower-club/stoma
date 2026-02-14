@@ -1,7 +1,7 @@
 import type { RateLimitStore } from "../policies/traffic/rate-limit";
 
 // ---------------------------------------------------------------------------
-// Durable Object class — exported for the consumer's wrangler.toml
+// Durable Object class — exported for the consumer's wrangler.jsonc
 // ---------------------------------------------------------------------------
 
 /**
@@ -11,12 +11,19 @@ import type { RateLimitStore } from "../policies/traffic/rate-limit";
  * The counter auto-expires using the DO alarm API.
  *
  * **Consumer setup**: Export this class from your Worker entry point and
- * reference it in `wrangler.toml`:
+ * reference it in `wrangler.jsonc`:
  *
- * ```toml
- * [[durable_objects.bindings]]
- * name = "RATE_LIMITER"
- * class_name = "RateLimiterDO"
+ * ```jsonc
+ * {
+ *   "durable_objects": {
+ *     "bindings": [
+ *       {
+ *         "name": "RATE_LIMITER",
+ *         "class_name": "RateLimiterDO"
+ *       }
+ *     ]
+ *   }
+ * }
  * ```
  *
  * ```ts
