@@ -72,6 +72,7 @@ export const apiKeyAuth = definePolicy<ApiKeyAuthConfig>({
   name: "api-key-auth",
   priority: Priority.AUTH,
   defaults: { headerName: "x-api-key" },
+  phases: ["request-headers"],
   handler: async (c, next, { config, debug, trace }) => {
     // Try header first
     let key = c.req.header(config.headerName!);
@@ -110,5 +111,64 @@ export const apiKeyAuth = definePolicy<ApiKeyAuthConfig>({
     }
 
     await next();
+  },
+  evaluate: {
+    onRequest: async (input, { config, debug, trace }) => {
+      // Try header first
+      let key = input.headers.get(config.headerName!) ?? undefined;
+      let source = "header";
+
+      // Fall back to query parameter if configured
+      if (!key && config.queryParam) {
+        const url = new URL(input.path, "http://localhost");
+        key = url.searchParams.get(config.queryParam!) ?? undefined;
+        source = "query";
+      }
+
+      if (!key) {
+        trace("rejected", { reason: "missing" });
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "Missing API key",
+        };
+      }
+
+      const isValid = await config.validate(key);
+      if (!isValid) {
+        trace("rejected", { reason: "invalid" });
+        return {
+          action: "reject",
+          status: 403,
+          code: "forbidden",
+          message: "Invalid API key",
+        };
+      }
+
+      trace("authenticated", { source });
+
+      // Forward key identity as a header if configured
+      if (config.forwardKeyIdentity) {
+        const identity = await config.forwardKeyIdentity.identityFn(key);
+        const sanitized = identity.replace(/[\r\n\0]/g, "");
+        debug(
+          `forwarded key identity as ${config.forwardKeyIdentity.headerName}`
+        );
+        return {
+          action: "continue",
+          mutations: [
+            {
+              type: "header",
+              op: "set",
+              name: config.forwardKeyIdentity.headerName,
+              value: sanitized,
+            },
+          ],
+        };
+      }
+
+      return { action: "continue" };
+    },
   },
 });

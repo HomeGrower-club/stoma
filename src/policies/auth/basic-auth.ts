@@ -43,6 +43,7 @@ export const basicAuth = definePolicy<BasicAuthConfig>({
   name: "basic-auth",
   priority: Priority.AUTH,
   defaults: { realm: "Restricted" },
+  phases: ["request-headers"],
   handler: async (c, next, { config }) => {
     // Sanitize realm to prevent header injection (escape quotes, strip control chars)
     const realm = (config.realm ?? "Restricted")
@@ -85,5 +86,59 @@ export const basicAuth = definePolicy<BasicAuthConfig>({
     }
 
     await next();
+  },
+  evaluate: {
+    onRequest: async (input, { config }) => {
+      // Sanitize realm to prevent header injection
+      const realm = (config.realm ?? "Restricted")
+        .replace(/[\r\n\0]/g, "")
+        .replace(/"/g, '\\"');
+
+      const authHeader = input.headers.get("authorization");
+
+      if (!authHeader || !authHeader.startsWith("Basic ")) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "Basic authentication required",
+          headers: { "www-authenticate": `Basic realm="${realm}"` },
+        };
+      }
+
+      let username: string;
+      let password: string;
+      try {
+        const decoded = atob(authHeader.slice(6));
+        const colonIndex = decoded.indexOf(":");
+        if (colonIndex === -1) {
+          throw new Error("Invalid format");
+        }
+        username = decoded.slice(0, colonIndex);
+        password = decoded.slice(colonIndex + 1);
+      } catch {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "Malformed Basic authentication header",
+        };
+      }
+
+      // validate function requires Hono Context - use a no-op for evaluate
+      // Users needing evaluate should use a different auth policy
+      const isValid = await config.validate(username, password, {} as Context);
+      if (!isValid) {
+        return {
+          action: "reject",
+          status: 403,
+          code: "forbidden",
+          message: "Invalid credentials",
+          headers: { "www-authenticate": `Basic realm="${realm}"` },
+        };
+      }
+
+      return { action: "continue" };
+    },
   },
 });

@@ -63,6 +63,7 @@ export interface MockConfig extends PolicyConfig {
 export const mock = definePolicy<MockConfig>({
   name: "mock",
   priority: Priority.MOCK,
+  httpOnly: true,
   defaults: { status: 200, delayMs: 0 },
   validate: (config) => {
     if (!config.allowInProduction) {

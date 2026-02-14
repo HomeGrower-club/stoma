@@ -31,6 +31,7 @@ export interface RequestLimitConfig extends PolicyConfig {
 export const requestLimit = definePolicy<RequestLimitConfig>({
   name: "request-limit",
   priority: Priority.EARLY,
+  phases: ["request-headers"],
   defaults: {
     message: "Request body too large",
   },
@@ -43,5 +44,22 @@ export const requestLimit = definePolicy<RequestLimitConfig>({
       }
     }
     await next();
+  },
+  evaluate: {
+    onRequest: async (input, { config }) => {
+      const contentLength = input.headers.get("content-length");
+      if (contentLength) {
+        const length = Number.parseInt(contentLength, 10);
+        if (!Number.isNaN(length) && length > config.maxBytes) {
+          return {
+            action: "reject",
+            status: 413,
+            code: "request_too_large",
+            message: config.message!,
+          };
+        }
+      }
+      return { action: "continue" };
+    },
   },
 });

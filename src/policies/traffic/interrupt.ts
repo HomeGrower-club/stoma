@@ -49,6 +49,7 @@ export interface InterruptConfig extends PolicyConfig {
 export const interrupt = definePolicy<InterruptConfig>({
   name: "interrupt",
   priority: Priority.DEFAULT,
+  httpOnly: true,
   defaults: { statusCode: 200, headers: {} },
   handler: async (c, next, { config, debug }) => {
     const shouldInterrupt = await config.condition(c);

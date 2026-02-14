@@ -71,6 +71,14 @@ describe("cache", () => {
       return new Response(null, { status: 204 });
     });
 
+    app.get("/not-modified", () => {
+      callCount++;
+      return new Response(null, {
+        status: 304,
+        headers: { etag: '"abc123"' },
+      });
+    });
+
     app.get("/binary", () => {
       callCount++;
       const bytes = new Uint8Array([
@@ -245,6 +253,19 @@ describe("cache", () => {
 
       const res2 = await app.request("/empty");
       expect(res2.status).toBe(204);
+      expect(getCallCount()).toBe(1);
+    });
+
+    it("should handle 304 Not Modified responses", async () => {
+      const { app, getCallCount } = createApp({ store });
+
+      const res1 = await app.request("/not-modified");
+      expect(res1.status).toBe(304);
+      expect(res1.headers.get("etag")).toBe('"abc123"');
+
+      const res2 = await app.request("/not-modified");
+      expect(res2.status).toBe(304);
+      expect(res2.headers.get("etag")).toBe('"abc123"');
       expect(getCallCount()).toBe(1);
     });
   });
@@ -1089,5 +1110,62 @@ describe("cache", () => {
       const buf = await cached!.arrayBuffer();
       expect(new Uint8Array(buf)).toEqual(bytes);
     });
+
+    // Null-body statuses (204, 304) must round-trip cleanly.
+    // Node/Bun/Deno reject `new Response(body, { status: 204 })` when
+    // body is non-null. These tests guard against that regression.
+    it.each([
+      { status: 204, label: "204 No Content" },
+      { status: 304, label: "304 Not Modified" },
+    ])("should round-trip $label response", async ({ status }) => {
+      const original = new Response(null, {
+        status,
+        headers: { "x-custom": "value" },
+      });
+
+      await store.put("key", original, 300);
+      const cached = await store.get("key");
+
+      expect(cached).not.toBeNull();
+      expect(cached!.status).toBe(status);
+      expect(cached!.headers.get("x-custom")).toBe("value");
+      expect(await cached!.text()).toBe("");
+    });
+
+    it.each([
+      { body: "hello", type: "text", check: (r: Response) => r.text() },
+      {
+        body: JSON.stringify({ a: 1 }),
+        type: "json",
+        check: (r: Response) => r.json(),
+      },
+      {
+        body: new Uint8Array([1, 2, 3]),
+        type: "binary",
+        check: async (r: Response) => new Uint8Array(await r.arrayBuffer()),
+      },
+    ])(
+      "should round-trip $type body with preserved status",
+      async ({ body, check }) => {
+        const original = new Response(body, {
+          status: 200,
+          headers: { "x-tag": "test" },
+        });
+
+        await store.put("rt", original, 300);
+        const cached = await store.get("rt");
+
+        expect(cached).not.toBeNull();
+        expect(cached!.status).toBe(200);
+        expect(cached!.headers.get("x-tag")).toBe("test");
+
+        // Re-create originals for comparison (body is consumed)
+        const expected = await check(
+          new Response(body, { status: 200 })
+        );
+        const actual = await check(cached!);
+        expect(actual).toEqual(expected);
+      }
+    );
   });
 });

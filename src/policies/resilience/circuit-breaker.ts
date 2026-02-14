@@ -439,5 +439,6 @@ export function circuitBreaker(config?: CircuitBreakerConfig): Policy {
     name: "circuit-breaker",
     priority: Priority.CIRCUIT_BREAKER,
     handler: withSkip(config?.skip, handler),
+    httpOnly: true,
   };
 }

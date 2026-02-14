@@ -4,6 +4,7 @@
  * @module transform
  */
 
+import type { Mutation } from "../../core/protocol";
 import { definePolicy, Priority } from "../sdk";
 import type { PolicyConfig } from "../types";
 
@@ -54,6 +55,7 @@ export interface ResponseTransformConfig extends PolicyConfig {
 export const requestTransform = definePolicy<RequestTransformConfig>({
   name: "request-transform",
   priority: Priority.REQUEST_TRANSFORM,
+  phases: ["request-headers"],
   handler: async (c, next, { config }) => {
     // Workers runtime has immutable Request.headers — clone into a mutable copy
     const headers = new Headers(c.req.raw.headers);
@@ -86,6 +88,38 @@ export const requestTransform = definePolicy<RequestTransformConfig>({
 
     await next();
   },
+  evaluate: {
+    onRequest: async (_input, { config }) => {
+      const mutations: Mutation[] = [];
+
+      // Set headers
+      if (config.setHeaders) {
+        for (const [name, value] of Object.entries(config.setHeaders)) {
+          mutations.push({
+            type: "header",
+            op: "set" as const,
+            name,
+            value,
+          });
+        }
+      }
+
+      // Remove headers
+      if (config.removeHeaders) {
+        for (const name of config.removeHeaders) {
+          mutations.push({
+            type: "header",
+            op: "remove" as const,
+            name,
+          });
+        }
+      }
+
+      return mutations.length > 0
+        ? { action: "continue", mutations }
+        : { action: "continue" };
+    },
+  },
 });
 
 /**
@@ -115,6 +149,7 @@ export const requestTransform = definePolicy<RequestTransformConfig>({
 export const responseTransform = definePolicy<ResponseTransformConfig>({
   name: "response-transform",
   priority: Priority.RESPONSE_TRANSFORM,
+  phases: ["response-headers"],
   handler: async (c, next, { config }) => {
     await next();
 
@@ -144,5 +179,37 @@ export const responseTransform = definePolicy<ResponseTransformConfig>({
         c.res.headers.delete(name);
       }
     }
+  },
+  evaluate: {
+    onResponse: async (_input, { config }) => {
+      const mutations: Mutation[] = [];
+
+      // Set headers
+      if (config.setHeaders) {
+        for (const [name, value] of Object.entries(config.setHeaders)) {
+          mutations.push({
+            type: "header",
+            op: "set" as const,
+            name,
+            value,
+          });
+        }
+      }
+
+      // Remove headers
+      if (config.removeHeaders) {
+        for (const name of config.removeHeaders) {
+          mutations.push({
+            type: "header",
+            op: "remove" as const,
+            name,
+          });
+        }
+      }
+
+      return mutations.length > 0
+        ? { action: "continue", mutations }
+        : { action: "continue" };
+    },
   },
 });

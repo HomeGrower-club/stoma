@@ -249,4 +249,180 @@ export const jws = definePolicy<JwsConfig>({
     debug("JWS verified");
     await next();
   },
+  evaluate: {
+    onRequest: async (input, { config, debug }) => {
+      // Extract JWS from header
+      const jwsCompact = input.headers.get(config.headerName!);
+      if (!jwsCompact) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "jws_missing",
+          message: `Missing JWS header: ${config.headerName}`,
+        };
+      }
+
+      // Parse JWS compact serialization: header.payload.signature
+      const parts = jwsCompact.split(".");
+      if (parts.length !== 3) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "jws_invalid",
+          message: "Malformed JWS: expected 3 parts",
+        };
+      }
+
+      const [headerB64, payloadB64, signatureB64] = parts;
+
+      // Decode header
+      let header: JwsHeader;
+      try {
+        header = JSON.parse(base64UrlDecode(headerB64));
+      } catch {
+        return {
+          action: "reject",
+          status: 401,
+          code: "jws_invalid",
+          message: "Malformed JWS header: invalid base64",
+        };
+      }
+
+      // Block "none" algorithm
+      if (header.alg.toLowerCase() === "none") {
+        return {
+          action: "reject",
+          status: 401,
+          code: "jws_invalid",
+          message: "JWS algorithm 'none' is not allowed",
+        };
+      }
+
+      // Get payload (embedded or from body)
+      const verifyPayloadB64 =
+        config.payloadSource === "body" && input.body
+          ? typeof input.body === "string"
+            ? base64UrlEncodeBytes(new TextEncoder().encode(input.body))
+            : base64UrlEncodeBytes(new Uint8Array(input.body))
+          : payloadB64;
+
+      const signingInput = `${headerB64}.${verifyPayloadB64}`;
+
+      // Verify signature
+      const signature = base64UrlToBuffer(signatureB64);
+
+      if (config.secret) {
+        const algorithm = hmacAlgorithm(header.alg);
+        if (!algorithm) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "jws_invalid",
+            message: `Unsupported JWS algorithm: ${header.alg}`,
+          };
+        }
+
+        const key = await crypto.subtle.importKey(
+          "raw",
+          new TextEncoder().encode(config.secret),
+          { name: "HMAC", hash: algorithm },
+          false,
+          ["verify"]
+        );
+
+        const valid = await crypto.subtle.verify(
+          algorithm,
+          key,
+          signature,
+          new TextEncoder().encode(signingInput)
+        );
+        if (!valid) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "jws_invalid",
+            message: "Invalid JWS signature",
+          };
+        }
+      } else if (config.jwksUrl) {
+        const algorithm = rsaAlgorithm(header.alg);
+        if (!algorithm) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "jws_invalid",
+            message: `Unsupported JWS algorithm: ${header.alg}`,
+          };
+        }
+
+        const keys = await fetchJwks(
+          config.jwksUrl,
+          config.jwksCacheTtlMs,
+          config.jwksTimeoutMs
+        );
+        const matchingKey = header.kid
+          ? keys.find(
+              (k) =>
+                (k as unknown as Record<string, unknown>).kid === header.kid
+            )
+          : keys[0];
+
+        if (!matchingKey) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "jws_invalid",
+            message: "No matching JWKS key found",
+          };
+        }
+
+        const key = await crypto.subtle.importKey(
+          "jwk",
+          matchingKey,
+          algorithm,
+          false,
+          ["verify"]
+        );
+
+        const valid = await crypto.subtle.verify(
+          algorithm,
+          key,
+          signature,
+          new TextEncoder().encode(signingInput)
+        );
+        if (!valid) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "jws_invalid",
+            message: "Invalid JWS signature",
+          };
+        }
+      }
+
+      // Forward verified payload if requested
+      if (config.forwardPayload) {
+        try {
+          const decodedPayload = base64UrlDecode(verifyPayloadB64);
+          const sanitized = decodedPayload.replace(/[\r\n\0]/g, "");
+          return {
+            action: "continue",
+            mutations: [
+              {
+                type: "header" as const,
+                op: "set" as const,
+                name: config.forwardHeaderName!,
+                value: sanitized,
+              },
+            ],
+          };
+        } catch {
+          // If payload isn't decodable, continue without forwarding
+        }
+      }
+
+      debug("JWS verified");
+      return { action: "continue" };
+    },
+  },
 });

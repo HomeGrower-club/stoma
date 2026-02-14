@@ -43,6 +43,7 @@ export interface AssignMetricsConfig extends PolicyConfig {
 export const assignMetrics = definePolicy<AssignMetricsConfig>({
   name: "assign-metrics",
   priority: Priority.OBSERVABILITY,
+  httpOnly: true,
   handler: async (c, next, { config, debug }) => {
     const resolvedTags: Record<string, string> = {};
 

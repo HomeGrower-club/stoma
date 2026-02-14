@@ -7,6 +7,8 @@
  *
  * @module resource-filter
  */
+
+import type { Mutation } from "../../core/protocol";
 import { definePolicy, Priority } from "../sdk";
 import type { PolicyConfig } from "../types";
 
@@ -108,6 +110,7 @@ function filterObject(
 export const resourceFilter = definePolicy<ResourceFilterConfig>({
   name: "resource-filter",
   priority: Priority.RESPONSE_TRANSFORM,
+  phases: ["response-body"],
   defaults: {
     contentTypes: ["application/json"],
     applyToArrayItems: true,
@@ -180,5 +183,85 @@ export const resourceFilter = definePolicy<ResourceFilterConfig>({
       status: c.res.status,
       headers: c.res.headers,
     });
+  },
+  evaluate: {
+    onResponse: async (input, { config, debug }) => {
+      if (config.fields.length === 0) {
+        debug("no fields configured — passing through");
+        return { action: "continue" };
+      }
+
+      const contentType = input.headers.get("content-type") ?? "";
+      const matchedType = config.contentTypes!.some((ct) =>
+        contentType.includes(ct)
+      );
+
+      if (!matchedType) {
+        debug(
+          "skipping — response content type %s not in %o",
+          contentType,
+          config.contentTypes
+        );
+        return { action: "continue" };
+      }
+
+      // Parse body
+      let body: unknown;
+      try {
+        if (!input.body) {
+          return { action: "continue" };
+        }
+        const bodyStr =
+          typeof input.body === "string"
+            ? input.body
+            : new TextDecoder().decode(input.body);
+        body = JSON.parse(bodyStr);
+      } catch {
+        debug("response body is not valid JSON — passing through");
+        return { action: "continue" };
+      }
+
+      let filtered: unknown;
+      if (Array.isArray(body)) {
+        if (config.applyToArrayItems) {
+          filtered = body.map((item) =>
+            item != null && typeof item === "object"
+              ? filterObject(
+                  item as Record<string, unknown>,
+                  config.mode,
+                  config.fields
+                )
+              : item
+          );
+        } else {
+          filtered = body;
+        }
+      } else if (body != null && typeof body === "object") {
+        filtered = filterObject(
+          body as Record<string, unknown>,
+          config.mode,
+          config.fields
+        );
+      } else {
+        filtered = body;
+      }
+
+      debug(
+        "filtered response with mode=%s fields=%o",
+        config.mode,
+        config.fields
+      );
+
+      return {
+        action: "continue",
+        mutations: [
+          {
+            type: "body",
+            op: "replace",
+            content: JSON.stringify(filtered),
+          } as Mutation,
+        ],
+      };
+    },
   },
 });

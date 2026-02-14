@@ -132,6 +132,17 @@ export interface PolicyDefinition<TConfig extends PolicyConfig = PolicyConfig> {
    * Default: `["request-headers"]`.
    */
   phases?: ProcessingPhase[];
+
+  /**
+   * Set to `true` for policies that only work with the HTTP protocol.
+   *
+   * These policies rely on HTTP-specific concepts (Request/Response objects,
+   * specific headers, HTTP status codes, etc.) and cannot be meaningfully
+   * evaluated in other protocols like ext_proc or WebSocket.
+   *
+   * When set, this is passed through to the returned Policy's `httpOnly` property.
+   */
+  httpOnly?: true;
 }
 
 /**
@@ -209,6 +220,7 @@ export function definePolicy<TConfig extends PolicyConfig = PolicyConfig>(
       handler,
       evaluate,
       phases: definition.phases,
+      httpOnly: definition.httpOnly,
     };
   };
 }

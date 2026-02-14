@@ -72,5 +72,6 @@ export function cors(config?: CorsConfig): Policy {
     name: "cors",
     priority: Priority.EARLY,
     handler: withSkip(config?.skip, honoMiddleware),
+    httpOnly: true,
   };
 }

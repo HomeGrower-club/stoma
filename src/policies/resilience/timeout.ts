@@ -35,6 +35,7 @@ export interface TimeoutConfig extends PolicyConfig {
 export const timeout = definePolicy<TimeoutConfig>({
   name: "timeout",
   priority: Priority.TIMEOUT,
+  httpOnly: true,
   defaults: { timeoutMs: 30_000, message: "Gateway timeout", statusCode: 504 },
   handler: async (c, next, { config, trace }) => {
     const controller = new AbortController();

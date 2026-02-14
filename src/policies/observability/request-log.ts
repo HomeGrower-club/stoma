@@ -105,6 +105,7 @@ const DEFAULT_MAX_BODY_LENGTH = 8192;
 export const requestLog = definePolicy<RequestLogConfig>({
   name: "request-log",
   priority: Priority.OBSERVABILITY,
+  httpOnly: true,
   handler: async (c, next, { config, debug, gateway }) => {
     const sink = config.sink ?? defaultSink;
     const maxBodyLength = config.maxBodyLength ?? DEFAULT_MAX_BODY_LENGTH;

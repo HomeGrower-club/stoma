@@ -8,6 +8,7 @@
  */
 
 import { GatewayError } from "../../core/errors";
+import type { Mutation } from "../../core/protocol";
 import { definePolicy, Priority } from "../sdk";
 import type { PolicyConfig } from "../types";
 
@@ -58,6 +59,7 @@ export function clearOAuth2Cache(): void {
 export const oauth2 = definePolicy<OAuth2Config>({
   name: "oauth2",
   priority: Priority.AUTH,
+  phases: ["request-headers"],
   defaults: {
     tokenLocation: "header",
     headerName: "authorization",
@@ -154,6 +156,114 @@ export const oauth2 = definePolicy<OAuth2Config>({
     }
 
     await next();
+  },
+  evaluate: {
+    onRequest: async (input, { config, debug }) => {
+      // 1. Extract token
+      let token: string | undefined;
+
+      if (config.tokenLocation === "query") {
+        const url = new URL(input.path, "http://localhost");
+        token = url.searchParams.get(config.queryParam!) ?? undefined;
+      } else {
+        const headerValue = input.headers.get(config.headerName!) ?? undefined;
+        if (headerValue && config.headerPrefix) {
+          const prefix = `${config.headerPrefix} `;
+          if (headerValue.startsWith(prefix)) {
+            token = headerValue.slice(prefix.length);
+          }
+        } else {
+          token = headerValue;
+        }
+      }
+
+      if (!token || !token.trim()) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "Missing access token",
+        };
+      }
+
+      // 2. Validate token
+      if (config.localValidate) {
+        debug("local validation");
+        const valid = await config.localValidate(token);
+        if (!valid) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "unauthorized",
+            message: "Token validation failed",
+          };
+        }
+        return { action: "continue" };
+      } else if (config.introspectionUrl) {
+        debug("introspection validation");
+        const introspectionResult = await introspect(
+          token,
+          config.introspectionUrl,
+          config.clientId,
+          config.clientSecret,
+          config.cacheTtlSeconds ?? 0,
+          config.introspectionTimeoutMs
+        );
+
+        if (!introspectionResult.active) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "unauthorized",
+            message: "Token is not active",
+          };
+        }
+
+        // Check required scopes
+        if (config.requiredScopes && config.requiredScopes.length > 0) {
+          const tokenScopes = introspectionResult.scope
+            ? introspectionResult.scope.split(" ")
+            : [];
+          const missing = config.requiredScopes.filter(
+            (s) => !tokenScopes.includes(s)
+          );
+          if (missing.length > 0) {
+            return {
+              action: "reject",
+              status: 403,
+              code: "forbidden",
+              message: "Insufficient scope",
+            };
+          }
+        }
+
+        // Forward token info as headers via mutations
+        if (config.forwardTokenInfo) {
+          const mutations: Mutation[] = [];
+          for (const [field, headerKey] of Object.entries(
+            config.forwardTokenInfo
+          )) {
+            const value = introspectionResult[field];
+            if (value !== undefined && value !== null) {
+              const sanitized = String(value).replace(/[\r\n\0]/g, "");
+              mutations.push({
+                type: "header" as const,
+                op: "set" as const,
+                name: headerKey,
+                value: sanitized,
+              });
+            }
+          }
+          if (mutations.length > 0) {
+            return { action: "continue", mutations };
+          }
+        }
+
+        return { action: "continue" };
+      }
+
+      return { action: "continue" };
+    },
   },
 });
 

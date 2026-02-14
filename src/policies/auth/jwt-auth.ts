@@ -4,8 +4,8 @@
  * @module jwt-auth
  */
 import { GatewayError } from "../../core/errors";
-import { Priority, policyDebug, withSkip } from "../sdk";
-import type { Policy, PolicyConfig } from "../types";
+import { definePolicy, Priority } from "../sdk";
+import type { PolicyConfig } from "../types";
 import {
   base64UrlDecode,
   base64UrlToBuffer,
@@ -85,21 +85,27 @@ interface JwtPayload {
  * });
  * ```
  */
-export function jwtAuth(config: JwtAuthConfig): Policy {
-  if (!config.secret && !config.jwksUrl) {
-    throw new GatewayError(
-      500,
-      "config_error",
-      "jwtAuth requires either 'secret' or 'jwksUrl'"
-    );
-  }
-
-  const headerName = config.headerName ?? "authorization";
-  const tokenPrefix = config.tokenPrefix ?? "Bearer";
-
-  const handler: import("hono").MiddlewareHandler = async (c, next) => {
-    const debug = policyDebug(c, "jwt-auth");
-    const authHeader = c.req.header(headerName);
+export const jwtAuth = definePolicy<JwtAuthConfig>({
+  name: "jwt-auth",
+  priority: Priority.AUTH,
+  phases: ["request-headers"],
+  defaults: {
+    headerName: "authorization",
+    tokenPrefix: "Bearer",
+    clockSkewSeconds: 0,
+    requireExp: false,
+  },
+  validate: (config) => {
+    if (!config.secret && !config.jwksUrl) {
+      throw new GatewayError(
+        500,
+        "config_error",
+        "jwtAuth requires either 'secret' or 'jwksUrl'"
+      );
+    }
+  },
+  handler: async (c, next, { config, debug }) => {
+    const authHeader = c.req.header(config.headerName!);
 
     if (!authHeader) {
       throw new GatewayError(
@@ -111,15 +117,15 @@ export function jwtAuth(config: JwtAuthConfig): Policy {
 
     // Extract token
     let token: string;
-    if (tokenPrefix) {
-      if (!authHeader.startsWith(`${tokenPrefix} `)) {
+    if (config.tokenPrefix) {
+      if (!authHeader.startsWith(`${config.tokenPrefix} `)) {
         throw new GatewayError(
           401,
           "unauthorized",
-          `Expected ${tokenPrefix} token`
+          `Expected ${config.tokenPrefix} token`
         );
       }
-      token = authHeader.slice(tokenPrefix.length + 1);
+      token = authHeader.slice(config.tokenPrefix.length + 1);
     } else {
       token = authHeader;
     }
@@ -181,7 +187,6 @@ export function jwtAuth(config: JwtAuthConfig): Policy {
 
     // Validate claims
     const now = Math.floor(Date.now() / 1000);
-    const skew = config.clockSkewSeconds ?? 0;
 
     if (config.requireExp && payload.exp === undefined) {
       throw new GatewayError(
@@ -191,7 +196,7 @@ export function jwtAuth(config: JwtAuthConfig): Policy {
       );
     }
 
-    if (payload.exp !== undefined && payload.exp < now - skew) {
+    if (payload.exp !== undefined && payload.exp < now - config.clockSkewSeconds!) {
       throw new GatewayError(401, "unauthorized", "JWT has expired");
     }
 
@@ -228,14 +233,167 @@ export function jwtAuth(config: JwtAuthConfig): Policy {
     }
 
     await next();
-  };
+  },
+  evaluate: {
+    onRequest: async (input, { config }) => {
+      const authHeader = input.headers.get(config.headerName!);
 
-  return {
-    name: "jwt-auth",
-    priority: Priority.AUTH,
-    handler: withSkip(config.skip, handler),
-  };
-}
+      if (!authHeader) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "Missing authentication token",
+        };
+      }
+
+      // Extract token
+      let token: string;
+      if (config.tokenPrefix) {
+        if (!authHeader.startsWith(`${config.tokenPrefix} `)) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "unauthorized",
+            message: `Expected ${config.tokenPrefix} token`,
+          };
+        }
+        token = authHeader.slice(config.tokenPrefix.length + 1);
+      } else {
+        token = authHeader;
+      }
+
+      if (!token || !token.trim()) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "Empty authentication token",
+        };
+      }
+
+      // Decode (without verifying yet)
+      const parts = token.split(".");
+      if (parts.length !== 3) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "Malformed JWT: expected 3 parts",
+        };
+      }
+
+      let header: JwtHeader;
+      let payload: JwtPayload;
+      try {
+        header = JSON.parse(base64UrlDecode(parts[0]));
+        payload = JSON.parse(base64UrlDecode(parts[1]));
+      } catch {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "Malformed JWT: invalid base64 encoding",
+        };
+      }
+
+      // Block "none" algorithm
+      if (header.alg.toLowerCase() === "none") {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "JWT algorithm 'none' is not allowed",
+        };
+      }
+
+      // Verify signature
+      if (config.secret) {
+        await verifyHmac(
+          config.secret,
+          parts[0],
+          parts[1],
+          parts[2],
+          header.alg
+        );
+      } else if (config.jwksUrl) {
+        await verifyJwks(
+          config.jwksUrl,
+          parts[0],
+          parts[1],
+          parts[2],
+          header,
+          config.jwksCacheTtlMs,
+          config.jwksTimeoutMs
+        );
+      }
+
+      // Validate claims
+      const now = Math.floor(Date.now() / 1000);
+
+      if (config.requireExp && payload.exp === undefined) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "JWT must contain an 'exp' claim",
+        };
+      }
+
+      if (payload.exp !== undefined && payload.exp < now - config.clockSkewSeconds!) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "JWT has expired",
+        };
+      }
+
+      if (config.issuer && payload.iss !== config.issuer) {
+        return {
+          action: "reject",
+          status: 401,
+          code: "unauthorized",
+          message: "JWT issuer mismatch",
+        };
+      }
+
+      if (config.audience) {
+        const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+        if (!aud.includes(config.audience)) {
+          return {
+            action: "reject",
+            status: 401,
+            code: "unauthorized",
+            message: "JWT audience mismatch",
+          };
+        }
+      }
+
+      // Forward claims as headers via mutations
+      if (config.forwardClaims) {
+        const mutations = [];
+        for (const [claim, headerKey] of Object.entries(config.forwardClaims)) {
+          const value = payload[claim];
+          if (value !== undefined && value !== null) {
+            const sanitized = String(value).replace(/[\r\n\0]/g, "");
+            mutations.push({
+              type: "header" as const,
+              op: "set" as const,
+              name: headerKey,
+              value: sanitized,
+            });
+          }
+        }
+        if (mutations.length > 0) {
+          return { action: "continue", mutations };
+        }
+      }
+
+      return { action: "continue" };
+    },
+  },
+});
 
 async function verifyHmac(
   secret: string,

@@ -31,6 +31,7 @@ export interface MetricsReporterConfig extends PolicyConfig {
 export const metricsReporter = definePolicy<MetricsReporterConfig>({
   name: "metrics-reporter",
   priority: Priority.METRICS,
+  httpOnly: true,
   handler: async (c, next, { config, debug, gateway }) => {
     const startTime = Date.now();
 

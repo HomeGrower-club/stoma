@@ -6,16 +6,8 @@
 import type { Context } from "hono";
 import { GatewayError } from "../../core/errors";
 import { extractClientIp } from "../../utils/ip";
-import {
-  Priority,
-  policyDebug,
-  policyTrace,
-  resolveConfig,
-  safeCall,
-  setDebugHeader,
-  withSkip,
-} from "../sdk";
-import type { Policy, PolicyConfig } from "../types";
+import { definePolicy, Priority, safeCall, setDebugHeader } from "../sdk";
+import type { PolicyConfig } from "../types";
 
 export interface RateLimitConfig extends PolicyConfig {
   /** Maximum requests per window */
@@ -53,6 +45,19 @@ export interface InMemoryRateLimitStoreOptions {
   cleanupIntervalMs?: number;
 }
 
+/**
+ * Default in-memory rate limit store backed by a `Map`.
+ *
+ * The store is bounded by `maxKeys` (default 100,000) to prevent unbounded
+ * memory growth from unique rate-limit keys. When the store reaches capacity
+ * and no expired entries can be evicted, it **fails closed** — returning
+ * `MAX_SAFE_INTEGER` as the count to trigger rate limiting. This is an
+ * intentional security design: memory safety takes priority over availability.
+ *
+ * Note the distinction between store-level and policy-level failure modes:
+ * - **Store at capacity** (this class): fail-closed — reject the request
+ * - **Store throws/times out** (policy handler via `safeCall`): fail-open — allow the request
+ */
 export class InMemoryRateLimitStore implements RateLimitStore {
   private counters = new Map<string, { count: number; resetAt: number }>();
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
@@ -80,6 +85,15 @@ export class InMemoryRateLimitStore implements RateLimitStore {
     );
   }
 
+  /**
+   * Increment the counter for a key within the given time window.
+   *
+   * When the store reaches `maxKeys` capacity and no expired entries can
+   * be evicted, returns `{ count: MAX_SAFE_INTEGER, resetAt }` to trigger
+   * rate limiting (fail-closed). This prevents unbounded memory growth at
+   * the cost of potentially rejecting legitimate requests — an intentional
+   * security trade-off where memory safety takes priority over availability.
+   */
   async increment(
     key: string,
     windowSeconds: number
@@ -134,6 +148,26 @@ export class InMemoryRateLimitStore implements RateLimitStore {
 }
 
 /**
+ * Per-instance default stores for factory calls that don't provide their own.
+ *
+ * Keyed by the resolved config object (unique per factory call via
+ * `resolveConfig`'s spread). This preserves the lazy-init behavior: the
+ * `InMemoryRateLimitStore` is only created on the first request, not at
+ * factory time, avoiding premature timer starts in test environments.
+ */
+const defaultStores = new WeakMap<object, InMemoryRateLimitStore>();
+
+function getStore(config: RateLimitConfig): RateLimitStore {
+  if (config.store) return config.store;
+  let store = defaultStores.get(config);
+  if (!store) {
+    store = new InMemoryRateLimitStore();
+    defaultStores.set(config, store);
+  }
+  return store;
+}
+
+/**
  * Rate limit requests with pluggable storage backends.
  *
  * Defaults to client IP extraction via `CF-Connecting-IP` or `X-Forwarded-For`.
@@ -157,25 +191,16 @@ export class InMemoryRateLimitStore implements RateLimitStore {
  * });
  * ```
  */
-export function rateLimit(config: RateLimitConfig): Policy {
-  const resolved = resolveConfig<RateLimitConfig>(
-    { windowSeconds: 60, statusCode: 429, message: "Rate limit exceeded" },
-    config
-  );
-
-  // Default store used ONLY if none provided.
-  // We don't create it here at module-level to avoid starting timers
-  // immediately upon import in testing environments.
-  let defaultStore: InMemoryRateLimitStore | undefined;
-
-  const handler: import("hono").MiddlewareHandler = async (c, next) => {
-    const debug = policyDebug(c, "rate-limit");
-    const trace = policyTrace(c, "rate-limit");
-
-    if (!config.store && !defaultStore) {
-      defaultStore = new InMemoryRateLimitStore();
-    }
-    const resolvedStore = config.store ?? defaultStore!;
+export const rateLimit = definePolicy<RateLimitConfig>({
+  name: "rate-limit",
+  priority: Priority.RATE_LIMIT,
+  defaults: {
+    windowSeconds: 60,
+    statusCode: 429,
+    message: "Rate limit exceeded",
+  },
+  handler: async (c, next, { config, debug, trace }) => {
+    const store = getStore(config);
 
     // Extract the rate limit key
     let key: string;
@@ -188,7 +213,7 @@ export function rateLimit(config: RateLimitConfig): Policy {
     // Resilient to store failures — fail-open (allow the request) if the
     // store is unreachable, but skip rate-limit headers since we have no data.
     const result = await safeCall(
-      () => resolvedStore.increment(key, resolved.windowSeconds!),
+      () => store.increment(key, config.windowSeconds!),
       null,
       debug,
       "store.increment()"
@@ -204,16 +229,16 @@ export function rateLimit(config: RateLimitConfig): Policy {
     const remaining = Math.max(0, config.max - count);
     const resetSeconds = Math.ceil((resetAt - Date.now()) / 1000);
     setDebugHeader(c, "x-stoma-ratelimit-key", key);
-    setDebugHeader(c, "x-stoma-ratelimit-window", resolved.windowSeconds!);
+    setDebugHeader(c, "x-stoma-ratelimit-window", config.windowSeconds!);
 
     if (count > config.max) {
       debug(`limited (key=${key}, count=${count}, max=${config.max})`);
       trace("rejected", { key, count, max: config.max });
       const resetHeader = String(resetSeconds);
       throw new GatewayError(
-        resolved.statusCode!,
+        config.statusCode!,
         "rate_limited",
-        resolved.message!,
+        config.message!,
         {
           "x-ratelimit-limit": String(config.max),
           "x-ratelimit-remaining": "0",
@@ -232,11 +257,5 @@ export function rateLimit(config: RateLimitConfig): Policy {
     c.res.headers.set("x-ratelimit-limit", String(config.max));
     c.res.headers.set("x-ratelimit-remaining", String(remaining));
     c.res.headers.set("x-ratelimit-reset", String(resetSeconds));
-  };
-
-  return {
-    name: "rate-limit",
-    priority: Priority.RATE_LIMIT,
-    handler: withSkip(config.skip, handler),
-  };
-}
+  },
+});

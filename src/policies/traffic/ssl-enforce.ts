@@ -31,6 +31,7 @@ export interface SslEnforceConfig extends PolicyConfig {
 export const sslEnforce = definePolicy<SslEnforceConfig>({
   name: "ssl-enforce",
   priority: Priority.EARLY,
+  httpOnly: true,
   defaults: {
     redirect: true,
     hstsMaxAge: 31536000,

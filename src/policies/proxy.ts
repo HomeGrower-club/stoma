@@ -98,5 +98,6 @@ export function proxy(config?: ProxyPolicyConfig): Policy {
     name: "proxy",
     priority: Priority.PROXY,
     handler: withSkip(config?.skip, handler),
+    httpOnly: true,
   };
 }

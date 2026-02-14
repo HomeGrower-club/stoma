@@ -63,6 +63,7 @@ export interface DynamicRoutingConfig extends PolicyConfig {
 export const dynamicRouting = definePolicy<DynamicRoutingConfig>({
   name: "dynamic-routing",
   priority: Priority.REQUEST_TRANSFORM,
+  httpOnly: true,
   defaults: { fallthrough: true },
   handler: async (c, next, { config, debug }) => {
     for (const rule of config.rules) {

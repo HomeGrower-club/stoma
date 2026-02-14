@@ -119,6 +119,7 @@ function validateJsonStructure(
 export const jsonThreatProtection = definePolicy<JsonThreatProtectionConfig>({
   name: "json-threat-protection",
   priority: Priority.EARLY,
+  phases: ["request-body"],
   defaults: {
     maxDepth: 20,
     maxKeys: 100,
@@ -186,5 +187,78 @@ export const jsonThreatProtection = definePolicy<JsonThreatProtectionConfig>({
 
     debug("JSON structure validated");
     await next();
+  },
+  evaluate: {
+    onRequest: async (input, { config, debug }) => {
+      const contentType = input.headers.get("content-type") ?? "";
+      const matchedType = config.contentTypes!.some((ct) =>
+        contentType.includes(ct)
+      );
+
+      if (!matchedType) {
+        debug("skipping — content type %s not inspected", contentType);
+        return { action: "continue" };
+      }
+
+      // Check Content-Length against maxBodySize BEFORE parsing
+      const contentLength = input.headers.get("content-length");
+      if (contentLength) {
+        const length = Number.parseInt(contentLength, 10);
+        if (!Number.isNaN(length) && length > config.maxBodySize!) {
+          debug("body size %d exceeds max %d", length, config.maxBodySize);
+          return {
+            action: "reject",
+            status: 413,
+            code: "body_too_large",
+            message: "Request body exceeds maximum size",
+          };
+        }
+      }
+
+      // Parse JSON
+      let parsed: unknown;
+      try {
+        if (!input.body) {
+          debug("empty body — passing through");
+          return { action: "continue" };
+        }
+        const bodyStr =
+          typeof input.body === "string"
+            ? input.body
+            : new TextDecoder().decode(input.body);
+        parsed = JSON.parse(bodyStr);
+      } catch {
+        debug("invalid JSON");
+        return {
+          action: "reject",
+          status: 400,
+          code: "invalid_json",
+          message: "Invalid JSON in request body",
+        };
+      }
+
+      // Walk the parsed JSON and validate structural limits
+      try {
+        validateJsonStructure(parsed, {
+          maxDepth: config.maxDepth!,
+          maxKeys: config.maxKeys!,
+          maxStringLength: config.maxStringLength!,
+          maxArraySize: config.maxArraySize!,
+        });
+      } catch (err) {
+        if (err instanceof GatewayError) {
+          return {
+            action: "reject",
+            status: err.statusCode,
+            code: err.code,
+            message: err.message,
+          };
+        }
+        throw err;
+      }
+
+      debug("JSON structure validated");
+      return { action: "continue" };
+    },
   },
 });

@@ -58,6 +58,7 @@ export interface TrafficShadowConfig extends PolicyConfig {
 export const trafficShadow = definePolicy<TrafficShadowConfig>({
   name: "traffic-shadow",
   priority: Priority.RESPONSE_TRANSFORM,
+  httpOnly: true,
   defaults: {
     target: "",
     percentage: 100,

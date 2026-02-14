@@ -29,6 +29,8 @@ import type { DebugLogger } from "../utils/debug";
  *   runtimes (ext_proc, WebSocket) to invoke the policy without Hono.
  * - {@link phases} — Which processing phases this policy participates in.
  *   Used by phase-based runtimes to skip irrelevant policies.
+ * - {@link httpOnly} — Set to `true` for policies that can ONLY work with
+ *   the HTTP protocol and don't make sense for ext_proc or WebSocket.
  */
 export interface Policy {
   /** Unique policy name (e.g. "jwt-auth", "rate-limit") */
@@ -61,6 +63,25 @@ export interface Policy {
    * Default: `["request-headers"]` (most policies only inspect request headers).
    */
   phases?: ProcessingPhase[];
+
+  /**
+   * Set to `true` for policies that only work with the HTTP protocol.
+   *
+   * These policies rely on HTTP-specific concepts (Request/Response objects,
+   * specific headers, HTTP status codes, etc.) and cannot be meaningfully
+   * evaluated in other protocols like ext_proc or WebSocket.
+   *
+   * Examples:
+   * - `cors` — uses HTTP-specific `Access-Control-*` headers
+   * - `ssl-enforce` — HTTP-only protocol concept
+   * - `proxy` — HTTP-to-HTTP forwarding
+   * - `mock` — returns HTTP Response objects
+   *
+   * Tooling can use this flag to:
+   * - Skip these policies when generating docs for non-HTTP runtimes
+   * - Warn if an HTTP-only policy is used in a non-HTTP gateway config
+   */
+  httpOnly?: true;
 }
 
 /** Base configuration shared by all policies */

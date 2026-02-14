@@ -7,6 +7,7 @@
  * @module geo-ip-filter
  */
 import { GatewayError } from "../../core/errors";
+import type { PolicyInput } from "../../core/protocol";
 import { Priority, policyDebug, resolveConfig, withSkip } from "../sdk";
 import type { Policy, PolicyConfig } from "../types";
 
@@ -88,5 +89,36 @@ export function geoIpFilter(config?: GeoIpFilterConfig): Policy {
     name: "geo-ip-filter",
     priority: Priority.IP_FILTER,
     handler: withSkip(config?.skip, handler),
+    phases: ["request-headers"],
+    evaluate: {
+      onRequest: async (input: PolicyInput) => {
+        const country = input.headers
+          .get(resolved.countryHeader!)
+          ?.toUpperCase();
+        const mode = resolved.mode!;
+
+        if (mode === "allow") {
+          if (!country || !allowSet.has(country)) {
+            return {
+              action: "reject",
+              status: 403,
+              code: "geo_denied",
+              message: "Access denied from this region",
+            };
+          }
+        } else {
+          if (country && denySet.has(country)) {
+            return {
+              action: "reject",
+              status: 403,
+              code: "geo_denied",
+              message: "Access denied from this region",
+            };
+          }
+        }
+
+        return { action: "continue" };
+      },
+    },
   };
 }

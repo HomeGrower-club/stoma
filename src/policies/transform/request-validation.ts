@@ -78,6 +78,7 @@ function normalizeResult(result: boolean | ValidationResult): ValidationResult {
 export const requestValidation = definePolicy<RequestValidationConfig>({
   name: "request-validation",
   priority: Priority.AUTH,
+  phases: ["request-body"],
   defaults: {
     contentTypes: ["application/json"],
     errorMessage: "Request validation failed",
@@ -135,5 +136,76 @@ export const requestValidation = definePolicy<RequestValidationConfig>({
 
     debug("validation passed");
     await next();
+  },
+  evaluate: {
+    onRequest: async (input, { config, debug }) => {
+      const contentType = input.headers.get("content-type") ?? "";
+      const matchedType = config.contentTypes!.some((ct) =>
+        contentType.includes(ct)
+      );
+
+      if (!matchedType) {
+        debug(
+          "skipping — content type %s not in %o",
+          contentType,
+          config.contentTypes
+        );
+        return { action: "continue" };
+      }
+
+      // Parse body
+      let parsed: unknown;
+      try {
+        if (!input.body) {
+          debug("body parse failed");
+          return {
+            action: "reject",
+            status: 400,
+            code: "validation_failed",
+            message: `${config.errorMessage!}: invalid JSON`,
+          };
+        }
+        const bodyStr =
+          typeof input.body === "string"
+            ? input.body
+            : new TextDecoder().decode(input.body);
+        parsed = JSON.parse(bodyStr);
+      } catch {
+        debug("body parse failed");
+        return {
+          action: "reject",
+          status: 400,
+          code: "validation_failed",
+          message: `${config.errorMessage!}: invalid JSON`,
+        };
+      }
+
+      // Run async validator if provided, otherwise sync
+      const validatorFn = config.validateAsync ?? config.validate;
+      if (!validatorFn) {
+        debug("no validator configured — passing through");
+        return { action: "continue" };
+      }
+
+      const rawResult = await validatorFn(parsed);
+      const result = normalizeResult(rawResult);
+
+      if (!result.valid) {
+        const details =
+          result.errors && result.errors.length > 0
+            ? `${config.errorMessage!}: ${result.errors.join("; ")}`
+            : config.errorMessage!;
+        debug("validation failed: %s", details);
+        return {
+          action: "reject",
+          status: 400,
+          code: "validation_failed",
+          message: details,
+        };
+      }
+
+      debug("validation passed");
+      return { action: "continue" };
+    },
   },
 });

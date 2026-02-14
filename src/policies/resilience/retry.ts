@@ -161,5 +161,6 @@ export function retry(config?: RetryConfig): Policy {
     name: "retry",
     priority: Priority.RETRY,
     handler: withSkip(config?.skip, handler),
+    httpOnly: true,
   };
 }

@@ -43,6 +43,7 @@ export interface AssignAttributesConfig extends PolicyConfig {
 export const assignAttributes = definePolicy<AssignAttributesConfig>({
   name: "assign-attributes",
   priority: Priority.REQUEST_TRANSFORM,
+  phases: ["request-headers"],
   handler: async (c, next, { config, debug }) => {
     for (const [key, value] of Object.entries(config.attributes)) {
       if (typeof value === "function") {
@@ -56,5 +57,21 @@ export const assignAttributes = definePolicy<AssignAttributesConfig>({
     }
 
     await next();
+  },
+  evaluate: {
+    onRequest: async (_input, { config, debug }) => {
+      const mutations = [];
+      for (const [key, value] of Object.entries(config.attributes)) {
+        const resolved =
+          typeof value === "function" ? value({} as Context) : value;
+        debug("set %s = %s", key, resolved);
+        mutations.push({
+          type: "attribute" as const,
+          key,
+          value: resolved,
+        });
+      }
+      return { action: "continue", mutations };
+    },
   },
 });

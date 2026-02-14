@@ -77,6 +77,7 @@ function formatEntry(
 export const serverTiming = definePolicy<ServerTimingConfig>({
   name: "server-timing",
   priority: Priority.METRICS,
+  httpOnly: true,
   defaults: {
     serverTimingHeader: true,
     responseTimeHeader: true,

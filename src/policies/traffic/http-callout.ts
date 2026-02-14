@@ -66,6 +66,7 @@ export interface HttpCalloutConfig extends PolicyConfig {
 export const httpCallout = definePolicy<HttpCalloutConfig>({
   name: "http-callout",
   priority: Priority.REQUEST_TRANSFORM,
+  httpOnly: true,
   defaults: { method: "GET", timeout: 5000, abortOnFailure: true },
   handler: async (c, next, { config, debug }) => {
     // Resolve URL

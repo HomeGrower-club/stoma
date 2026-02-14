@@ -15,6 +15,17 @@ import {
 } from "../sdk";
 import type { Policy, PolicyConfig } from "../types";
 
+// Per HTTP spec, 204 and 304 responses must not carry a body.
+// Node.js enforces this strictly; workerd is lenient. Guard all
+// Response reconstruction so we don't silently break on Node/Bun/Deno.
+const NULL_BODY_STATUSES = new Set([204, 304]);
+function safeBody(
+  body: BodyInit | null | undefined,
+  status: number
+): BodyInit | null {
+  return NULL_BODY_STATUSES.has(status) ? null : (body ?? null);
+}
+
 // --- Store interface ---
 
 /** Pluggable cache storage backend */
@@ -60,7 +71,7 @@ export class InMemoryCacheStore implements CacheStore {
     // Move to end for LRU ordering (most recently accessed = last)
     this.entries.delete(key);
     this.entries.set(key, entry);
-    return new Response(entry.body, {
+    return new Response(safeBody(entry.body, entry.status), {
       status: entry.status,
       headers: entry.headers,
     });
@@ -284,7 +295,7 @@ export function cache(config?: CacheConfig): Policy {
       }
       // Return cached response, re-creating so headers can be modified
       const body = await cached.arrayBuffer();
-      const res = new Response(body, {
+      const res = new Response(safeBody(body, cached.status), {
         status: cached.status,
         headers: cached.headers,
       });
@@ -337,7 +348,10 @@ export function cache(config?: CacheConfig): Policy {
     setDebugHeader(c, "x-stoma-cache-status", "MISS");
     trace("MISS", { key, ttl: resolved.ttlSeconds! });
     const storeClone = c.res.clone();
-    const storeBody = await storeClone.arrayBuffer();
+    const storeBody = safeBody(
+      await storeClone.arrayBuffer(),
+      storeClone.status
+    );
     const storeHeaders = new Headers(storeClone.headers);
     storeHeaders.set(
       INTERNAL_EXPIRES_HEADER,

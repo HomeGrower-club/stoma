@@ -7,6 +7,7 @@
  * @module assign-content
  */
 import type { Context } from "hono";
+import type { Mutation } from "../../core/protocol";
 import { definePolicy, Priority } from "../sdk";
 import type { PolicyConfig } from "../types";
 
@@ -169,5 +170,117 @@ export const assignContent = definePolicy<AssignContentConfig>({
         );
       }
     }
+  },
+  evaluate: {
+    onRequest: async (input, { config, debug }) => {
+      if (!config.request) {
+        return { action: "continue" };
+      }
+
+      const contentType = input.headers.get("content-type") ?? "";
+      if (!contentTypeMatches(contentType, config.contentTypes!)) {
+        debug(
+          "request content-type %s not in allowed types — skipping request modification",
+          contentType
+        );
+        return { action: "continue" };
+      }
+
+      // Parse existing body or start empty
+      let body: Record<string, unknown> = {};
+      try {
+        if (input.body) {
+          const bodyStr =
+            typeof input.body === "string"
+              ? input.body
+              : new TextDecoder().decode(input.body);
+          if (bodyStr) {
+            body = JSON.parse(bodyStr);
+          }
+        }
+      } catch {
+        // Invalid JSON — start with empty object
+      }
+
+      // Resolve and merge fields (can't use dynamic functions in evaluate)
+      for (const [key, value] of Object.entries(config.request)) {
+        if (typeof value === "function") {
+          body[key] = value({} as Context);
+        } else {
+          body[key] = value;
+        }
+      }
+
+      debug(
+        "assigned %d fields to request body",
+        Object.keys(config.request).length
+      );
+
+      return {
+        action: "continue",
+        mutations: [
+          {
+            type: "body",
+            op: "replace",
+            content: JSON.stringify(body),
+          } as Mutation,
+        ],
+      };
+    },
+    onResponse: async (input, { config, debug }) => {
+      if (!config.response) {
+        return { action: "continue" };
+      }
+
+      const contentType = input.headers.get("content-type") ?? "";
+      if (!contentTypeMatches(contentType, config.contentTypes!)) {
+        debug(
+          "response content-type %s not in allowed types — skipping response modification",
+          contentType
+        );
+        return { action: "continue" };
+      }
+
+      // Parse existing body or start empty
+      let body: Record<string, unknown> = {};
+      try {
+        if (input.body) {
+          const bodyStr =
+            typeof input.body === "string"
+              ? input.body
+              : new TextDecoder().decode(input.body);
+          if (bodyStr) {
+            body = JSON.parse(bodyStr);
+          }
+        }
+      } catch {
+        // Invalid JSON — start with empty object
+      }
+
+      // Resolve and merge fields (can't use dynamic functions in evaluate)
+      for (const [key, value] of Object.entries(config.response)) {
+        if (typeof value === "function") {
+          body[key] = value({} as Context);
+        } else {
+          body[key] = value;
+        }
+      }
+
+      debug(
+        "assigned %d fields to response body",
+        Object.keys(config.response).length
+      );
+
+      return {
+        action: "continue",
+        mutations: [
+          {
+            type: "body",
+            op: "replace",
+            content: JSON.stringify(body),
+          } as Mutation,
+        ],
+      };
+    },
   },
 });

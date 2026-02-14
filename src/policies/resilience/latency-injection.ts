@@ -38,6 +38,7 @@ export interface LatencyInjectionConfig extends PolicyConfig {
 export const latencyInjection = definePolicy<LatencyInjectionConfig>({
   name: "latency-injection",
   priority: Priority.EARLY,
+  httpOnly: true,
   defaults: { jitter: 0, probability: 1 },
   handler: async (_c, next, { config, debug }) => {
     // Roll against probability

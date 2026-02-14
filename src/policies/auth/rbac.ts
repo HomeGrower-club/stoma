@@ -38,6 +38,7 @@ export const rbac = definePolicy<RbacConfig>({
     roleDelimiter: ",",
     denyMessage: "Access denied: insufficient permissions",
   },
+  phases: ["request-headers"],
   handler: async (c, next, { config, debug }) => {
     const hasRoleCheck = config.roles && config.roles.length > 0;
     const hasPermCheck = config.permissions && config.permissions.length > 0;
@@ -90,5 +91,67 @@ export const rbac = definePolicy<RbacConfig>({
     }
 
     await next();
+  },
+  evaluate: {
+    onRequest: async (input, { config, debug }) => {
+      const hasRoleCheck = config.roles && config.roles.length > 0;
+      const hasPermCheck = config.permissions && config.permissions.length > 0;
+
+      if (!hasRoleCheck && !hasPermCheck) {
+        debug("no roles or permissions configured, passing through");
+        return { action: "continue" };
+      }
+
+      if (hasRoleCheck) {
+        const roleHeaderValue = input.headers.get(config.roleHeader!) ?? "";
+        const userRoles = roleHeaderValue
+          ? roleHeaderValue.split(config.roleDelimiter!).map((r) => r.trim())
+          : [];
+
+        debug(
+          `checking roles: user=${userRoles.join(",")} required=${config.roles!.join(",")}`
+        );
+
+        const hasMatchingRole = config.roles!.some((role) =>
+          userRoles.includes(role)
+        );
+        if (!hasMatchingRole) {
+          return {
+            action: "reject",
+            status: 403,
+            code: "forbidden",
+            message: config.denyMessage!,
+          };
+        }
+      }
+
+      if (hasPermCheck) {
+        const permHeaderValue =
+          input.headers.get(config.permissionHeader!) ?? "";
+        const userPermissions = permHeaderValue
+          ? permHeaderValue
+              .split(config.permissionDelimiter!)
+              .map((p) => p.trim())
+          : [];
+
+        debug(
+          `checking permissions: user=${userPermissions.join(",")} required=${config.permissions!.join(",")}`
+        );
+
+        const hasAllPermissions = config.permissions!.every((perm) =>
+          userPermissions.includes(perm)
+        );
+        if (!hasAllPermissions) {
+          return {
+            action: "reject",
+            status: 403,
+            code: "forbidden",
+            message: config.denyMessage!,
+          };
+        }
+      }
+
+      return { action: "continue" };
+    },
   },
 });

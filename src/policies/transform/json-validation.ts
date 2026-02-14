@@ -61,6 +61,7 @@ export interface JsonValidationConfig extends PolicyConfig {
 export const jsonValidation = definePolicy<JsonValidationConfig>({
   name: "json-validation",
   priority: Priority.AUTH,
+  phases: ["request-body"],
   defaults: {
     contentTypes: ["application/json"],
     rejectStatus: 422,
@@ -131,5 +132,74 @@ export const jsonValidation = definePolicy<JsonValidationConfig>({
 
     debug("validation passed");
     await next();
+  },
+  evaluate: {
+    onRequest: async (input, { config, debug }) => {
+      const contentType = input.headers.get("content-type") ?? "";
+      const matchedType = config.contentTypes!.some((ct) =>
+        contentType.includes(ct)
+      );
+
+      if (!matchedType) {
+        debug(
+          "skipping — content type %s not in %o",
+          contentType,
+          config.contentTypes
+        );
+        return { action: "continue" };
+      }
+
+      // Parse body
+      let parsed: unknown;
+      try {
+        if (!input.body) {
+          debug("empty body with JSON content type");
+          return {
+            action: "reject",
+            status: config.rejectStatus!,
+            code: "validation_failed",
+            message: "Request body is empty",
+          };
+        }
+        const bodyStr =
+          typeof input.body === "string"
+            ? input.body
+            : new TextDecoder().decode(input.body);
+        parsed = JSON.parse(bodyStr);
+      } catch {
+        debug("body parse failed");
+        return {
+          action: "reject",
+          status: config.rejectStatus!,
+          code: "validation_failed",
+          message: "Request body is not valid JSON",
+        };
+      }
+
+      // If no validate function provided, valid JSON parse is sufficient
+      if (!config.validate) {
+        debug("no validator configured — JSON parsed successfully");
+        return { action: "continue" };
+      }
+
+      const result = await config.validate(parsed);
+
+      if (!result.valid) {
+        const message =
+          config.errorDetail && result.errors && result.errors.length > 0
+            ? `Validation failed: ${result.errors.join("; ")}`
+            : "Validation failed";
+        debug("validation failed: %s", message);
+        return {
+          action: "reject",
+          status: config.rejectStatus!,
+          code: "validation_failed",
+          message,
+        };
+      }
+
+      debug("validation passed");
+      return { action: "continue" };
+    },
   },
 });
