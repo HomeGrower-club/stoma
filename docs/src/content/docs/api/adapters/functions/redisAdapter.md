@@ -7,7 +7,7 @@ title: "redisAdapter"
 
 > **redisAdapter**(`config`): [`GatewayAdapter`](/api/index/interfaces/gatewayadapter/)
 
-Defined in: [src/adapters/redis.ts:367](https://github.com/HomeGrower-club/stoma/blob/48ef00d6c13071f9fc03cba04228926dc2dd542c/src/adapters/redis.ts#L367)
+Defined in: [src/adapters/redis.ts:367](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/adapters/redis.ts#L367)
 
 Create a [GatewayAdapter](/api/index/interfaces/gatewayadapter/) using Redis-backed stores.
 

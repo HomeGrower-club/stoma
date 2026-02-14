@@ -7,7 +7,7 @@
       "@homegrower-club/stoma": ["../dist/index.d.ts"],
       "@homegrower-club/stoma/adapters/cloudflare": ["../dist/adapters/cloudflare.d.ts"],
       "@homegrower-club/stoma/adapters/memory": ["../dist/adapters/memory.d.ts"],
-      "@homegrower-club/stoma/sdk": ["../dist/sdk/index.d.ts"]
+      "@homegrower-club/stoma/sdk": ["../dist/policies/sdk/index.d.ts"]
     }
   }
 }

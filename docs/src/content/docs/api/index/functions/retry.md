@@ -7,7 +7,7 @@ title: "retry"
 
 > **retry**(`config?`): [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/resilience/retry.ts:86](https://github.com/HomeGrower-club/stoma/blob/48ef00d6c13071f9fc03cba04228926dc2dd542c/src/policies/resilience/retry.ts#L86)
+Defined in: [src/policies/resilience/retry.ts:86](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/policies/resilience/retry.ts#L86)
 
 Retry failed upstream calls with configurable backoff.
 

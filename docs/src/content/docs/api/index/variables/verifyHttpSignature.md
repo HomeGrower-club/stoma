@@ -7,7 +7,7 @@ title: "verifyHttpSignature"
 
 > `const` **verifyHttpSignature**: (`config`) => [`Policy`](/api/index/interfaces/policy/)
 
-Defined in: [src/policies/auth/verify-http-signature.ts:45](https://github.com/HomeGrower-club/stoma/blob/48ef00d6c13071f9fc03cba04228926dc2dd542c/src/policies/auth/verify-http-signature.ts#L45)
+Defined in: [src/policies/auth/verify-http-signature.ts:45](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/policies/auth/verify-http-signature.ts#L45)
 
 Verify RFC 9421 HTTP Message Signatures on inbound requests with key ID lookup (priority 10).
 

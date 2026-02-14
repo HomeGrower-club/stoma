@@ -7,7 +7,7 @@ title: "cloudflareAdapter"
 
 > **cloudflareAdapter**(`bindings`): [`GatewayAdapter`](/api/index/interfaces/gatewayadapter/)
 
-Defined in: [src/adapters/cloudflare.ts:114](https://github.com/HomeGrower-club/stoma/blob/48ef00d6c13071f9fc03cba04228926dc2dd542c/src/adapters/cloudflare.ts#L114)
+Defined in: [src/adapters/cloudflare.ts:114](https://github.com/HomeGrower-club/stoma/blob/51850db26f18dce0fb4866cdcbc9eec2bad7561e/src/adapters/cloudflare.ts#L114)
 
 Create a GatewayAdapter using Cloudflare-native stores.
 
