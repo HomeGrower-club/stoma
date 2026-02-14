@@ -1,7 +1,7 @@
 {
   "name": "@homegrower-club/stoma",
   "version": "0.1.0-rc.1",
-  "description": "Declarative API gateway as a TypeScript library, built on Hono. Runs on Cloudflare Workers, Node.js, Deno, Bun, and any edge runtime.",
+  "description": "Declarative API gateway as a TypeScript library. Runs on Cloudflare Workers, Node.js, Deno, Bun, and any JavaScript runtime.",
   "type": "module",
   "repository": {
     "type": "git",
