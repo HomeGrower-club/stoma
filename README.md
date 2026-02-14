@@ -1,6 +1,6 @@
 # Stoma 🌱
 
-**Declarative API gateway as a TypeScript library. Runs anywhere Hono runs -- Cloudflare Workers, Node.js, Deno, Bun, and more.**
+**Declarative API gateway as a TypeScript library. Runs on Cloudflare Workers, Node.js, Deno, Bun, and more.**
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
 ![Hono](https://img.shields.io/badge/Hono-4.7-orange)
@@ -16,13 +16,13 @@ API gateways in the JavaScript ecosystem are stuck between two bad options:
 
 2. **Dead or abandoned libraries** -- Express Gateway was the closest thing to a TS-native gateway. It is unmaintained, locked to Express 4, and has no story for modern runtimes.
 
-There is a third option: **an embeddable gateway library that runs anywhere your app does.**
+There is a third option: **a declarative gateway library that lives in your codebase and deploys with your standard workflow.**
 
-`@homegrower-club/stoma` fills this gap. It is a TypeScript library you import -- not a Go binary or YAML config you deploy. Define your routes, policies, and upstreams as typed objects. The library compiles them into a Hono app you can export directly.
+`@homegrower-club/stoma` fills this gap. It is a TypeScript library you import -- not a Go binary or YAML config you deploy. Define your routes, policies, and upstreams as typed objects. The library compiles them into an HTTP application you can export directly.
 
 - Configured with **TypeScript**, not YAML
-- Lives **inside** your application, not beside it
-- Runs on **any runtime** Hono supports: Cloudflare Workers, Node.js, Deno, Bun, Fastly, Lambda@Edge, Vercel Edge Functions
+- Lives in **your codebase** -- deploy as part of your app or as a standalone service
+- Runs on Cloudflare Workers, Node.js, Deno, Bun, Fastly, Lambda@Edge, Vercel Edge Functions
 - Optionally leverages **platform-specific features** (Cloudflare Service Bindings, KV, Durable Objects) through a pluggable adapter system
 
 Think KrakenD's declarative route-to-pipeline model, but as a TypeScript library.
@@ -30,12 +30,12 @@ Think KrakenD's declarative route-to-pipeline model, but as a TypeScript library
 ## Features
 
 - **TypeScript-first with full type safety** -- Every config object, policy, and upstream is typed. No YAML. No JSON Schema. Your editor catches mistakes before your users do.
-- **Built on Hono** -- 12KB, zero dependencies, Web Standards API. One of the fastest routers in the JavaScript ecosystem.
+- **Powered by Hono** -- lightweight, zero dependencies, Web Standards API. One of the fastest routers in the JavaScript ecosystem.
 - **Declarative route / pipeline / policy chain model** -- Define routes, attach ordered policy chains, and point at an upstream. The gateway wires it all together.
-- **40 built-in policies** -- Auth (JWT, API key, OAuth2, RBAC, HTTP signatures), traffic control (rate limiting, IP filtering, caching, threat protection), resilience (circuit breaker, retry, timeout), transforms (CORS, request/response rewriting, validation), and observability (structured logging, metrics, health checks).
+- **Dozens of built-in policies** -- Auth (JWT, API key, OAuth2, RBAC, HTTP signatures), traffic control (rate limiting, IP filtering, caching, threat protection), resilience (circuit breaker, retry, timeout), transforms (CORS, request/response rewriting, validation), and observability (structured logging, metrics, health checks).
 - **Multi-runtime** -- Core depends only on Hono and the Web `Request`/`Response` API. No Node.js built-ins, no platform lock-in.
 - **Pluggable adapter system** -- Runtime-specific capabilities (distributed stores, background tasks, service bindings) are injected through adapters, not hard-coded. Adapters ship for Cloudflare Workers, Node.js, Deno, Bun, and in-memory development.
-- **Pluggable policy system** -- Policies are Hono middleware with metadata. Write a custom policy in a few lines, or use `definePolicy()` from the SDK for a structured approach.
+- **Pluggable policy system** -- Policies are middleware functions with metadata. Write a custom policy in a few lines, or use `definePolicy()` from the SDK for a structured approach.
 
 ## Installation
 
@@ -211,7 +211,7 @@ No adapter is required. Without one, policies that need stores (rate limiting, c
 
 ## Policies
 
-Policies are the building blocks of gateway pipelines. They are Hono middleware with a name and a priority (lower numbers execute first).
+Policies are the building blocks of gateway pipelines. They are middleware handlers with a name and a priority (lower numbers execute first).
 
 ### Built-in Policies
 
