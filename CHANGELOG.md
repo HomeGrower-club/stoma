@@ -1,5 +1,18 @@
 # @homegrower-club/stoma
 
+## 0.1.0-rc.4
+### Patch Changes
+
+
+
+- [`c4f3901`](https://github.com/HomeGrower-club/stoma/commit/c4f39017bf8187e5e750d4bae1acb4fe016b78a8) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - ### Fixes
+  
+  - Refactored JWT auth validation: Extracted duplicated validation logic from `handler` and `evaluate.onRequest` into a shared `validateJwt()` function. Returns a discriminated `JWTValidationResult`, so each runtime path maps to its own error model.
+  
+  ### Docs
+  
+  - Docs have been updated with new about and sustainability pages.
+
 ## 0.1.0-rc.3
 ### Patch Changes
 
