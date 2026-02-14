@@ -44,6 +44,29 @@ export interface PlaygroundResponse {
 // Service Worker registration
 // ---------------------------------------------------------------------------
 
+const IN_APP_BROWSER_PATTERNS: { pattern: RegExp; name: string }[] = [
+  { pattern: /LinkedInApp/i, name: "LinkedIn" },
+  { pattern: /FBAV|FBAN/i, name: "Facebook" },
+  { pattern: /Instagram/i, name: "Instagram" },
+  { pattern: /Twitter.*CriOS|Twitter for iPhone/i, name: "Twitter/X" },
+  { pattern: /Snapchat/i, name: "Snapchat" },
+  { pattern: /Slack/i, name: "Slack" },
+  { pattern: /Discord/i, name: "Discord" },
+  { pattern: /WebView/i, name: "in-app browser" },
+  { pattern: /wv\b/i, name: "in-app browser" },
+  { pattern: /; wv\)/i, name: "in-app browser" },
+];
+
+function detectInAppBrowser(): string | null {
+  const ua = navigator.userAgent;
+  for (const { pattern, name } of IN_APP_BROWSER_PATTERNS) {
+    if (pattern.test(ua)) {
+      return name;
+    }
+  }
+  return null;
+}
+
 /**
  * Register the playground service worker and wait for it to activate.
  *
@@ -54,9 +77,16 @@ export interface PlaygroundResponse {
  */
 export async function registerPlaygroundSW(): Promise<ServiceWorkerRegistration> {
   if (!("serviceWorker" in navigator)) {
+    const inApp = detectInAppBrowser();
+    if (inApp) {
+      throw new Error(
+        `The Stoma playground doesn't work in ${inApp} browser. ` +
+          "Please open this page in Safari, Chrome, or another standalone browser."
+      );
+    }
     throw new Error(
       "Service Workers are not supported in this browser. " +
-        "Try Chrome, Firefox, or Safari."
+        "The Stoma playground requires Service Workers to run."
     );
   }
 

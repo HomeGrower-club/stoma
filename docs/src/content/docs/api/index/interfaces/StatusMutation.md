@@ -5,7 +5,7 @@ prev: false
 title: "StatusMutation"
 ---
 
-Defined in: [src/core/protocol.ts:237](https://github.com/HomeGrower-club/stoma/blob/08b5f2db5f15b4e339eff6647be9d231bf97a776/src/core/protocol.ts#L237)
+Defined in: [src/core/protocol.ts:237](https://github.com/HomeGrower-club/stoma/blob/c64f3a82788fa0548efb551b1e585d1d132c4df7/src/core/protocol.ts#L237)
 
 Modify the response status code.
 
@@ -18,7 +18,7 @@ request phases.
 
 > **code**: `number`
 
-Defined in: [src/core/protocol.ts:240](https://github.com/HomeGrower-club/stoma/blob/08b5f2db5f15b4e339eff6647be9d231bf97a776/src/core/protocol.ts#L240)
+Defined in: [src/core/protocol.ts:240](https://github.com/HomeGrower-club/stoma/blob/c64f3a82788fa0548efb551b1e585d1d132c4df7/src/core/protocol.ts#L240)
 
 New HTTP status code.
 
@@ -28,4 +28,4 @@ New HTTP status code.
 
 > **type**: `"status"`
 
-Defined in: [src/core/protocol.ts:238](https://github.com/HomeGrower-club/stoma/blob/08b5f2db5f15b4e339eff6647be9d231bf97a776/src/core/protocol.ts#L238)
+Defined in: [src/core/protocol.ts:238](https://github.com/HomeGrower-club/stoma/blob/c64f3a82788fa0548efb551b1e585d1d132c4df7/src/core/protocol.ts#L238)

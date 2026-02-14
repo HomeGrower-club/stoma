@@ -5,6 +5,7 @@ import { defineConfig } from "astro/config";
 import starlightTypeDoc, { typeDocSidebarGroup } from "starlight-typedoc";
 import mermaid from 'astro-mermaid';
 import llmTxt from 'starlight-llms-txt'
+import demoApiPlugin from './vite-plugin-demo-api';
 
 export default defineConfig({
   site: "https://stoma.opensource.homegrower.club/",
@@ -12,6 +13,7 @@ export default defineConfig({
     syntaxHighlight: "shiki",
   },
   vite: {
+    plugins: [demoApiPlugin()],
     resolve: {
       alias: {
         "@examples": path.resolve(
