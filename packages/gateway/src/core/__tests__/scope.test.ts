@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { describe, expect, it } from "vitest";
+import { cors } from "../../policies/transform/cors";
 import type { Policy } from "../../policies/types";
 import { createGateway } from "../gateway";
 import { scope } from "../scope";
@@ -421,6 +422,129 @@ describe("scope - nesting", () => {
     });
 
     expect(level1[0].path).toBe("/api/v2/items/:id");
+  });
+});
+
+// ── Root path ("/" route in a scope) ──
+
+describe("scope - root path route", () => {
+  it("should resolve path: '/' to just the prefix (no trailing slash)", () => {
+    const routes = scope({
+      prefix: "/environment",
+      routes: [makeRoute({ path: "/" })],
+    });
+
+    expect(routes[0].path).toBe("/environment");
+  });
+
+  it("should resolve path: '/' with trailing-slash prefix to just the prefix", () => {
+    const routes = scope({
+      prefix: "/environment/",
+      routes: [makeRoute({ path: "/" })],
+    });
+
+    expect(routes[0].path).toBe("/environment");
+  });
+
+  it("should match GET on scope root with and without trailing slash (integration)", async () => {
+    const routes = scope({
+      prefix: "/environment",
+      routes: [
+        makeRoute({ path: "/", methods: ["GET"] }),
+        makeRoute({ path: "/sub", methods: ["GET"] }),
+      ],
+    });
+
+    const gw = createGateway({ routes });
+
+    // Without trailing slash
+    const res1 = await gw.app.request("/environment");
+    expect(res1.status).toBe(200);
+    const body1 = (await res1.json()) as Record<string, unknown>;
+    expect(body1.path).toBe("/environment");
+
+    // With trailing slash
+    const res2 = await gw.app.request("/environment/");
+    expect(res2.status).toBe(200);
+  });
+
+  it("should match GET on sub-routes with and without trailing slash (integration)", async () => {
+    const routes = scope({
+      prefix: "/environment",
+      routes: [
+        makeRoute({ path: "/sub", methods: ["GET"] }),
+      ],
+    });
+
+    const gw = createGateway({ routes });
+
+    const res1 = await gw.app.request("/environment/sub");
+    expect(res1.status).toBe(200);
+
+    const res2 = await gw.app.request("/environment/sub/");
+    expect(res2.status).toBe(200);
+  });
+
+  it("should handle OPTIONS preflight on scope root with and without trailing slash", async () => {
+    const routes = scope({
+      prefix: "/environment",
+      routes: [
+        makeRoute({ path: "/", methods: ["GET"] }),
+      ],
+    });
+
+    const gw = createGateway({
+      policies: [
+        cors({
+          origins: "https://example.com",
+          methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+          allowHeaders: ["Content-Type", "Authorization"],
+          credentials: true,
+        }),
+      ],
+      routes,
+    });
+
+    // OPTIONS on /environment (no trailing slash)
+    const res1 = await gw.app.request("/environment", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://example.com",
+        "access-control-request-method": "GET",
+      },
+    });
+    expect(res1.status).toBe(204);
+    expect(res1.headers.get("access-control-allow-origin")).toBe(
+      "https://example.com"
+    );
+
+    // OPTIONS on /environment/ (with trailing slash)
+    const res2 = await gw.app.request("/environment/", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://example.com",
+        "access-control-request-method": "GET",
+      },
+    });
+    expect(res2.status).toBe(204);
+    expect(res2.headers.get("access-control-allow-origin")).toBe(
+      "https://example.com"
+    );
+  });
+
+  it("should not affect non-root routes in the same scope", () => {
+    const routes = scope({
+      prefix: "/api",
+      routes: [
+        makeRoute({ path: "/" }),
+        makeRoute({ path: "/users" }),
+        makeRoute({ path: "/orders" }),
+      ],
+    });
+
+    expect(routes[0].path).toBe("/api");
+    expect(routes[1].path).toBe("/api/users");
+    expect(routes[2].path).toBe("/api/orders");
   });
 });
 

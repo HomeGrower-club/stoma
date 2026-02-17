@@ -104,8 +104,8 @@ describe("createGateway - valid scenarios", () => {
       expect(res.status).toBe(200);
     }
 
-    // 6 methods for 1 route (HONO_METHODS excludes HEAD which Hono handles via GET)
-    expect(gw.routeCount).toBe(6);
+    // 6 methods × 2 (with + without trailing slash)
+    expect(gw.routeCount).toBe(12);
   });
 
   it("should register routes only for specified methods", async () => {
@@ -122,7 +122,8 @@ describe("createGateway - valid scenarios", () => {
     const deleteRes = await gw.app.request("/test", { method: "DELETE" });
     expect(deleteRes.status).toBe(404);
 
-    expect(gw.routeCount).toBe(2);
+    // 2 methods × 2 (with + without trailing slash)
+    expect(gw.routeCount).toBe(4);
   });
 });
 
@@ -684,8 +685,8 @@ describe("createGateway - security", () => {
     });
 
     expect(res.status).toBe(204);
-    // routeCount should be 2 (GET + OPTIONS), not 3
-    expect(gw.routeCount).toBe(2);
+    // routeCount should be 2 (GET + OPTIONS) × 2 (with + without trailing slash)
+    expect(gw.routeCount).toBe(4);
   });
 
   it("should preserve inbound host header when proxy preserveHost is enabled", async () => {

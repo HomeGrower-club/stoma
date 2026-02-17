@@ -218,6 +218,31 @@ export function createGateway<TBindings = Record<string, unknown>>(
     (app as any).on(methodNames, fullPath, ...allHandlers);
     routeCount += methods.length;
 
+    // Register a trailing-slash alias so /path and /path/ both resolve.
+    // Hono treats them as distinct routes, but users (and browsers sending
+    // CORS preflight) expect both to work.  Skip wildcard and already-
+    // trailing-slash paths — they don't need an alias.
+    const needsSlashAlias =
+      fullPath.length > 1 &&
+      !fullPath.endsWith("/") &&
+      !fullPath.endsWith("*");
+    if (needsSlashAlias) {
+      const withSlash = `${fullPath}/`;
+      // biome-ignore lint/suspicious/noExplicitAny: Hono's overloaded .on() types
+      (app as any).on(methodNames, withSlash, ...allHandlers);
+      routeCount += methods.length;
+      if (hasCors && !methodNames.includes("OPTIONS")) {
+        const preflightHandlers = [
+          contextInjector,
+          ...middlewareChain,
+          async (c: Context) => c.body(null, 204),
+        ];
+        // biome-ignore lint/suspicious/noExplicitAny: Hono's overloaded .on() types
+        (app as any).on("OPTIONS", withSlash, ...preflightHandlers);
+        routeCount += 1;
+      }
+    }
+
     const policyNames = mergedPolicies.map((p) => p.name);
 
     // Track registry data (include auto-injected OPTIONS in the method list)

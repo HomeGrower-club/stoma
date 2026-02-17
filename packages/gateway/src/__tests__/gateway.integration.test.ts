@@ -906,3 +906,61 @@ describe("Gateway integration - handler upstream", () => {
     expect(data.body).toBe("request-body-content");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Trailing-slash normalization
+// ---------------------------------------------------------------------------
+
+describe("Gateway integration - trailing slash normalization", () => {
+  it("should match routes with and without trailing slash", async () => {
+    const gw = createGateway({
+      routes: [
+        {
+          path: "/users",
+          methods: ["GET"],
+          pipeline: { upstream: handlerUpstream({ users: true }) },
+        },
+      ],
+    });
+
+    const res1 = await gw.app.request("/users");
+    expect(res1.status).toBe(200);
+    expect(await res1.json()).toEqual({ users: true });
+
+    const res2 = await gw.app.request("/users/");
+    expect(res2.status).toBe(200);
+    expect(await res2.json()).toEqual({ users: true });
+  });
+
+  it("should not add trailing-slash alias for wildcard routes", async () => {
+    const gw = createGateway({
+      routes: [
+        {
+          path: "/proxy/*",
+          methods: ["GET"],
+          pipeline: { upstream: handlerUpstream({ proxy: true }) },
+        },
+      ],
+    });
+
+    // Wildcard should still match sub-paths
+    const res = await gw.app.request("/proxy/foo");
+    expect(res.status).toBe(200);
+  });
+
+  it("should not add trailing-slash alias for root path", async () => {
+    const gw = createGateway({
+      routes: [
+        {
+          path: "/",
+          methods: ["GET"],
+          pipeline: { upstream: handlerUpstream({ root: true }) },
+        },
+      ],
+    });
+
+    const res = await gw.app.request("/");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ root: true });
+  });
+});

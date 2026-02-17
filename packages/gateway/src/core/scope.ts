@@ -77,6 +77,13 @@ function joinPaths(prefix: string, path: string): string {
   // Ensure path has leading slash
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
+  // Root path "/" means "the scope prefix itself" — return prefix without
+  // a trailing slash so that `/environment` + `/` → `/environment`, not
+  // `/environment/` (which Hono treats as a different route).
+  if (normalizedPath === "/") {
+    return prefix;
+  }
+
   // Avoid double slashes at the join point
   if (prefix.endsWith("/") && normalizedPath.startsWith("/")) {
     return `${prefix}${normalizedPath.slice(1)}`;
