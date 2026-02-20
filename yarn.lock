@@ -3159,6 +3159,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@vivero/stoma-cli@workspace:packages/cli"
   dependencies:
+    "@cloudflare/workers-types": "npm:^4.20250214.0"
     "@hono/node-server": "npm:^1.14.0"
     "@types/node": "npm:^22.0.0"
     "@vivero/stoma": "workspace:*"
