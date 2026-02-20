@@ -98,7 +98,9 @@ export function RequestBuilder({
                   <span className={`ed-method ed-method--${m.toLowerCase()}`}>
                     {m}
                   </span>
-                  <span className="ed-route-path">{route.path.replace(/\*$/, "")}</span>
+                  <span className="ed-route-path">
+                    {route.path.replace(/\*$/, "")}
+                  </span>
                 </button>
               ))
             )}
