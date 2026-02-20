@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-import { Hono } from "hono";
 import { createPolicyTestHarness } from "@vivero/stoma/sdk";
-import { analyticsLog } from "../analytics.js";
+import { Hono } from "hono";
+import { describe, expect, it, vi } from "vitest";
 import { ANALYTICS_TYPE, type AnalyticsEntry } from "../../types.js";
+import { analyticsLog } from "../analytics.js";
 
 describe("analyticsLog policy", () => {
   it("should emit an analytics entry via the default sink", async () => {

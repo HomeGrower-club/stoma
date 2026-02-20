@@ -66,7 +66,10 @@ export default function Editor() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [prefill, setPrefill] = useState<{ method: string; path: string } | null>(null);
+  const [prefill, setPrefill] = useState<{
+    method: string;
+    path: string;
+  } | null>(null);
   const popupRef = useRef<Window | null>(null);
   const hashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

@@ -40,15 +40,15 @@ export default defineConfig({
     alias: {
       "@vivero/stoma/adapters/cloudflare": resolve(
         __dirname,
-        "../packages/gateway/src/adapters/cloudflare.ts",
+        "../packages/gateway/src/adapters/cloudflare.ts"
       ),
       "@vivero/stoma/adapters/memory": resolve(
         __dirname,
-        "../packages/gateway/src/adapters/memory.ts",
+        "../packages/gateway/src/adapters/memory.ts"
       ),
       "@vivero/stoma/sdk": resolve(
         __dirname,
-        "../packages/gateway/src/policies/sdk/index.ts",
+        "../packages/gateway/src/policies/sdk/index.ts"
       ),
       "@vivero/stoma": resolve(__dirname, "../packages/gateway/src/index.ts"),
     },

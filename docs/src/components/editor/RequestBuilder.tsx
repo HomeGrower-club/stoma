@@ -22,7 +22,13 @@ interface RequestBuilderProps {
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
-export function RequestBuilder({ routes, busy, onSend, prefill, onPrefillApplied }: RequestBuilderProps) {
+export function RequestBuilder({
+  routes,
+  busy,
+  onSend,
+  prefill,
+  onPrefillApplied,
+}: RequestBuilderProps) {
   const [method, setMethod] = useState<string>("GET");
   const [path, setPath] = useState("/api/echo");
   const [headersText, setHeadersText] = useState("");

@@ -8,9 +8,9 @@
  * @module debug
  */
 export {
-  type DebugLogger,
-  noopDebugLogger,
-  createDebugger,
-  matchNamespace,
   createDebugFactory,
+  createDebugger,
+  type DebugLogger,
+  matchNamespace,
+  noopDebugLogger,
 } from "@vivero/stoma-core";

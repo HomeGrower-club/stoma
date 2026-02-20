@@ -3,56 +3,54 @@
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "stoma-docs",
-	"main": "src/demo-api/worker.ts",
-	"compatibility_date": "2025-12-17",
-	"compatibility_flags": ["nodejs_compat"],
-	"assets": {
-		"directory": "dist",
-		"binding": "ASSETS"
-	},
-	"observability": {
-		"enabled": true
-	},
-	"workers_dev": true,
-	"routes": [
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stoma-docs",
+  "main": "src/demo-api/worker.ts",
+  "compatibility_date": "2025-12-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "workers_dev": true,
+  "routes": [
     {
       "pattern": "stoma.vivero.dev",
       "custom_domain": true
     }
-	],
-	/**
-	 * Environment Variables (public, safe to commit)
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-	 */
-	"vars": {
-	},
-	/**
-	 * Scheduled Triggers (Cron)
-	 * https://developers.cloudflare.com/workers/configuration/cron-triggers/
-	 *
-	 * Every 15 minutes: send reminders, poll environment controllers
-	 * Daily at 3 AM UTC: cleanup old data (environment readings, orphan photos)
-	 */
-	"triggers": {
-	}
-	/**
-	 * Secrets (set via: wrangler secret put SECRET_NAME)
-	 * https://developers.cloudflare.com/workers/configuration/secrets/
-	 *
-	 * Required secrets for push notifications:
-	 * - SUPABASE_SERVICE_KEY: Supabase service role key (bypasses RLS)
-	 * - VAPID_PUBLIC_KEY: Web Push VAPID public key (from scripts/generate-vapid-keys.js)
-	 * - VAPID_PRIVATE_KEY: Web Push VAPID private key (from scripts/generate-vapid-keys.js)
-	 * - VAPID_SUBJECT: VAPID subject (mailto:your@email.com)
-	 *
-	 * Generate VAPID keys: node scripts/generate-vapid-keys.js
-	 */
-	/**
-	 * Bindings
-	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
-	 */
-	// "kv_namespaces": [{ "binding": "MY_KV", "id": "xxx" }]
-	// "d1_databases": [{ "binding": "MY_DB", "database_id": "xxx" }]
+  ],
+  /**
+   * Environment Variables (public, safe to commit)
+   * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+   */
+  "vars": {},
+  /**
+   * Scheduled Triggers (Cron)
+   * https://developers.cloudflare.com/workers/configuration/cron-triggers/
+   *
+   * Every 15 minutes: send reminders, poll environment controllers
+   * Daily at 3 AM UTC: cleanup old data (environment readings, orphan photos)
+   */
+  "triggers": {}
+  /**
+   * Secrets (set via: wrangler secret put SECRET_NAME)
+   * https://developers.cloudflare.com/workers/configuration/secrets/
+   *
+   * Required secrets for push notifications:
+   * - SUPABASE_SERVICE_KEY: Supabase service role key (bypasses RLS)
+   * - VAPID_PUBLIC_KEY: Web Push VAPID public key (from scripts/generate-vapid-keys.js)
+   * - VAPID_PRIVATE_KEY: Web Push VAPID private key (from scripts/generate-vapid-keys.js)
+   * - VAPID_SUBJECT: VAPID subject (mailto:your@email.com)
+   *
+   * Generate VAPID keys: node scripts/generate-vapid-keys.js
+   */
+  /**
+   * Bindings
+   * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+   */
+  // "kv_namespaces": [{ "binding": "MY_KV", "id": "xxx" }]
+  // "d1_databases": [{ "binding": "MY_DB", "database_id": "xxx" }]
 }

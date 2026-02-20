@@ -1,12 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type {
-  CompactorStorage,
-  ParquetMerger,
-} from "../../types.js";
+import type { CompactorStorage, ParquetMerger } from "../../types.js";
 import {
   createCompactor,
-  groupByPartition,
   filterBeforeCutoff,
+  groupByPartition,
 } from "../index.js";
 
 function createMockStorage(
@@ -183,12 +180,12 @@ describe("createCompactor", () => {
     // Hour 10 (ends at 11:00) is before 14:00 → compacted
     // Hour 14 (ends at 15:00) is NOT before 14:00 → skipped
     expect(result.partitionsCompacted).toBe(1);
-    expect(storage.written.has("analytics/2026/02/14/10/compacted.parquet")).toBe(
-      true
-    );
-    expect(storage.written.has("analytics/2026/02/14/14/compacted.parquet")).toBe(
-      false
-    );
+    expect(
+      storage.written.has("analytics/2026/02/14/10/compacted.parquet")
+    ).toBe(true);
+    expect(
+      storage.written.has("analytics/2026/02/14/14/compacted.parquet")
+    ).toBe(false);
   });
 
   it("should compact with month granularity", async () => {

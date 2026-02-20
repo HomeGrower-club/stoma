@@ -1,8 +1,8 @@
 // API routes module — owned by the platform team.
 // Defines user-facing endpoints with JWT auth and caching.
 
-import { jwtAuth, cache, InMemoryCacheStore } from "@vivero/stoma";
 import type { GatewayConfig } from "@vivero/stoma";
+import { cache, InMemoryCacheStore, jwtAuth } from "@vivero/stoma";
 
 const cacheStore = new InMemoryCacheStore({ maxEntries: 100 });
 

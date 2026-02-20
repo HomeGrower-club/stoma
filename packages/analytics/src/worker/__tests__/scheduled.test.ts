@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProcessorResult } from "../../types.js";
 
 vi.mock("../../processor/index.js", () => ({
@@ -11,8 +11,8 @@ vi.mock("../../parquet/duckdb-wasm.js", () => ({
   duckdbWasmParquetWriter: vi.fn(() => ({})),
 }));
 
-import { createAnalyticsHandler } from "../scheduled.js";
 import { createProcessor } from "../../processor/index.js";
+import { createAnalyticsHandler } from "../scheduled.js";
 
 const mockCreateProcessor = vi.mocked(createProcessor);
 

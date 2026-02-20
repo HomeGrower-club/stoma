@@ -28,8 +28,9 @@
  *
  * @module analytics-log
  */
-import { definePolicy, Priority } from "@vivero/stoma/sdk";
+
 import type { PolicyConfig } from "@vivero/stoma";
+import { definePolicy, Priority } from "@vivero/stoma/sdk";
 import { ANALYTICS_TYPE, type AnalyticsEntry } from "../types.js";
 
 export interface AnalyticsLogConfig extends PolicyConfig {
@@ -55,7 +56,11 @@ export interface AnalyticsLogConfig extends PolicyConfig {
    * ```
    */
   extractDimensions?: (c: {
-    req: { method: string; url: string; header: (name: string) => string | undefined };
+    req: {
+      method: string;
+      url: string;
+      header: (name: string) => string | undefined;
+    };
     res: { status: number; headers: Headers };
     /** Read a value from the Hono context (set by prior policies). */
     get: (key: string) => unknown;

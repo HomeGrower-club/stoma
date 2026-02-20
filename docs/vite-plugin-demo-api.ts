@@ -18,7 +18,7 @@ export default function demoApiPlugin(): Plugin {
         // Lazy-import so the gateway module is resolved through Vite's
         // module graph (enabling HMR and proper TS compilation).
         const { gateway } = await server.ssrLoadModule(
-          "./src/demo-api/gateway.ts",
+          "./src/demo-api/gateway.ts"
         );
 
         // Build a Web Request from the Node.js IncomingMessage.
@@ -28,7 +28,8 @@ export default function demoApiPlugin(): Plugin {
 
         const headers = new Headers();
         for (const [key, value] of Object.entries(req.headers)) {
-          if (value) headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+          if (value)
+            headers.set(key, Array.isArray(value) ? value.join(", ") : value);
         }
 
         const hasBody = req.method !== "GET" && req.method !== "HEAD";

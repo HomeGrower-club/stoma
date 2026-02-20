@@ -132,7 +132,7 @@ export function policiesToMiddleware(policies: Policy[]): MiddlewareHandler[] {
       // track calledNext, errors, and push entries.
       let calledNext = false;
       let errorMsg: string | null = null;
-      let handlerResult: Response | void;
+      let handlerResult: Response | undefined;
 
       try {
         const tracedNext = async () => {

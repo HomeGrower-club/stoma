@@ -4,9 +4,13 @@ declare module "@cloudflare/puppeteer" {
     goto(
       url: string,
       options?: {
-        waitUntil?: "load" | "domcontentloaded" | "networkidle0" | "networkidle2";
+        waitUntil?:
+          | "load"
+          | "domcontentloaded"
+          | "networkidle0"
+          | "networkidle2";
         timeout?: number;
-      },
+      }
     ): Promise<unknown>;
     evaluate<T>(pageFunction: () => T | Promise<T>): Promise<T>;
   }

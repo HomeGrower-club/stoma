@@ -68,8 +68,8 @@ self.onmessage = async (event: MessageEvent) => {
       } else {
         throw new Error(
           "Code must export a gateway. Use either:\n" +
-            '  export default createGateway({ ... })\n' +
-            '  export default async function() { return createGateway({ ... }) }'
+            "  export default createGateway({ ... })\n" +
+            "  export default async function() { return createGateway({ ... }) }"
         );
       }
 

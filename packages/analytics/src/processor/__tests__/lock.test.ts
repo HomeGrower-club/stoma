@@ -1,14 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { createInMemoryLock, createInMemoryFileTracker } from "../lock-memory.js";
-import { createStorageLock, createStorageFileTracker } from "../lock-storage.js";
-import { createProcessor } from "../index.js";
 import {
   ANALYTICS_TYPE,
   type AnalyticsEntry,
+  type ParquetWriter,
   type StorageReader,
   type StorageWriter,
-  type ParquetWriter,
 } from "../../types.js";
+import { createProcessor } from "../index.js";
+import {
+  createInMemoryFileTracker,
+  createInMemoryLock,
+} from "../lock-memory.js";
+import {
+  createStorageFileTracker,
+  createStorageLock,
+} from "../lock-storage.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 

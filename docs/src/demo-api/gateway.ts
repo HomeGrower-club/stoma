@@ -4,7 +4,12 @@
 
 import type { Context } from "hono";
 import { memoryAdapter } from "../../../packages/gateway/src/adapters/memory";
-import { cors, createGateway, rateLimit, requestLog } from "../../../packages/gateway/src/index";
+import {
+  cors,
+  createGateway,
+  rateLimit,
+  requestLog,
+} from "../../../packages/gateway/src/index";
 
 const adapter = memoryAdapter();
 

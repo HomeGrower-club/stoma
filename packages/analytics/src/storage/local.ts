@@ -1,4 +1,8 @@
-import type { CompactorStorage, StorageReader, StorageWriter } from "../types.js";
+import type {
+  CompactorStorage,
+  StorageReader,
+  StorageWriter,
+} from "../types.js";
 
 export interface LocalStorageOptions {
   basePath: string;
@@ -25,7 +29,10 @@ export function localStorageAdapter(
       const keys: string[] = [];
 
       try {
-        const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+        const entries = await readdir(dir, {
+          recursive: true,
+          withFileTypes: true,
+        });
         for (const entry of entries) {
           if (!entry.isFile()) continue;
           const fullPath = join(entry.parentPath, entry.name);

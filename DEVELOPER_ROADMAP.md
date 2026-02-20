@@ -317,6 +317,10 @@ const authChain = authenticate({
 
 ## Developer Experience (DX)
 
+### Editor: Migrate MDX Snippets to `export default`
+
+The editor worker now accepts `export default createGateway(...)` in addition to the legacy `createPlaygroundGateway()` wrapper. The ~25 `EditorLink` snippets embedded in MDX files (`cookbook.mdx`, `your-first-policy.mdx`, `policy-patterns.mdx`, and other tutorial/recipe pages) still use the old `createPlaygroundGateway` pattern. These should be migrated to `export default` for consistency with real Stoma usage — the backward-compat path in the worker ensures no urgency, but new snippets should use `export default`.
+
 ### 25. CLI Scaffolding
 **Problem:** Creating a new policy or setting up a fresh gateway requires boilerplate.
 **Solution:** A `stoma` CLI.

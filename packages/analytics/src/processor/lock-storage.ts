@@ -1,15 +1,25 @@
-import type { ProcessingLock, ProcessedFileTracker, StorageReader, StorageWriter } from "../types.js";
+import type {
+  ProcessedFileTracker,
+  ProcessingLock,
+  StorageReader,
+  StorageWriter,
+} from "../types.js";
 
 interface LockData {
   owner: string;
   expiresAt: number;
 }
 
-type StorageAdapter = Pick<StorageReader, "read" | "delete"> & Pick<StorageWriter, "write">;
+type StorageAdapter = Pick<StorageReader, "read" | "delete"> &
+  Pick<StorageWriter, "write">;
 
 export function createStorageLock(storage: StorageAdapter): ProcessingLock {
   return {
-    async acquire(lockKey: string, owner: string, ttlMs: number): Promise<boolean> {
+    async acquire(
+      lockKey: string,
+      owner: string,
+      ttlMs: number
+    ): Promise<boolean> {
       const path = `__locks/${lockKey}.json`;
       try {
         const content = await storage.read(path);
@@ -21,7 +31,10 @@ export function createStorageLock(storage: StorageAdapter): ProcessingLock {
         // No lock file or read error — proceed to acquire
       }
       const lockData: LockData = { owner, expiresAt: Date.now() + ttlMs };
-      await storage.write(path, new TextEncoder().encode(JSON.stringify(lockData)));
+      await storage.write(
+        path,
+        new TextEncoder().encode(JSON.stringify(lockData))
+      );
       return true;
     },
     async release(lockKey: string, owner: string): Promise<void> {
@@ -77,7 +90,10 @@ export function createStorageFileTracker(
       arr = arr.slice(arr.length - maxKeys);
     }
     const data: TrackerManifest = { keys: arr };
-    await storage.write(manifestPath, new TextEncoder().encode(JSON.stringify(data)));
+    await storage.write(
+      manifestPath,
+      new TextEncoder().encode(JSON.stringify(data))
+    );
   }
 
   return {

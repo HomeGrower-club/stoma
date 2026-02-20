@@ -2,9 +2,9 @@ import path from "node:path";
 import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
+import mermaid from "astro-mermaid";
 import starlightTypeDoc, { typeDocSidebarGroup } from "starlight-typedoc";
-import mermaid from 'astro-mermaid';
-import demoApiPlugin from './vite-plugin-demo-api';
+import demoApiPlugin from "./vite-plugin-demo-api";
 
 export default defineConfig({
   site: "https://stoma.vivero.dev/",
@@ -17,7 +17,7 @@ export default defineConfig({
       alias: {
         "@examples": path.resolve(
           new URL(".", import.meta.url).pathname,
-          "../packages/gateway/examples",
+          "../packages/gateway/examples"
         ),
       },
     },
@@ -164,7 +164,7 @@ export default defineConfig({
         },
         {
           label: "Analytics",
-          badge: { 
+          badge: {
             text: "Preview",
             // variant: "note",
           },
@@ -190,9 +190,8 @@ export default defineConfig({
       ],
     }),
     mermaid({
-      theme: 'forest',
-      autoTheme: true
+      theme: "forest",
+      autoTheme: true,
     }),
-
   ],
 });

@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cors } from "../../policies/transform/cors";
 import { proxy } from "../../policies/proxy";
+import { cors } from "../../policies/transform/cors";
 import type { Policy } from "../../policies/types";
 import { GatewayError } from "../errors";
 import { createGateway } from "../gateway";

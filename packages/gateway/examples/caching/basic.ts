@@ -3,7 +3,7 @@
 // directly on subsequent requests, reducing upstream load.
 // Demo API: https://stoma.vivero.dev/demo-api
 
-import { createGateway, cache, cors, InMemoryCacheStore } from "@vivero/stoma";
+import { cache, cors, createGateway, InMemoryCacheStore } from "@vivero/stoma";
 
 // Create a cache store — InMemoryCacheStore works on all runtimes
 const cacheStore = new InMemoryCacheStore({

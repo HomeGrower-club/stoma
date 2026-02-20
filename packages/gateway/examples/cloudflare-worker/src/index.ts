@@ -1,3 +1,4 @@
+import puppeteer from "@cloudflare/puppeteer";
 import {
   cache,
   circuitBreaker,
@@ -7,14 +8,13 @@ import {
   InMemoryMetricsCollector,
   metricsReporter,
   rateLimit,
-  requestValidation,
   requestLog,
   requestTransform,
+  requestValidation,
   responseTransform,
   retry,
   timeout,
 } from "@vivero/stoma";
-import puppeteer from "@cloudflare/puppeteer";
 import { memoryAdapter } from "@vivero/stoma/adapters";
 
 const stores = memoryAdapter();
@@ -38,30 +38,43 @@ function validateHttpUrl(input: string): URL | null {
   }
 }
 
-async function renderMarkdownFromUrl(browserBinding: Fetcher, url: string): Promise<string> {
+async function renderMarkdownFromUrl(
+  browserBinding: Fetcher,
+  url: string
+): Promise<string> {
   const browser = await puppeteer.launch(browserBinding);
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await page.goto(url, { waitUntil: "networkidle2", timeout: BROWSER_RENDER_TIMEOUT_MS });
+    await page.goto(url, {
+      waitUntil: "networkidle2",
+      timeout: BROWSER_RENDER_TIMEOUT_MS,
+    });
 
     const markdown = await page.evaluate(() => {
       const doc = (globalThis as { document?: any }).document;
       if (!doc) return "";
 
-      const contentRoot = doc.querySelector("main, article, [role='main']") ?? doc.body;
+      const contentRoot =
+        doc.querySelector("main, article, [role='main']") ?? doc.body;
       const title = String(doc.title ?? "").trim();
       const lines: string[] = [];
 
       const normalize = (value: string) =>
-        value.replace(/\u00a0/g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+        value
+          .replace(/\u00a0/g, " ")
+          .replace(/[ \t]+\n/g, "\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
 
       const blocks = Array.from(
-        contentRoot.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,pre,blockquote"),
+        contentRoot.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,pre,blockquote")
       ) as Array<any>;
 
       for (const block of blocks) {
-        if (block.closest("script, style, noscript, nav, footer, header, form")) {
+        if (
+          block.closest("script, style, noscript, nav, footer, header, form")
+        ) {
           continue;
         }
 
@@ -92,10 +105,17 @@ async function renderMarkdownFromUrl(browserBinding: Fetcher, url: string): Prom
             lines.push(`- ${text}`);
             break;
           case "blockquote":
-            lines.push(text.split("\n").map((line) => `> ${line}`).join("\n"));
+            lines.push(
+              text
+                .split("\n")
+                .map((line) => `> ${line}`)
+                .join("\n")
+            );
             break;
           case "pre":
-            lines.push(`\`\`\`\n${String(block.textContent ?? "").trim()}\n\`\`\``);
+            lines.push(
+              `\`\`\`\n${String(block.textContent ?? "").trim()}\n\`\`\``
+            );
             break;
           default:
             lines.push(text);
@@ -113,7 +133,10 @@ async function renderMarkdownFromUrl(browserBinding: Fetcher, url: string): Prom
         lines.unshift(`# ${title}`);
       }
 
-      return lines.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+      return lines
+        .join("\n\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
     });
 
     return markdown.slice(0, MAX_MARKDOWN_CHARS);
@@ -182,40 +205,58 @@ const gateway = createGateway({
               }
               const candidate = (body as { url?: unknown }).url;
               if (typeof candidate !== "string") {
-                return { valid: false, errors: ["Body must include a string 'url' field"] };
+                return {
+                  valid: false,
+                  errors: ["Body must include a string 'url' field"],
+                };
               }
               const parsed = validateHttpUrl(candidate);
               if (!parsed) {
-                return { valid: false, errors: ["url must be a valid http(s) URL"] };
+                return {
+                  valid: false,
+                  errors: ["url must be a valid http(s) URL"],
+                };
               }
               return { valid: true };
             },
           }),
-          cache({ ttlSeconds: 60, store: stores.cacheStore, methods: ['POST'] }),
+          cache({
+            ttlSeconds: 60,
+            store: stores.cacheStore,
+            methods: ["POST"],
+          }),
           timeout({ timeoutMs: 30_000 }),
         ],
         upstream: {
           type: "handler",
           handler: async (c) => {
-            const browserBinding = ((c as { env?: BrowserRenderingEnv }).env?.MYBROWSER);
+            const browserBinding = (c as { env?: BrowserRenderingEnv }).env
+              ?.MYBROWSER;
             if (!browserBinding) {
               return c.json(
                 {
                   error: "config_error",
-                  message: "Browser Rendering binding missing. Configure [browser].binding = \"MYBROWSER\"",
+                  message:
+                    'Browser Rendering binding missing. Configure [browser].binding = "MYBROWSER"',
                 },
-                500,
+                500
               );
             }
 
             const body = (await c.req.json()) as { url: string };
             const targetUrl = validateHttpUrl(body.url);
             if (!targetUrl) {
-              return c.json({ error: "invalid_url", message: "Invalid URL" }, 400);
+              return c.json(
+                { error: "invalid_url", message: "Invalid URL" },
+                400
+              );
             }
 
             try {
-              const markdown = await renderMarkdownFromUrl(browserBinding, targetUrl.toString());
+              const markdown = await renderMarkdownFromUrl(
+                browserBinding,
+                targetUrl.toString()
+              );
               return new Response(markdown, {
                 status: 200,
                 headers: {
@@ -227,9 +268,12 @@ const gateway = createGateway({
               return c.json(
                 {
                   error: "browser_render_failed",
-                  message: error instanceof Error ? error.message : "Browser rendering failed",
+                  message:
+                    error instanceof Error
+                      ? error.message
+                      : "Browser rendering failed",
                 },
-                502,
+                502
               );
             }
           },

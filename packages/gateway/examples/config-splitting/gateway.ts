@@ -2,11 +2,17 @@
 // multiple files using mergeConfigs(). Each team owns their routes
 // in a separate module; the entrypoint composes them together.
 
-import { createGateway, health, cors, requestLog, rateLimit } from "@vivero/stoma";
-import { mergeConfigs } from "@vivero/stoma/config";
 import type { GatewayConfig } from "@vivero/stoma";
-import { authRoutes } from "./routes/auth";
+import {
+  cors,
+  createGateway,
+  health,
+  rateLimit,
+  requestLog,
+} from "@vivero/stoma";
+import { mergeConfigs } from "@vivero/stoma/config";
 import { apiRoutes } from "./routes/api";
+import { authRoutes } from "./routes/auth";
 
 // Shared base config — gateway-wide settings
 const baseConfig: Partial<GatewayConfig> = {
@@ -25,8 +31,8 @@ const gateway = createGateway(
     baseConfig,
     { routes: [health({ path: "/health" })] },
     authRoutes,
-    apiRoutes,
-  ),
+    apiRoutes
+  )
 );
 
 export default gateway;

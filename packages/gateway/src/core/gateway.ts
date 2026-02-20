@@ -223,9 +223,7 @@ export function createGateway<TBindings = Record<string, unknown>>(
     // CORS preflight) expect both to work.  Skip wildcard and already-
     // trailing-slash paths — they don't need an alias.
     const needsSlashAlias =
-      fullPath.length > 1 &&
-      !fullPath.endsWith("/") &&
-      !fullPath.endsWith("*");
+      fullPath.length > 1 && !fullPath.endsWith("/") && !fullPath.endsWith("*");
     if (needsSlashAlias) {
       const withSlash = `${fullPath}/`;
       // biome-ignore lint/suspicious/noExplicitAny: Hono's overloaded .on() types

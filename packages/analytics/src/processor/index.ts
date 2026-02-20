@@ -1,10 +1,10 @@
+import { createDebugger, type DebugLogger } from "@vivero/stoma-core";
 import type {
   AnalyticsEntry,
   ProcessorConfig,
-  ProcessorResult,
   ProcessorMetrics,
+  ProcessorResult,
 } from "../types.js";
-import { createDebugger, type DebugLogger } from "@vivero/stoma-core";
 import { parseCloudflareEvent } from "./formats/cloudflare.js";
 import { parseStandardLine } from "./formats/standard.js";
 
@@ -64,7 +64,10 @@ export function createProcessor(config: ProcessorConfig) {
     lockTtlMs = 300_000,
   } = config;
 
-  const debug: DebugLogger = createDebugger("stoma-analytics:processor", debugConfig);
+  const debug: DebugLogger = createDebugger(
+    "stoma-analytics:processor",
+    debugConfig
+  );
   const ownerId = `processor-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   return {
@@ -123,7 +126,11 @@ export function createProcessor(config: ProcessorConfig) {
         // 3. Apply fileFilter
         const filteredKeys = keys.filter(fileFilter);
         metrics.filesFiltered = keys.length - filteredKeys.length;
-        debug("filtered %d keys (removed %d)", filteredKeys.length, metrics.filesFiltered);
+        debug(
+          "filtered %d keys (removed %d)",
+          filteredKeys.length,
+          metrics.filesFiltered
+        );
 
         // 4. Dedup against processedTracker
         let keysToProcess: string[];
@@ -136,7 +143,11 @@ export function createProcessor(config: ProcessorConfig) {
             }
           }
           metrics.filesDeduped = filteredKeys.length - keysToProcess.length;
-          debug("deduped %d keys (skipped %d already processed)", keysToProcess.length, metrics.filesDeduped);
+          debug(
+            "deduped %d keys (skipped %d already processed)",
+            keysToProcess.length,
+            metrics.filesDeduped
+          );
         } else {
           keysToProcess = filteredKeys;
         }

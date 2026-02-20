@@ -471,9 +471,7 @@ describe("scope - root path route", () => {
   it("should match GET on sub-routes with and without trailing slash (integration)", async () => {
     const routes = scope({
       prefix: "/environment",
-      routes: [
-        makeRoute({ path: "/sub", methods: ["GET"] }),
-      ],
+      routes: [makeRoute({ path: "/sub", methods: ["GET"] })],
     });
 
     const gw = createGateway({ routes });
@@ -488,9 +486,7 @@ describe("scope - root path route", () => {
   it("should handle OPTIONS preflight on scope root with and without trailing slash", async () => {
     const routes = scope({
       prefix: "/environment",
-      routes: [
-        makeRoute({ path: "/", methods: ["GET"] }),
-      ],
+      routes: [makeRoute({ path: "/", methods: ["GET"] })],
     });
 
     const gw = createGateway({

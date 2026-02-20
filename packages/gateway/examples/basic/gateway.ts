@@ -3,7 +3,7 @@
 // request logging and CORS enabled globally.
 // Demo API: https://stoma.vivero.dev/demo-api
 
-import { createGateway, cors, requestLog } from "@vivero/stoma";
+import { cors, createGateway, requestLog } from "@vivero/stoma";
 
 const gateway = createGateway({
   // Friendly identifier shown in logs, admin UI, and metrics

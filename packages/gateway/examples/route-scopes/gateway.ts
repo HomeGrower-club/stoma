@@ -3,7 +3,7 @@
 // the same base path or middleware stack.
 // Demo API: https://stoma.vivero.dev/demo-api
 
-import { createGateway, scope, health, jwtAuth, cors } from "@vivero/stoma";
+import { cors, createGateway, health, jwtAuth, scope } from "@vivero/stoma";
 
 // Scoped routes share a prefix and JWT auth policy
 const apiRoutes = scope({

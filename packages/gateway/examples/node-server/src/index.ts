@@ -2,7 +2,7 @@
 // Run with: npx tsx src/index.ts
 
 import { serve } from "@hono/node-server";
-import { createGateway, cors, requestLog, health } from "@vivero/stoma";
+import { cors, createGateway, health, requestLog } from "@vivero/stoma";
 import { memoryAdapter } from "@vivero/stoma/adapters";
 
 const gateway = createGateway({

@@ -48,7 +48,7 @@ export default defineConfig({
       // Resolve Stoma imports to sibling package source (no build step needed)
       "@vivero/stoma/adapters/cloudflare": resolve(
         __dirname,
-        "../packages/gateway/src/adapters/cloudflare.ts",
+        "../packages/gateway/src/adapters/cloudflare.ts"
       ),
       "@vivero/stoma": resolve(__dirname, "../packages/gateway/src/index.ts"),
     },

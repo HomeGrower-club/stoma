@@ -3,7 +3,7 @@
 // Auth0, Supabase, Firebase, or Okta.
 // Demo API: https://stoma.vivero.dev/demo-api
 
-import { createGateway, jwtAuth, cors, requestLog } from "@vivero/stoma";
+import { cors, createGateway, jwtAuth, requestLog } from "@vivero/stoma";
 
 const gateway = createGateway({
   name: "secure-api",
@@ -16,7 +16,8 @@ const gateway = createGateway({
         policies: [
           jwtAuth({
             // Fetch public keys from the provider's JWKS endpoint
-            jwksUrl: "https://your-auth0-domain.auth0.com/.well-known/jwks.json",
+            jwksUrl:
+              "https://your-auth0-domain.auth0.com/.well-known/jwks.json",
             // Validate the issuer claim — prevents tokens from other issuers
             issuer: "https://your-auth0-domain.auth0.com/",
             // Validate the audience claim — prevents tokens for other APIs

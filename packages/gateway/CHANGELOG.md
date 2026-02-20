@@ -5,7 +5,7 @@
 
 
 
-- [`363341d`](https://github.com/HomeGrower-club/stoma/commit/363341dbc92a9f58a4b7df1ca0c66db2407cfe43) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Accept trailing slashes on route paths
+- [`363341d`](https://github.com/vivero-dev/stoma/commit/363341dbc92a9f58a4b7df1ca0c66db2407cfe43) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Accept trailing slashes on route paths
   
   ### Fixes
   
@@ -17,7 +17,7 @@
 
 
 
-- [`277d1a2`](https://github.com/HomeGrower-club/stoma/commit/277d1a2d27d98b444f074e4ecf0ae8095ef6f133) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Fix policy middleware swallowing handler return values, breaking context finalization
+- [`277d1a2`](https://github.com/vivero-dev/stoma/commit/277d1a2d27d98b444f074e4ecf0ae8095ef6f133) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Fix policy middleware swallowing handler return values, breaking context finalization
   
   ### Fixes
   
@@ -29,7 +29,7 @@
 
 
 
-- [`c4f3901`](https://github.com/HomeGrower-club/stoma/commit/c4f39017bf8187e5e750d4bae1acb4fe016b78a8) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - ### Fixes
+- [`c4f3901`](https://github.com/vivero-dev/stoma/commit/c4f39017bf8187e5e750d4bae1acb4fe016b78a8) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - ### Fixes
   
   - Refactored JWT auth validation: Extracted duplicated validation logic from `handler` and `evaluate.onRequest` into a shared `validateJwt()` function. Returns a discriminated `JWTValidationResult`, so each runtime path maps to its own error model.
   
@@ -42,7 +42,7 @@
 
 
 
-- [`e7ecfb7`](https://github.com/HomeGrower-club/stoma/commit/e7ecfb763ef8b7a750984690436ce8bf7253f804) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - # Docs updates only:
+- [`e7ecfb7`](https://github.com/vivero-dev/stoma/commit/e7ecfb763ef8b7a750984690436ce8bf7253f804) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - # Docs updates only:
   
   Add Open Graph meta tags and decouple docs deployment from package releases
   
@@ -50,7 +50,7 @@
   - Decouple `deploy-docs` CI job from npm publish — docs now deploy on any successful release job
 
 
-- [`c1485eb`](https://github.com/HomeGrower-club/stoma/commit/c1485eb0e5933c1e45cb0ba05dff75d11569f46d) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Tree-shakeable builds — 57% smaller bundles for consumers
+- [`c1485eb`](https://github.com/vivero-dev/stoma/commit/c1485eb0e5933c1e45cb0ba05dff75d11569f46d) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Tree-shakeable builds — 57% smaller bundles for consumers
   
   ### Build
   
@@ -72,7 +72,7 @@
 
 
 
-- [`75d0447`](https://github.com/HomeGrower-club/stoma/commit/75d04472e736fafe9528e258514a9fe3e352e511) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Live demo API, interactive editor links across docs, release workflow fixes
+- [`75d0447`](https://github.com/vivero-dev/stoma/commit/75d04472e736fafe9528e258514a9fe3e352e511) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Live demo API, interactive editor links across docs, release workflow fixes
   
   ### Features
   
@@ -97,7 +97,7 @@
 
 
 
-- [`155433e`](https://github.com/HomeGrower-club/stoma/commit/155433e7eb9f0050cc7b81fdc582e1d9045a583e) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Protocol-agnostic policy evaluation, docs editor improvements, lint fixes
+- [`155433e`](https://github.com/vivero-dev/stoma/commit/155433e7eb9f0050cc7b81fdc582e1d9045a583e) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Protocol-agnostic policy evaluation, docs editor improvements, lint fixes
   
   - Multi-protocol policy architecture: `PolicyInput`, `PolicyResult`, `PolicyEvaluator` types enabling policies to run outside HTTP (ext_proc, WebSocket)
   - `ipFilter` now exposes `evaluate.onRequest` alongside the existing Hono `handler`
@@ -111,7 +111,7 @@
 
 
 
-- [`bb4d04f`](https://github.com/HomeGrower-club/stoma/commit/bb4d04ff85c8c133b10c323d92695cf11b944552) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Initial release candidate for v0.1.0
+- [`bb4d04f`](https://github.com/vivero-dev/stoma/commit/bb4d04ff85c8c133b10c323d92695cf11b944552) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - Initial release candidate for v0.1.0
   
   Declarative API gateway library built on Hono for Cloudflare Workers and edge runtimes. Features:
   

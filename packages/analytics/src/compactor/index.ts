@@ -1,10 +1,10 @@
+import { createDebugger, type DebugLogger } from "@vivero/stoma-core";
 import type {
   CompactorConfig,
-  CompactorResult,
   CompactorMetrics,
+  CompactorResult,
 } from "../types.js";
 import { isStreamingMerger } from "../types.js";
-import { createDebugger, type DebugLogger } from "@vivero/stoma-core";
 
 /**
  * Create a compactor that merges small Parquet fragment files into larger
@@ -87,9 +87,7 @@ export function createCompactor(config: CompactorConfig) {
       for (const [partitionKey, allPartitionFiles] of eligible) {
         // Separate compacted file from fragment files
         const compactedPath = `${prefix}/${partitionKey}/compacted.parquet`;
-        const fragments = allPartitionFiles.filter(
-          (f) => f !== compactedPath
-        );
+        const fragments = allPartitionFiles.filter((f) => f !== compactedPath);
 
         // Skip if no new fragments to compact
         if (fragments.length === 0) continue;
@@ -297,9 +295,7 @@ export function filterBeforeCutoff(
         break;
       case "day":
         // End of this day = start of next day
-        partitionEnd = new Date(
-          Date.UTC(parts[0], parts[1] - 1, parts[2] + 1)
-        );
+        partitionEnd = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + 1));
         break;
       case "month":
         // End of this month = start of next month

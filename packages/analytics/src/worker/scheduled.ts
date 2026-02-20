@@ -72,8 +72,6 @@ export function createAnalyticsHandler(opts?: AnalyticsHandlerOptions) {
       deleteProcessed: env.DELETE_PROCESSED === "true",
     });
 
-    ctx.waitUntil(
-      processor.run().then(onResult).catch(onError)
-    );
+    ctx.waitUntil(processor.run().then(onResult).catch(onError));
   };
 }

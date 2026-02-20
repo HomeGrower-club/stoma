@@ -1,5 +1,9 @@
 /// <reference types="@cloudflare/workers-types" />
-import type { CompactorStorage, StorageReader, StorageWriter } from "../types.js";
+import type {
+  CompactorStorage,
+  StorageReader,
+  StorageWriter,
+} from "../types.js";
 
 export interface R2StorageOptions {
   bucket: R2Bucket;

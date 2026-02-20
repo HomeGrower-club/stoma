@@ -1,10 +1,14 @@
-import type { ProcessingLock, ProcessedFileTracker } from "../types.js";
+import type { ProcessedFileTracker, ProcessingLock } from "../types.js";
 
 export function createInMemoryLock(): ProcessingLock {
   const locks = new Map<string, { owner: string; expiresAt: number }>();
 
   return {
-    async acquire(lockKey: string, owner: string, ttlMs: number): Promise<boolean> {
+    async acquire(
+      lockKey: string,
+      owner: string,
+      ttlMs: number
+    ): Promise<boolean> {
       const existing = locks.get(lockKey);
       if (existing && existing.expiresAt > Date.now()) {
         return false; // Already locked by someone (or self)

@@ -2,7 +2,7 @@
 // Validates bearer tokens via the introspection endpoint, caches
 // valid tokens, and forwards user info to upstream services.
 
-import { createGateway, oauth2, cors, requestLog } from "@vivero/stoma";
+import { cors, createGateway, oauth2, requestLog } from "@vivero/stoma";
 import { memoryAdapter } from "@vivero/stoma/adapters";
 
 const adapter = memoryAdapter();
@@ -13,10 +13,7 @@ const gateway = createGateway({
   adapter,
 
   // Global policies apply to all routes
-  policies: [
-    requestLog(),
-    cors({ origins: ["https://your-app.com"] }),
-  ],
+  policies: [requestLog(), cors({ origins: ["https://your-app.com"] })],
 
   routes: [
     {
@@ -25,7 +22,8 @@ const gateway = createGateway({
         policies: [
           oauth2({
             // Supabase introspection endpoint — works with any RFC 7662 provider
-            introspectionUrl: "https://xyzcompany.supabase.co/auth/v1/introspect",
+            introspectionUrl:
+              "https://xyzcompany.supabase.co/auth/v1/introspect",
             clientId: "your-anon-key",
             clientSecret: "your-service-role-key",
             tokenLocation: "header",

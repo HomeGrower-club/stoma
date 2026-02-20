@@ -1,7 +1,7 @@
 import type {
   AnalyticsEntry,
-  ParquetWriter,
   ParquetMerger,
+  ParquetWriter,
   StreamingParquetMerger,
 } from "../types.js";
 
@@ -261,9 +261,9 @@ export function duckdbWasmParquetMerger(): ParquetMerger {
  *
  * @param opts.chunkSize - Number of fragments per merge pass. Default: 50.
  */
-export function duckdbWasmStreamingMerger(
-  opts?: { chunkSize?: number }
-): StreamingParquetMerger {
+export function duckdbWasmStreamingMerger(opts?: {
+  chunkSize?: number;
+}): StreamingParquetMerger {
   const chunkSize = opts?.chunkSize ?? 50;
 
   const baseMerger = duckdbWasmParquetMerger();

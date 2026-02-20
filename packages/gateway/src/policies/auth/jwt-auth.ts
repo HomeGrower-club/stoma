@@ -78,7 +78,7 @@ type JwtValidationResult =
 async function validateJwt(
   authHeader: string | null | undefined,
   config: JwtAuthConfig,
-  debug: DebugLogger,
+  debug: DebugLogger
 ): Promise<JwtValidationResult> {
   if (!authHeader) {
     return {
@@ -154,9 +154,7 @@ async function validateJwt(
     debug(`HMAC verification (alg=${header.alg})`);
     await verifyHmac(config.secret, parts[0], parts[1], parts[2], header.alg);
   } else if (config.jwksUrl) {
-    debug(
-      `JWKS verification (alg=${header.alg}, kid=${header.kid ?? "none"})`
-    );
+    debug(`JWKS verification (alg=${header.alg}, kid=${header.kid ?? "none"})`);
     await verifyJwks(
       config.jwksUrl,
       parts[0],
@@ -273,7 +271,7 @@ export const jwtAuth = /*#__PURE__*/ definePolicy<JwtAuthConfig>({
     const result = await validateJwt(
       c.req.header(config.headerName!),
       config,
-      debug,
+      debug
     );
 
     if (!result.ok) {
@@ -301,7 +299,7 @@ export const jwtAuth = /*#__PURE__*/ definePolicy<JwtAuthConfig>({
       const result = await validateJwt(
         input.headers.get(config.headerName!),
         config,
-        debug,
+        debug
       );
 
       if (!result.ok) {

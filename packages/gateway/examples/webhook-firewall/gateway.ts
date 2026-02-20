@@ -4,12 +4,12 @@
 // Demo API: https://stoma.vivero.dev/demo-api
 
 import {
-  createGateway,
   apiKeyAuth,
-  requestLimit,
+  createGateway,
   jsonThreatProtection,
-  regexThreatProtection,
   rateLimit,
+  regexThreatProtection,
+  requestLimit,
 } from "@vivero/stoma";
 
 const gateway = createGateway({
@@ -31,9 +31,7 @@ const gateway = createGateway({
           jsonThreatProtection({ maxDepth: 10, maxArraySize: 50 }),
           // Block script injection attempts in the body
           regexThreatProtection({
-            patterns: [
-              { regex: "<script", targets: ["body"] },
-            ],
+            patterns: [{ regex: "<script", targets: ["body"] }],
           }),
           // Contain abuse with bounded request rate
           rateLimit({ max: 120 }),

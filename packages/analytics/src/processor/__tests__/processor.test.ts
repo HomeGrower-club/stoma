@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { ANALYTICS_TYPE, type AnalyticsEntry, type StorageReader, type StorageWriter, type ParquetWriter } from "../../types.js";
+import {
+  ANALYTICS_TYPE,
+  type AnalyticsEntry,
+  type ParquetWriter,
+  type StorageReader,
+  type StorageWriter,
+} from "../../types.js";
 import { createProcessor } from "../index.js";
 
 function makeEntry(overrides?: Partial<AnalyticsEntry>): AnalyticsEntry {
@@ -54,7 +60,7 @@ describe("createProcessor", () => {
     const entry2 = makeEntry({ statusCode: 201 });
 
     const source = createMockSource({
-      "logs/file1.ndjson": JSON.stringify(entry1) + "\n" + JSON.stringify(entry2),
+      "logs/file1.ndjson": `${JSON.stringify(entry1)}\n${JSON.stringify(entry2)}`,
     });
     const destination = createMockDestination();
     const parquetWriter = createMockParquetWriter();
@@ -198,7 +204,9 @@ describe("createProcessor", () => {
 
   it("should handle source.list failures gracefully", async () => {
     const source: StorageReader = {
-      list: vi.fn(async () => { throw new Error("R2 unavailable"); }),
+      list: vi.fn(async () => {
+        throw new Error("R2 unavailable");
+      }),
       read: vi.fn(async () => ""),
       delete: vi.fn(async () => {}),
     };

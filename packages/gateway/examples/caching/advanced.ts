@@ -3,16 +3,20 @@
 // rate limiting, and language-aware cache keys via varyHeaders.
 // Demo API: https://stoma.vivero.dev/demo-api
 
-import { createGateway, cache, rateLimit, cors, InMemoryCacheStore } from "@vivero/stoma";
+import {
+  cache,
+  cors,
+  createGateway,
+  InMemoryCacheStore,
+  rateLimit,
+} from "@vivero/stoma";
 
 const cacheStore = new InMemoryCacheStore({ maxEntries: 500 });
 
 const gateway = createGateway({
   name: "catalog-api",
   basePath: "/api",
-  policies: [
-    cors({ origins: ["https://shop.example.com"] }),
-  ],
+  policies: [cors({ origins: ["https://shop.example.com"] })],
   routes: [
     // Product listings — short TTL, rate limited
     {
@@ -51,9 +55,7 @@ const gateway = createGateway({
       path: "/products/*",
       methods: ["POST", "PUT", "PATCH", "DELETE"],
       pipeline: {
-        policies: [
-          rateLimit({ max: 20, windowSeconds: 60 }),
-        ],
+        policies: [rateLimit({ max: 20, windowSeconds: 60 })],
         upstream: { type: "url", target: "https://stoma.vivero.dev/demo-api" },
       },
     },

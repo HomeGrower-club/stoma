@@ -20,7 +20,11 @@ interface ResponsePanelProps {
   onOpenAuthPopup?: (url: string) => void;
 }
 
-export function ResponsePanel({ response, error, onOpenAuthPopup }: ResponsePanelProps) {
+export function ResponsePanel({
+  response,
+  error,
+  onOpenAuthPopup,
+}: ResponsePanelProps) {
   const timingEntries = useMemo(
     () => parseServerTiming(response?.headers["server-timing"]),
     [response]
@@ -64,8 +68,9 @@ export function ResponsePanel({ response, error, onOpenAuthPopup }: ResponsePane
   }
 
   const isRedirect = response.status >= 300 && response.status < 400;
-  const locationUrl = response.headers["location"];
-  const isExternalRedirect = isRedirect && locationUrl && !locationUrl.startsWith("/");
+  const locationUrl = response.headers.location;
+  const isExternalRedirect =
+    isRedirect && locationUrl && !locationUrl.startsWith("/");
 
   let bodyContent = response.body;
   let parsedError: { error?: string; message?: string } | null = null;

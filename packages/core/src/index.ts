@@ -1,7 +1,7 @@
 export {
-  type DebugLogger,
-  noopDebugLogger,
-  createDebugger,
-  matchNamespace,
   createDebugFactory,
+  createDebugger,
+  type DebugLogger,
+  matchNamespace,
+  noopDebugLogger,
 } from "./debug";

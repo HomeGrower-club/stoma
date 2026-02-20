@@ -3,7 +3,7 @@
 // (e.g., internal services sharing a secret).
 // Demo API: https://stoma.vivero.dev/demo-api
 
-import { createGateway, jwtAuth, cors, requestLog } from "@vivero/stoma";
+import { cors, createGateway, jwtAuth, requestLog } from "@vivero/stoma";
 
 const gateway = createGateway({
   name: "secure-api",
