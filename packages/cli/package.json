@@ -46,6 +46,7 @@
       "stoma": "./dist/bin.js"
     },
     "main": "./dist/bin.js",
+    "types": "./dist/cli.d.ts",
     "exports": {
       ".": {
         "types": "./dist/cli.d.ts",

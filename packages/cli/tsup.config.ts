@@ -15,7 +15,7 @@ export default defineConfig({
     "zod",
     "esbuild",
   ],
-  dts: false,
+  dts: { entry: ["src/cli.ts"] },
   sourcemap: true,
   clean: true,
   outDir: "dist",
