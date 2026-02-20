@@ -1,0 +1,81 @@
+{
+  "name": "@vivero/stoma-cli",
+  "version": "0.1.0-rc.0",
+  "description": "CLI for running Stoma API gateways locally — load a gateway file and serve it on a Node.js HTTP server.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vivero-dev/stoma.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://stoma.vivero.dev",
+  "license": "MIT",
+  "author": {
+    "name": "Jonathan Bennett"
+  },
+  "bugs": {
+    "url": "https://github.com/vivero-dev/stoma/issues"
+  },
+  "keywords": [
+    "stoma",
+    "cli",
+    "api-gateway",
+    "hono",
+    "local-server"
+  ],
+  "bin": {
+    "stoma": "./dist/bin.js"
+  },
+  "main": "./src/cli.ts",
+  "types": "./src/cli.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/cli.ts",
+      "default": "./src/cli.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "bin": {
+      "stoma": "./dist/bin.js"
+    },
+    "main": "./dist/bin.js",
+    "exports": {
+      ".": {
+        "types": "./dist/cli.d.ts",
+        "import": "./dist/bin.js",
+        "default": "./dist/bin.js"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "tsx src/bin.ts",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "echo 'no linter configured'"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "@vivero/stoma": "workspace:*",
+    "clipanion": "^4.0.0-rc.4",
+    "esbuild": "^0.25.0",
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "vitest": "3.2.4"
+  }
+}
