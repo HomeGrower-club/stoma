@@ -9,8 +9,17 @@ coverage
 docs/.astro/
 docs/dist/
 
-# Generated playground service worker bundle
+# Generated TypeDoc API docs (starlight-typedoc regenerates on build)
+docs/src/content/docs/api/
+
+# Old TypeDoc HTML output
+docs/docs/
+
+# Generated build artifacts (vite bundles)
 docs/public/playground-sw.js
+docs/public/stoma-bundle.esm.js
+docs/public/stoma-bundle.d.ts
+docs/public/editor-worker.js
 
 # Internal planning and audit docs
 PLAN.md
