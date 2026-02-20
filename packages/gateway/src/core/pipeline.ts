@@ -132,6 +132,7 @@ export function policiesToMiddleware(policies: Policy[]): MiddlewareHandler[] {
       // track calledNext, errors, and push entries.
       let calledNext = false;
       let errorMsg: string | null = null;
+      // biome-ignore lint/suspicious/noConfusingVoidType: needed for hono compat.
       let handlerResult: Response | void;
 
       try {

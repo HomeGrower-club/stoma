@@ -455,7 +455,7 @@ function escHtml(s) {
 function highlightJson(prettyStr) {
   var s = escHtml(prettyStr);
   // Keys
-  s = s.replace(/"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"\s*:/g, '<span class="j-key">"$1"</span>:');
+  s = s.replace(/"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"s*:/g, '<span class="j-key">"$1"</span>:');
   // String values (after : or in arrays after , or [)
   s = s.replace(/:\\s*"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"/g, ': <span class="j-str">"$1"</span>');
   // Numbers

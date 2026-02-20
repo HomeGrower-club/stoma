@@ -208,6 +208,7 @@ describe("requestLog", () => {
     app.use("/proxy/*", injector);
     app.use("/proxy/*", policy.handler);
     app.all("/proxy/*", (c) => {
+      // @ts-expect-error needed overload for tests.
       c.set("_upstreamTarget", "https://api.example.com");
       return c.json({ ok: true });
     });

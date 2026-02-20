@@ -44,14 +44,11 @@ export function wrapWithPlayground(
     // OAuth relay: when the OAuth provider redirects the popup to a callback
     // route, serve a relay page that sends the params back to the playground
     // via postMessage instead of letting the gateway handle the browser request.
-    const isNavigation = request.headers
-      .get("accept")
-      ?.includes("text/html");
+    const isNavigation = request.headers.get("accept")?.includes("text/html");
     if (isNavigation && url.search) {
       const isCallbackRoute = callbackPaths.some(
         (p) =>
-          url.pathname === p ||
-          url.pathname.startsWith(p.replace(/\*$/, ""))
+          url.pathname === p || url.pathname.startsWith(p.replace(/\*$/, ""))
       );
       if (isCallbackRoute) {
         return new Response(oauthRelayHtml(url), {
@@ -88,11 +85,7 @@ async function handlePlaygroundSend(
       method: payload.method,
       headers: payload.headers ?? {},
     };
-    if (
-      payload.body &&
-      payload.method !== "GET" &&
-      payload.method !== "HEAD"
-    ) {
+    if (payload.body && payload.method !== "GET" && payload.method !== "HEAD") {
       init.body = payload.body;
     }
 

@@ -19,14 +19,8 @@ export class RunCommand extends Command {
     `,
     examples: [
       ["Run a compiled gateway file", "stoma run ./my-gateway.js"],
-      [
-        "Run on a custom port",
-        "stoma run ./my-gateway.js --port 3000",
-      ],
-      [
-        "Run with debug logging",
-        "stoma run ./my-gateway.js --debug",
-      ],
+      ["Run on a custom port", "stoma run ./my-gateway.js --port 3000"],
+      ["Run with debug logging", "stoma run ./my-gateway.js --debug"],
       [
         "Run a remote gateway file",
         "stoma run https://example.com/gateway.ts --trust-remote",
@@ -68,7 +62,7 @@ export class RunCommand extends Command {
     const filePath = isRemote ? this.file : path.resolve(this.file);
     const portNum = parseInt(this.port, 10);
 
-    if (isNaN(portNum) || portNum < 0 || portNum > 65535) {
+    if (Number.isNaN(portNum) || portNum < 0 || portNum > 65535) {
       log.error(`Invalid port: ${this.port}`);
       return 1;
     }
@@ -94,8 +88,9 @@ export class RunCommand extends Command {
 
     if (this.verbose && gateway._registry) {
       for (const route of gateway._registry.routes) {
-        const methods =
-          Array.isArray(route.methods) ? route.methods.join(",") : "ALL";
+        const methods = Array.isArray(route.methods)
+          ? route.methods.join(",")
+          : "ALL";
         log.verbose(`  ${methods.padEnd(8)} ${route.path}`);
       }
     }
@@ -117,15 +112,14 @@ export class RunCommand extends Command {
       );
 
       if (this.playground) {
-        log.info(
-          `Playground: http://${this.host}:${portNum}/__playground`
-        );
+        log.info(`Playground: http://${this.host}:${portNum}/__playground`);
       }
 
       if (gateway._registry) {
         for (const route of gateway._registry.routes) {
-          const methods =
-            Array.isArray(route.methods) ? route.methods.join(",") : "ALL";
+          const methods = Array.isArray(route.methods)
+            ? route.methods.join(",")
+            : "ALL";
           log.info(`  ${methods.padEnd(8)} ${route.path}`);
         }
       }

@@ -179,8 +179,7 @@ export const requestLog = /*#__PURE__*/ definePolicy<RequestLogConfig>({
       userAgent: c.req.header("user-agent") ?? "unknown",
       gatewayName: gateway?.gatewayName ?? "unknown",
       routePath: gateway?.routePath ?? url.pathname,
-      upstream:
-        (c.get("_upstreamTarget") as string | undefined) ?? "unknown",
+      upstream: (c.get("_upstreamTarget") as string | undefined) ?? "unknown",
       traceId: gateway?.traceId,
       spanId: gateway?.spanId,
     };

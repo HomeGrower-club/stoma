@@ -492,8 +492,6 @@ function createUrlUpstream(upstream: UrlUpstream, debug = noopDebugLogger) {
   const targetBase = new URL(upstream.target);
 
   return async (c: Context) => {
-    c.set("_upstreamTarget", targetBase.origin);
-
     const incomingUrl = new URL(c.req.url);
 
     // Apply path rewrite if configured
@@ -505,6 +503,9 @@ function createUrlUpstream(upstream: UrlUpstream, debug = noopDebugLogger) {
     }
 
     const targetUrl = new URL(targetPath + incomingUrl.search, targetBase);
+
+    // Set after path rewrite so the log captures the actual resolved URL
+    c.set("_upstreamTarget", targetUrl.toString());
 
     // SSRF protection: ensure the rewritten URL still points to the
     // configured upstream origin (protocol + host + port).

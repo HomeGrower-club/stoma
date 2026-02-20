@@ -1,10 +1,10 @@
-import { build } from "esbuild";
 import { existsSync } from "node:fs";
 import { mkdtemp, rm, unlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { build } from "esbuild";
 import type { GatewayInstance } from "./types.js";
 
 export interface ResolveOptions {
@@ -78,7 +78,9 @@ async function resolveRemoteGateway(
 ): Promise<GatewayInstance> {
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Failed to fetch remote gateway: ${res.status} ${res.statusText}`);
+    throw new Error(
+      `Failed to fetch remote gateway: ${res.status} ${res.statusText}`
+    );
   }
 
   const filename = filenameFromUrl(url, res.headers.get("content-type"));
@@ -250,10 +252,7 @@ function isHonoApp(
   );
 }
 
-function asGatewayInstance(
-  value: unknown,
-  source: string
-): GatewayInstance {
+function asGatewayInstance(value: unknown, source: string): GatewayInstance {
   if (isGatewayInstance(value)) {
     return value;
   }
