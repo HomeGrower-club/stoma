@@ -1,5 +1,14 @@
 # @vivero/stoma-core
 
+## 0.1.0-rc.2
+### Patch Changes
+
+
+
+- [`c6f0576`](https://github.com/vivero-dev/stoma/commit/c6f05763d6f2ba3e8a3c6845258d57e6f8c1d693) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - fix: publish via `yarn npm publish` to correctly resolve `workspace:*` protocols
+  
+  Replaces `changeset publish` (which used `npm publish <dir>` and never resolved workspace protocols) with a custom publish script that runs `yarn npm publish` from each package directory. Yarn natively handles `workspace:*` resolution and `publishConfig` field overrides, so the prepack/postpack workaround scripts have been removed.
+
 ## 0.1.0-rc.1
 ### Patch Changes
 
