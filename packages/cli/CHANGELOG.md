@@ -1,5 +1,16 @@
 # @vivero/stoma-cli
 
+## 0.1.0-rc.6
+### Patch Changes
+
+
+
+- [`c6f0576`](https://github.com/vivero-dev/stoma/commit/c6f05763d6f2ba3e8a3c6845258d57e6f8c1d693) Thanks [@JonathanBennett](https://github.com/JonathanBennett)! - fix: resolve `workspace:*` protocols in published packages
+  
+  Replaces `changeset publish` with a custom publish script (`scripts/publish.mjs`) that uses `yarn pack` to resolve `workspace:*` protocols and apply `publishConfig` overrides, then `npm publish <tarball>` for OIDC trusted publishing with provenance. The prepack/postpack workaround scripts have been removed.
+- Updated dependencies [[`c6f0576`](https://github.com/vivero-dev/stoma/commit/c6f05763d6f2ba3e8a3c6845258d57e6f8c1d693)]:
+  - @vivero/stoma@0.1.0-rc.10
+
 ## 0.1.0-rc.5
 ### Patch Changes
 
