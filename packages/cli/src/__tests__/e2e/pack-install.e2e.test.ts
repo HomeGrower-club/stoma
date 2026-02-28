@@ -107,13 +107,9 @@ async function installWith(
   // Yarn 4 on Windows needs file: protocol for local tarballs (backslash paths
   // are interpreted as registry package names without it)
   const gwTarball =
-    runner === "yarn" && isWindows
-      ? `file:${gatewayTarball}`
-      : gatewayTarball;
+    runner === "yarn" && isWindows ? `file:${gatewayTarball}` : gatewayTarball;
   const clTarball =
-    runner === "yarn" && isWindows
-      ? `file:${cliTarball}`
-      : cliTarball;
+    runner === "yarn" && isWindows ? `file:${cliTarball}` : cliTarball;
 
   if (runner === "npm") {
     writeFileSync(
