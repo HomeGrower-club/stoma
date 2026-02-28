@@ -1,6 +1,7 @@
 import path from "node:path";
 import { Command, Option } from "clipanion";
 import { resolveGateway } from "../gateway/resolve.js";
+import type { GatewayInstance } from "../gateway/types.js";
 import { wrapWithPlayground } from "../playground/wrap.js";
 import { startServer } from "../server/serve.js";
 import { createLogger } from "../utils/logger.js";
@@ -69,7 +70,7 @@ export class RunCommand extends Command {
 
     log.info(`Loading gateway from ${filePath}`);
 
-    let gateway;
+    let gateway: GatewayInstance;
     try {
       gateway = await resolveGateway(filePath, {
         debug: this.debug,

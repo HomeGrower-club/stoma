@@ -24,10 +24,7 @@ function mockGatewayFetch(): (req: Request) => Response | Promise<Response> {
     });
 }
 
-function req(
-  path: string,
-  init?: RequestInit
-): Request {
+function req(path: string, init?: RequestInit): Request {
   return new Request(`http://localhost:8787${path}`, init);
 }
 
@@ -39,9 +36,7 @@ describe("wrapWithPlayground", () => {
       const wrapped = wrapWithPlayground(mockGatewayFetch(), mockRegistry());
       const res = await wrapped(req("/__playground"));
 
-      expect(res.headers.get("content-type")).toBe(
-        "text/html; charset=utf-8"
-      );
+      expect(res.headers.get("content-type")).toBe("text/html; charset=utf-8");
       const body = await res.text();
       expect(body).toContain("<!DOCTYPE html");
       expect(body).toContain("playground");
@@ -215,9 +210,7 @@ describe("wrapWithPlayground", () => {
       );
 
       const body = await res.text();
-      expect(res.headers.get("content-type")).toBe(
-        "text/html; charset=utf-8"
-      );
+      expect(res.headers.get("content-type")).toBe("text/html; charset=utf-8");
       expect(body).toContain("stoma-oauth-callback");
       expect(body).toContain('"code":"abc"');
       expect(body).toContain('"state":"xyz"');
@@ -225,9 +218,7 @@ describe("wrapWithPlayground", () => {
 
     it("does NOT intercept non-navigation requests to callback routes", async () => {
       const registry = mockRegistry({
-        routes: [
-          { path: "/oauth/callback", methods: ["GET"], policies: [] },
-        ],
+        routes: [{ path: "/oauth/callback", methods: ["GET"], policies: [] }],
       });
       const wrapped = wrapWithPlayground(mockGatewayFetch(), registry);
 
@@ -243,9 +234,7 @@ describe("wrapWithPlayground", () => {
 
     it("does NOT intercept callback route without query params", async () => {
       const registry = mockRegistry({
-        routes: [
-          { path: "/oauth/callback", methods: ["GET"], policies: [] },
-        ],
+        routes: [{ path: "/oauth/callback", methods: ["GET"], policies: [] }],
       });
       const wrapped = wrapWithPlayground(mockGatewayFetch(), registry);
 

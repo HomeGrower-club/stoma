@@ -23,9 +23,9 @@ describe("resolveGateway security boundaries", () => {
     });
 
     it("includes the security warning in the error message", async () => {
-      await expect(
-        resolveGateway("https://example.com/gw.ts")
-      ).rejects.toThrow("download and execute code");
+      await expect(resolveGateway("https://example.com/gw.ts")).rejects.toThrow(
+        "download and execute code"
+      );
     });
   });
 
@@ -56,9 +56,7 @@ describe("resolveGateway security boundaries", () => {
       const fixturePath = path.join(fixturesDir, "test-gateway.ts");
       const gw = await resolveGateway(fixturePath);
 
-      const res = await gw.app.fetch(
-        new Request("http://localhost/health")
-      );
+      const res = await gw.app.fetch(new Request("http://localhost/health"));
       expect(res.status).toBe(200);
     });
 
@@ -66,9 +64,7 @@ describe("resolveGateway security boundaries", () => {
       const fixturePath = path.join(fixturesDir, "test-gateway.ts");
       const gw = await resolveGateway(fixturePath);
 
-      const res = await gw.app.fetch(
-        new Request("http://localhost/echo")
-      );
+      const res = await gw.app.fetch(new Request("http://localhost/echo"));
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body).toEqual({ ok: true });
