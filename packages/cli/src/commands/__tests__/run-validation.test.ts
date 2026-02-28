@@ -8,7 +8,7 @@ vi.mock("../../server/serve.js", () => ({
   startServer: vi.fn(),
 }));
 vi.mock("../../playground/wrap.js", () => ({
-  wrapWithPlayground: vi.fn((fetch: any) => fetch),
+  wrapWithPlayground: vi.fn((fetch: unknown) => fetch),
 }));
 
 import { Cli } from "clipanion";
