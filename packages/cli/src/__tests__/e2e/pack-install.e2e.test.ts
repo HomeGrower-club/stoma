@@ -185,9 +185,9 @@ async function installWith(
   // Windows creates various shims (.cmd, .exe) instead of symlinks in .bin/ depending on the package manager
   let binPath = path.join(tmpDir, "node_modules/.bin", "stoma");
   if (isWindows) {
-    if (existsSync(binPath + ".cmd")) {
+    if (existsSync(`${binPath}.cmd`)) {
       binPath += ".cmd";
-    } else if (existsSync(binPath + ".exe")) {
+    } else if (existsSync(`${binPath}.exe`)) {
       binPath += ".exe";
     }
   }
@@ -304,9 +304,13 @@ describe("yarn add (simulates yarn dlx)", async () => {
     tmpDirs.push(env.tmpDir);
   }, 180_000);
 
-  it.skipIf(!available)("installed binary works end-to-end", async () => {
-    await assertInstalledBinaryWorks(env);
-  }, 180_000);
+  it.skipIf(!available)(
+    "installed binary works end-to-end",
+    async () => {
+      await assertInstalledBinaryWorks(env);
+    },
+    180_000
+  );
 });
 
 describe("pnpm add (simulates pnpm dlx)", async () => {
@@ -319,9 +323,13 @@ describe("pnpm add (simulates pnpm dlx)", async () => {
     tmpDirs.push(env.tmpDir);
   }, 180_000);
 
-  it.skipIf(!available)("installed binary works end-to-end", async () => {
-    await assertInstalledBinaryWorks(env);
-  }, 180_000);
+  it.skipIf(!available)(
+    "installed binary works end-to-end",
+    async () => {
+      await assertInstalledBinaryWorks(env);
+    },
+    180_000
+  );
 });
 
 describe("bun add (simulates bunx)", async () => {
@@ -334,7 +342,11 @@ describe("bun add (simulates bunx)", async () => {
     tmpDirs.push(env.tmpDir);
   }, 180_000);
 
-  it.skipIf(!available)("installed binary works end-to-end", async () => {
-    await assertInstalledBinaryWorks(env);
-  }, 180_000);
+  it.skipIf(!available)(
+    "installed binary works end-to-end",
+    async () => {
+      await assertInstalledBinaryWorks(env);
+    },
+    180_000
+  );
 });
