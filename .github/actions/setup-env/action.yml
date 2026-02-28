@@ -8,10 +8,6 @@ runs:
       shell: bash
       run: corepack enable
 
-    - name: Install pnpm
-      shell: bash
-      run: npm install -g pnpm
-
     - uses: oven-sh/setup-bun@v2
       with:
         bun-version: latest
