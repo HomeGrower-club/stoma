@@ -38,7 +38,9 @@ const gateway = createGateway({
         ],
         upstream: {
           type: "url",
-          target: "https://stoma.vivero.dev/demo-api",
+          target: "https://stoma.vivero.dev",
+          rewritePath: (path) =>
+            path.replace("/v1/catalog", "/demo-api/products"),
         },
       },
     },

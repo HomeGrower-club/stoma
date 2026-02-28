@@ -31,7 +31,11 @@ const gateway = createGateway({
             varyHeaders: ["accept-language"],
           }),
         ],
-        upstream: { type: "url", target: "https://stoma.vivero.dev/demo-api" },
+        upstream: {
+          type: "url",
+          target: "https://stoma.vivero.dev",
+          rewritePath: (path) => path.replace("/api", "/demo-api"),
+        },
       },
     },
     // Product details — cached longer
@@ -47,7 +51,11 @@ const gateway = createGateway({
             varyHeaders: ["accept-language"],
           }),
         ],
-        upstream: { type: "url", target: "https://stoma.vivero.dev/demo-api" },
+        upstream: {
+          type: "url",
+          target: "https://stoma.vivero.dev",
+          rewritePath: (path) => path.replace("/api", "/demo-api"),
+        },
       },
     },
     // Admin mutations — never cached
@@ -56,7 +64,11 @@ const gateway = createGateway({
       methods: ["POST", "PUT", "PATCH", "DELETE"],
       pipeline: {
         policies: [rateLimit({ max: 20, windowSeconds: 60 })],
-        upstream: { type: "url", target: "https://stoma.vivero.dev/demo-api" },
+        upstream: {
+          type: "url",
+          target: "https://stoma.vivero.dev",
+          rewritePath: (path) => path.replace("/api", "/demo-api"),
+        },
       },
     },
   ],

@@ -13,13 +13,21 @@ const apiRoutes = scope({
     {
       path: "/users/*",
       pipeline: {
-        upstream: { type: "url", target: "https://stoma.vivero.dev/demo-api" },
+        upstream: {
+          type: "url",
+          target: "https://stoma.vivero.dev",
+          rewritePath: (path) => path.replace("/api/v1", "/demo-api"),
+        },
       },
     },
     {
-      path: "/projects/*",
+      path: "/products/*",
       pipeline: {
-        upstream: { type: "url", target: "https://stoma.vivero.dev/demo-api" },
+        upstream: {
+          type: "url",
+          target: "https://stoma.vivero.dev",
+          rewritePath: (path) => path.replace("/api/v1", "/demo-api"),
+        },
       },
     },
   ],
@@ -31,7 +39,7 @@ const gateway = createGateway({
   routes: [
     // Health check lives outside any scope
     health({ path: "/health" }),
-    // Scoped routes at /api/v1/users/* and /api/v1/projects/*
+    // Scoped routes at /api/v1/users/* and /api/v1/products/*
     ...apiRoutes,
   ],
 });

@@ -52,6 +52,7 @@ async function renderMarkdownFromUrl(
     });
 
     const markdown = await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: runs inside page.evaluate (browser context, no DOM lib)
       const doc = (globalThis as { document?: any }).document;
       if (!doc) return "";
 
@@ -69,6 +70,7 @@ async function renderMarkdownFromUrl(
 
       const blocks = Array.from(
         contentRoot.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,pre,blockquote")
+        // biome-ignore lint/suspicious/noExplicitAny: browser context without DOM lib
       ) as Array<any>;
 
       for (const block of blocks) {

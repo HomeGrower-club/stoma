@@ -15,7 +15,7 @@ const gateway = createGateway({
         policies: [
           trafficShadow({
             // Mirror 10% of write traffic to v2 for verification
-            target: "https://stoma.vivero.dev/demo-api",
+            target: "https://stoma.vivero.dev",
             percentage: 10,
             methods: ["POST", "PUT"],
             timeout: 3000,
@@ -24,7 +24,9 @@ const gateway = createGateway({
         upstream: {
           // Primary responses still come from stable v1
           type: "url",
-          target: "https://stoma.vivero.dev/demo-api",
+          target: "https://stoma.vivero.dev",
+          rewritePath: (path) =>
+            path.replace("/v1/orders", "/demo-api/products"),
         },
       },
     },
