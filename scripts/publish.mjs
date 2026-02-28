@@ -18,14 +18,22 @@
  */
 
 import { execSync } from "node:child_process";
-import { readFileSync, existsSync, readdirSync, mkdtempSync, rmSync } from "node:fs";
-import { join, resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
-const rootPkg = JSON.parse(readFileSync(join(rootDir, "package.json"), "utf-8"));
+const rootPkg = JSON.parse(
+  readFileSync(join(rootDir, "package.json"), "utf-8")
+);
 const isCI = Boolean(process.env.CI);
 const isDryRun = process.argv.includes("--dry-run");
 
@@ -64,10 +72,13 @@ function readPkg(dir) {
 
 function isAlreadyPublished(name, version) {
   try {
-    const out = execSync(`npm view "${name}@${version}" version --json 2>/dev/null`, {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
+    const out = execSync(
+      `npm view "${name}@${version}" version --json 2>/dev/null`,
+      {
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+      }
+    ).trim();
     return out === `"${version}"`;
   } catch {
     return false;
@@ -84,10 +95,14 @@ function packPackage(pkg, tmpDir) {
 
   // Extract and validate the packed package.json
   execSync(`tar xzf ${tgzPath} -C ${tmpDir}`, { stdio: "pipe" });
-  const packed = JSON.parse(readFileSync(join(tmpDir, "package", "package.json"), "utf-8"));
+  const packed = JSON.parse(
+    readFileSync(join(tmpDir, "package", "package.json"), "utf-8")
+  );
 
   const allDeps = { ...packed.dependencies, ...packed.peerDependencies };
-  const unresolved = Object.entries(allDeps).filter(([, v]) => v.startsWith("workspace:"));
+  const unresolved = Object.entries(allDeps).filter(([, v]) =>
+    v.startsWith("workspace:")
+  );
   if (unresolved.length > 0) {
     console.log(`  FAIL: unresolved workspace deps:`);
     for (const [name, ver] of unresolved) console.log(`    ${name}: ${ver}`);
@@ -109,22 +124,35 @@ function dryRunPackage(pkg) {
     const tgzPath = packPackage(pkg, tmpDir);
     if (!tgzPath) return false;
 
-    const packed = JSON.parse(readFileSync(join(tmpDir, "package", "package.json"), "utf-8"));
+    const packed = JSON.parse(
+      readFileSync(join(tmpDir, "package", "package.json"), "utf-8")
+    );
     const allDeps = { ...packed.dependencies, ...packed.peerDependencies };
-    const original = JSON.parse(readFileSync(join(pkg.dir, "package.json"), "utf-8"));
+    const original = JSON.parse(
+      readFileSync(join(pkg.dir, "package.json"), "utf-8")
+    );
 
     // Report resolved workspace deps
-    const resolvedWorkspace = Object.entries(allDeps).filter(
-      ([name]) => readFileSync(join(pkg.dir, "package.json"), "utf-8").includes(`"${name}": "workspace:`)
+    const resolvedWorkspace = Object.entries(allDeps).filter(([name]) =>
+      readFileSync(join(pkg.dir, "package.json"), "utf-8").includes(
+        `"${name}": "workspace:`
+      )
     );
     if (resolvedWorkspace.length > 0) {
       console.log(`  workspace deps resolved:`);
-      for (const [name] of resolvedWorkspace) console.log(`    ${name}: ${allDeps[name]}`);
+      for (const [name] of resolvedWorkspace)
+        console.log(`    ${name}: ${allDeps[name]}`);
     }
 
     // Check publishConfig overrides applied
     if (original.publishConfig) {
-      const overrideFields = ["main", "types", "exports", "bin", "module"].filter((f) => f in original.publishConfig);
+      const overrideFields = [
+        "main",
+        "types",
+        "exports",
+        "bin",
+        "module",
+      ].filter((f) => f in original.publishConfig);
       if (overrideFields.length > 0) {
         console.log(`  publishConfig applied: ${overrideFields.join(", ")}`);
         for (const f of overrideFields) {
