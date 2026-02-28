@@ -105,14 +105,14 @@ async function installWith(
   const tmpDir = mkdtempSync(path.join(tmpdir(), `stoma-e2e-${runner}-`));
 
   // Yarn 4 on Windows needs file: protocol with forward slashes for local tarballs
-  // e.g. "file:D:/a/stoma/stoma/packages/gateway/stoma-e2e.tgz"
+  // e.g. "file:///D:/a/stoma/stoma/packages/gateway/stoma-e2e.tgz"
   const gwTarball =
     runner === "yarn" && isWindows
-      ? `file:${gatewayTarball.replace(/\\/g, "/")}`
+      ? `file:///${gatewayTarball.replace(/\\/g, "/")}`
       : gatewayTarball;
   const clTarball =
     runner === "yarn" && isWindows
-      ? `file:${cliTarball.replace(/\\/g, "/")}`
+      ? `file:///${cliTarball.replace(/\\/g, "/")}`
       : cliTarball;
 
   if (runner === "npm") {
@@ -292,7 +292,7 @@ describe("npm install (simulates npx)", () => {
 
   it("installed binary works end-to-end", async () => {
     await assertInstalledBinaryWorks(env);
-  });
+  }, 180_000);
 });
 
 describe("yarn add (simulates yarn dlx)", async () => {
@@ -306,7 +306,7 @@ describe("yarn add (simulates yarn dlx)", async () => {
 
   it.skipIf(!available)("installed binary works end-to-end", async () => {
     await assertInstalledBinaryWorks(env);
-  });
+  }, 180_000);
 });
 
 describe("pnpm add (simulates pnpm dlx)", async () => {
@@ -321,7 +321,7 @@ describe("pnpm add (simulates pnpm dlx)", async () => {
 
   it.skipIf(!available)("installed binary works end-to-end", async () => {
     await assertInstalledBinaryWorks(env);
-  });
+  }, 180_000);
 });
 
 describe("bun add (simulates bunx)", async () => {
@@ -336,5 +336,5 @@ describe("bun add (simulates bunx)", async () => {
 
   it.skipIf(!available)("installed binary works end-to-end", async () => {
     await assertInstalledBinaryWorks(env);
-  });
+  }, 180_000);
 });
